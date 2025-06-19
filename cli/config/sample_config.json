@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "language": "python",
+  "global_time_limit": 300,
+  "setup_commands": [
+    "pip install numpy pandas matplotlib"
+  ],
+  "files_necessary": [
+    "solution.py"
+  ],
+  "questions": [
+    {
+      "name": "Basic File Operations",
+      "marking_items": [
+        {
+          "target_file": "solution.py",
+          "total_mark": 0,
+          "type": 0,
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "solution.py",
+          "total_mark": 8,
+          "type": 1,
+          "time_limit": 30,
+          "visibility": "visible",
+          "expected_input": "5\\n10\\n",
+          "expected_output": "15"
+        }
+      ]
+    },
+    {
+      "name": "Calculator",
+      "marking_items": [
+        {
+          "target_file": "calculator.py",
+          "total_mark": 0,
+          "type": 0,
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "calculator.py",
+          "total_mark": 8,
+          "type": 1,
+          "time_limit": 30,
+          "visibility": "visible",
+          "expected_input": "5*10\\n",
+          "expected_output": "50"
+        }
+      ]
+    }
+  ]
+}
