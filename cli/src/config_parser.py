@@ -12,12 +12,24 @@ class MarkingItem:
     """Represents a single marking item within a question."""
     target_file: str
     total_mark: int
-    type: int  # 0: file_exists, 1: output_comparison, 2: signature_check
+    type: str  # file_exists, output_comparison, signature_check, function_test, class_test
     time_limit: int = 30
-    visibility: str = "visible"  # visible, hidden
+    visibility: str = "visible"  # visible, hidden, after_due_date, after_published
     expected_input: str = ""
     expected_output: str = ""
     reference_file: str = ""
+    
+    # Function testing fields
+    function_name: str = ""
+    test_cases: List[Dict] = field(default_factory=list)
+    
+    # Class testing fields
+    class_name: str = ""
+    test_instantiation: bool = False
+    init_args: List = field(default_factory=list)
+    init_kwargs: Dict = field(default_factory=dict)
+    required_methods: List[str] = field(default_factory=list)
+    method_tests: List[Dict] = field(default_factory=list)
 
 @dataclass
 class Question:
@@ -86,6 +98,16 @@ class ConfigParser:
                     expected_input=item_data.get('expected_input', ''),
                     expected_output=item_data.get('expected_output', ''),
                     reference_file=item_data.get('reference_file', ''),
+                    # Function testing fields
+                    function_name=item_data.get('function_name', ''),
+                    test_cases=item_data.get('test_cases', []),
+                    # Class testing fields
+                    class_name=item_data.get('class_name', ''),
+                    test_instantiation=item_data.get('test_instantiation', False),
+                    init_args=item_data.get('init_args', []),
+                    init_kwargs=item_data.get('init_kwargs', {}),
+                    required_methods=item_data.get('required_methods', []),
+                    method_tests=item_data.get('method_tests', []),
                 )
                 question.marking_items.append(marking_item)
             

@@ -92,7 +92,8 @@ class AutograderGenerator:
     def _generate_run_tests(self, tests_dir: Path):
         """Generate modular test files: main run_tests.py and individual question test files."""
         # Generate main test runner
-        template = self.jinja_env.get_template('run_tests_main.py.j2')
+        assert self.temp_dir is not None, "temp_dir must be set before generating files"
+        template = self.jinja_env.get_template('run_tests.py.j2')
         content = template.render(config=self.config)
         
         run_tests_file = self.temp_dir / "run_tests.py"
@@ -104,7 +105,7 @@ class AutograderGenerator:
     
     def _generate_question_test_files(self, tests_dir: Path):
         """Generate individual test files for each question."""
-        question_template = self.jinja_env.get_template('question_test.py.j2')
+        question_template = self.jinja_env.get_template('test_question.py.j2')
         
         for question in self.config.questions:
             # Create safe filename from question name
@@ -226,8 +227,7 @@ class AutograderGenerator:
         for i, question in enumerate(self.config.questions, 1):
             readme_content += f"\n### {i}. {question.name}\n"
             for j, item in enumerate(question.marking_items, 1):
-                type_name = {0: "File Check", 1: "Output Test", 2: "Signature Check"}[item.type]
-                readme_content += f"- Item {j}: {type_name} ({item.total_mark} points)\n"
+                readme_content += f"- Item {j}: {item.type} ({item.total_mark} points)\n"
         
         readme_file = self.temp_dir / "README.md"
         with open(readme_file, 'w', encoding='utf-8') as f:
