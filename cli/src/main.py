@@ -2,6 +2,9 @@
 """
 TIF Autograder CLI Tool
 Main entry point for the command-line interface.
+
+This tool validates JSON configuration files using JSON Schema validation
+and generates Gradescope autograder scripts based on the configuration.
 """
 
 import argparse
@@ -45,13 +48,9 @@ def main():
     setup_logging(args.verbose)
     
     try:
-        # Parse configuration
-        config_parser = ConfigParser(args.config)
-        config = config_parser.parse()
-        
-        # Validate configuration
+        # Validate configuration first using JSON schema
         validator = ConfigValidator()
-        is_valid = validator.validate(config)
+        is_valid = validator.validate_from_file(args.config)
         
         # Display validation results
         errors = validator.get_errors()
@@ -60,18 +59,22 @@ def main():
         for warning in warnings:
             print_warning(warning)
         
-        if errors:
+        if not is_valid:
             print_error("Configuration validation failed:")
             for error in errors:
                 print_error(f"  - {error}")
             return 1
         
-        if is_valid:
-            print_success("Configuration validation passed")
+        print_success("Configuration validation passed")
         
         # If validate-only flag is set, stop here
         if args.validate_only:
             return 0
+        
+        # Parse configuration after validation
+        config_parser = ConfigParser(args.config)
+        config = config_parser.parse()
+        
         
         # Generate autograder
         generator = AutograderGenerator(config)

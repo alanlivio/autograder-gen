@@ -1,5 +1,9 @@
 """
 Configuration parser for autograder JSON files.
+
+This module provides functionality to parse JSON configuration files
+and convert them into structured Python objects. It works in conjunction
+with the validator module which uses JSON Schema for validation.
 """
 
 import json
@@ -40,7 +44,7 @@ class Question:
 @dataclass
 class AutograderConfig:
     """Complete autograder configuration."""
-    version: str = "0"
+    version: str = "0"  # Changed to string to match schema
     questions: List[Question] = field(default_factory=list)
     global_time_limit: int = 300
     language: str = "python"  # python, java, r
@@ -68,12 +72,34 @@ class ConfigParser:
         except Exception as e:
             raise ValueError(f"Error parsing configuration: {e}")
     
+    def parse_and_validate(self) -> AutograderConfig:
+        """Parse the JSON configuration file with validation."""
+        try:
+            # Import here to avoid circular import
+            from validator import ConfigValidator
+            
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Validate first
+            validator = ConfigValidator()
+            if not validator.validate_json(data):
+                errors = validator.get_errors()
+                raise ValueError(f"Configuration validation failed: {'; '.join(errors)}")
+            
+            return self._parse_config(data)
+            
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in configuration file: {e}")
+        except Exception as e:
+            raise ValueError(f"Error parsing configuration: {e}")
+    
     def _parse_config(self, data: Dict[str, Any]) -> AutograderConfig:
         """Convert JSON data to AutograderConfig object."""
         config = AutograderConfig()
         
         # Parse global settings
-        config.version = data.get('version', 0)
+        config.version = str(data.get('version', '0'))  # Ensure version is string
         config.global_time_limit = data.get('global_time_limit', 300)
         config.language = data.get('language', 'python')
         config.setup_commands = data.get('setup_commands', [])
