@@ -291,12 +291,6 @@ class ConfigValidator:
                 self.errors[-1] += f" at path: {path}"
             return False
     
-    def validate(self, config: AutograderConfig) -> bool:
-        """Validate the complete configuration. Returns True if valid."""
-        # Convert config object back to dict for JSON schema validation
-        data = self._config_to_dict(config)
-        return self.validate_json(data)
-    
     def validate_from_file(self, file_path: str) -> bool:
         """Validate configuration directly from JSON file."""
         try:
