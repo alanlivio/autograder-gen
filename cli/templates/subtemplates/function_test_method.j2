@@ -14,8 +14,7 @@
             {% if item.test_cases %}
             # Run test cases
             {% for test_case in item.test_cases %}
-            {% set case_index = loop.index %}
-            # Test case {{ case_index }}
+            # Test case {{ loop.index }}
             {% if test_case.args %}
             args = {{ test_case.args }}
             {% else %}
@@ -32,7 +31,7 @@
                 self.assertEqual(str(result), str(expected),
                     f"[ERROR] Function '{function_name}' in file '{target_file}' returned '{{result}}' for arguments {args} {kwargs}, but expected '{{expected}}' for question: '{{ question.name }}'. Please check your function's return value and logic.")
             except Exception as e:
-                self.fail(f"[ERROR] Test case {case_index} for function '{function_name}' in file '{target_file}' failed with exception: {str(e)} for question: '{{ question.name }}'.")
+                self.fail(f"[ERROR] Test case {{ loop.index }} for function '{function_name}' in file '{target_file}' failed with exception: {str(e)} for question: '{{ question.name }}'.")
             {% endfor %}
             {% endif %}
         except ImportError as e:

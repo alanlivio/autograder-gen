@@ -26,7 +26,7 @@
           "type": "output_comparison",
           "time_limit": 30,
           "visibility": "visible",
-          "expected_input": "5\n10\n",
+          "expected_input": "5\\n10\\n",
           "expected_output": "15"
         }
       ]

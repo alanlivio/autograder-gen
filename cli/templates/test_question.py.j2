@@ -48,6 +48,8 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
             # Load the module
             spec = importlib.util.spec_from_file_location("student_module", file_path)
             module = importlib.util.module_from_spec(spec)
+            if spec.loader is None:
+                raise ImportError(f"Could not load module from {file_path}")
             spec.loader.exec_module(module)
             
             # Get the function

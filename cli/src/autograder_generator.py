@@ -12,6 +12,7 @@ import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from cli.src.config_parser import AutograderConfig, Question, MarkingItem
+from cli.src.utils import print_success, print_error, print_warning
 
 class AutograderGenerator:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
