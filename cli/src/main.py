@@ -12,10 +12,10 @@ import json
 import sys
 from pathlib import Path
 
-from config_parser import ConfigParser
-from autograder_generator import AutograderGenerator
-from validator import ConfigValidator
-from utils import setup_logging, print_success, print_error, print_warning
+from cli.src.config_parser import ConfigParser
+from cli.src.autograder_generator import AutograderGenerator
+from cli.src.validator import ConfigValidator
+from cli.src.utils import setup_logging, print_success, print_error, print_warning
 
 def main():
     parser = argparse.ArgumentParser(

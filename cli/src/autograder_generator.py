@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from config_parser import AutograderConfig, Question, MarkingItem
+from cli.src.config_parser import AutograderConfig, Question, MarkingItem
 
 class AutograderGenerator:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
@@ -107,14 +107,15 @@ class AutograderGenerator:
         """Generate individual test files for each question."""
         question_template = self.jinja_env.get_template('test_question.py.j2')
         
-        for question in self.config.questions:
-            # Create safe filename from question name
-            question_filename = self._sanitize_filename(question.name)
+        for idx, question in enumerate(self.config.questions, 1):
+            # Use question number for filename
+            question_filename = f"question_{idx}"
             
             # Generate content for this question
             content = question_template.render(
                 config=self.config,
-                question=question
+                question=question,
+                question_number=idx
             )
             
             # Write the question test file

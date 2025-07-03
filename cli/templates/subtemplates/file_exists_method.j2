@@ -1,0 +1,17 @@
+    @weight({{ item.total_mark }})
+    @number({{ question_number }}.{{ loop.index }})
+    @visibility('visible')
+    def test_{{ test_name }}(self):
+        """{{ question.name }} - Item {{ loop.index }}"""
+        print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
+        # File existence check
+        target_file = "{{ item.target_file }}"
+        self.assertIn(target_file, self.submission_files, 
+            f"[ERROR] The required file '{target_file}' was not found in your submission. Please ensure you have submitted this file for the question: '{{ question.name }}'.")
+        file_path = self.source_dir / target_file
+        self.assertTrue(file_path.exists(), 
+            f"[ERROR] The file '{target_file}' does not exist in the autograder's source directory. This file is required for the question: '{{ question.name }}'.")
+        self.assertTrue(file_path.is_file(), 
+            f"[ERROR] The path '{target_file}' exists but is not a file. Please check your submission for the question: '{{ question.name }}'.")
+        print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
+        print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 

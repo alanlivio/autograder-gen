@@ -1,0 +1,22 @@
+    @weight({{ item.total_mark }})
+    @number({{ question_number }}.{{ loop.index }})
+    @visibility('visible')
+    def test_{{ test_name }}(self):
+        """{{ question.name }} - Item {{ loop.index }}"""
+        print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
+        # Signature check
+        target_file = "{{ item.target_file }}"
+        file_path = self.source_dir / target_file
+        self.assertTrue(file_path.exists(), 
+            f"[ERROR] The file '{target_file}' required for signature check was not found. Please ensure it is present for the question: '{{ question.name }}'.")
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+{% if config.language == 'python' %}
+            self.assertIn('def ', content, 
+                f"[ERROR] No function definitions found in '{target_file}' for question: '{{ question.name }}'. Please ensure you have defined the required functions.")
+{% endif %}
+        except Exception as e:
+            self.fail(f"[ERROR] An error occurred while reading '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
+        print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
+        print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 

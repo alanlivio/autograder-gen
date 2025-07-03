@@ -7,8 +7,7 @@
   ],
   "files_necessary": [
     "solution.py",
-    "math_functions.py",
-    "calculator.py"
+    "math_functions.py"
   ],
   "questions": [
     {
@@ -27,7 +26,7 @@
           "type": "output_comparison",
           "time_limit": 30,
           "visibility": "visible",
-          "expected_input": "5\\n10\\n",
+          "expected_input": "5\n10\n",
           "expected_output": "15"
         }
       ]
@@ -52,48 +51,11 @@
           "test_cases": [
             {
               "args": [2, 3],
-              "expected": 5,
-              "assertion_type": "assertEqual"
-            },
-            {
-              "args": [1.1, 2.2],
-              "expected": 3.3,
-              "assertion_type": "assertAlmostEqual",
-              "decimal_places": 2
+              "expected": "5"
             },
             {
               "args": [-5, 10],
-              "expected": 5,
-              "assertion_type": "assertEqual"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Class Testing",
-      "marking_items": [
-        {
-          "target_file": "calculator.py",
-          "class_name": "Calculator",
-          "total_mark": 15,
-          "type": "class_test",
-          "time_limit": 30,
-          "visibility": "visible",
-          "test_instantiation": true,
-          "init_args": [],
-          "required_methods": ["add", "subtract", "multiply", "divide"],
-          "method_tests": [
-            {
-              "method_name": "add",
-              "args": [5, 3],
-              "expected": 8
-            },
-            {
-              "method_name": "divide",
-              "args": [10, 0],
-              "should_raise": true,
-              "expected_exception": "ZeroDivisionError"
+              "expected": "5"
             }
           ]
         }

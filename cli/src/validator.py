@@ -146,126 +146,16 @@ class ConfigValidator:
                                         "description": "Keyword arguments for function call"
                                     },
                                     "expected": {
-                                        "description": "Expected return value"
-                                    },
-                                    "assertion_type": {
                                         "type": "string",
-                                        "enum": ["assertEqual", "assertAlmostEqual", "assertTrue", "assertFalse", "assertIn", "assertIsInstance"],
-                                        "default": "assertEqual",
-                                        "description": "Type of assertion to use"
-                                    },
-                                    "decimal_places": {
-                                        "type": "integer",
-                                        "minimum": 0,
-                                        "default": 7,
-                                        "description": "Decimal places for assertAlmostEqual"
-                                    },
-                                    "should_raise": {
-                                        "type": "boolean",
-                                        "default": False,
-                                        "description": "Whether the function should raise an exception"
-                                    },
-                                    "expected_exception": {
-                                        "type": "string",
-                                        "description": "Expected exception type name"
-                                    }
-                                }
-                            },
-                            "description": "Test cases for function testing"
-                        },
-                        "class_name": {
-                            "type": "string",
-                            "description": "Name of class to test (for class_test type)"
-                        },
-                        "test_instantiation": {
-                            "type": "boolean",
-                            "default": False,
-                            "description": "Whether to test class instantiation"
-                        },
-                        "init_args": {
-                            "type": "array",
-                            "description": "Arguments for class constructor"
-                        },
-                        "init_kwargs": {
-                            "type": "object",
-                            "description": "Keyword arguments for class constructor"
-                        },
-                        "required_methods": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "description": "Required methods that must exist in the class"
-                        },
-                        "method_tests": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "method_name": {
-                                        "type": "string",
-                                        "description": "Name of method to test"
-                                    },
-                                    "args": {
-                                        "type": "array",
-                                        "description": "Positional arguments for method call"
-                                    },
-                                    "kwargs": {
-                                        "type": "object",
-                                        "description": "Keyword arguments for method call"
-                                    },
-                                    "expected": {
-                                        "description": "Expected return value"
-                                    },
-                                    "should_raise": {
-                                        "type": "boolean",
-                                        "default": False,
-                                        "description": "Whether the method should raise an exception"
-                                    },
-                                    "expected_exception": {
-                                        "type": "string",
-                                        "description": "Expected exception type name"
+                                        "description": "Expected return value as string"
                                     }
                                 },
-                                "required": ["method_name"]
+                                "required": ["expected"],
+                                "additionalProperties": False
                             },
-                            "description": "Method tests for class testing"
+                            "description": "Test cases for function testing"
                         }
-                    },
-                    "allOf": [
-                        {
-                            "if": {
-                                "properties": {"type": {"const": "output_comparison"}}
-                            },
-                            "then": {
-                                "anyOf": [
-                                    {"required": ["expected_input"]},
-                                    {"required": ["reference_file"]}
-                                ]
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {"type": {"const": "function_test"}}
-                            },
-                            "then": {
-                                "required": ["function_name"],
-                                "properties": {
-                                    "test_cases": {
-                                        "minItems": 1
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {"type": {"const": "class_test"}}
-                            },
-                            "then": {
-                                "required": ["class_name"]
-                            }
-                        }
-                    ]
+                    }
                 }
             }
         }
@@ -324,12 +214,7 @@ class ConfigValidator:
                             "reference_file": item.reference_file,
                             "function_name": item.function_name,
                             "test_cases": item.test_cases,
-                            "class_name": item.class_name,
-                            "test_instantiation": item.test_instantiation,
-                            "init_args": item.init_args,
-                            "init_kwargs": item.init_kwargs,
-                            "required_methods": item.required_methods,
-                            "method_tests": item.method_tests,
+
                         }
                         for item in q.marking_items
                     ]
@@ -391,8 +276,6 @@ class ConfigValidator:
                     self._validate_signature_check_warnings(item, question_name, j+1)
                 elif item_type == "function_test":
                     self._validate_function_test_warnings(item, question_name, j+1)
-                elif item_type == "class_test":
-                    self._validate_class_test_warnings(item, question_name, j+1)
             
             # Check total marks
             if total_marks == 0:
@@ -440,24 +323,6 @@ class ConfigValidator:
                 self.warnings.append(
                     f"{context}: Test case {i+1} has no expected value or exception"
                 )
-    
-    def _validate_class_test_warnings(self, item: Dict[str, Any], question_name: str, item_num: int):
-        """Generate warnings for class test items."""
-        context = f"Question '{question_name}', Item {item_num}"
-        
-        if not item.get("class_name"):
-            self.warnings.append(f"{context}: class_name is required for class_test")
-        
-        has_tests = (
-            item.get("test_instantiation") or 
-            item.get("required_methods") or 
-            item.get("method_tests")
-        )
-        
-        if not has_tests:
-            self.warnings.append(
-                f"{context}: No tests specified (instantiation, required_methods, or method_tests)"
-            )
     
     def get_errors(self) -> List[str]:
         """Get validation errors."""

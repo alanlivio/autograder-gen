@@ -16,10 +16,10 @@ import importlib.util
 import inspect
 {% endif %}
 from pathlib import Path
-from gradescope_utils.autograder_utils.decorators import weight, visibility
+from gradescope_utils.autograder_utils.decorators import weight, visibility, number
 
-class Test{{ question.name|title|replace(' ', '')|replace('-', '')|replace('.', '') }}(unittest.TestCase):
-    """Test class for {{ question.name }}."""
+class TestQuestion{{ question_number }}(unittest.TestCase):
+    """Test class for Question {{ question_number }}: {{ question.name }}."""
 
     def setUp(self):
         """Set up test environment."""
@@ -58,285 +58,21 @@ class Test{{ question.name|title|replace(' ', '')|replace('-', '')|replace('.', 
             
         except Exception as e:
             raise ImportError(f"Failed to import {function_name} from {file_name}: {str(e)}")
-    
-    def import_class_from_file(self, file_name, class_name):
-        """Import a specific class from a student file."""
-        try:
-            file_path = self.source_dir / file_name
-            
-            # Check if file exists
-            if not file_path.exists():
-                raise ImportError(f"File {file_name} not found")
-            
-            # Load the module
-            spec = importlib.util.spec_from_file_location("student_module", file_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            # Get the class
-            if not hasattr(module, class_name):
-                raise ImportError(f"Class {class_name} not found in {file_name}")
-            
-            cls = getattr(module, class_name)
-            if not inspect.isclass(cls):
-                raise ImportError(f"{class_name} is not a class")
-            
-            return cls
-            
-        except Exception as e:
-            raise ImportError(f"Failed to import {class_name} from {file_name}: {str(e)}")
 
 {% endif %}
 
 {% for item in question.marking_items %}
+
 {% set test_name = ('item_' + loop.index|string)|lower %}
 
-    @weight({{ item.total_mark }})
-    @visibility('visible')
-    def test_{{ test_name }}(self):
-        """{{ question.name }} - Item {{ loop.index }}"""
-        
 {% if item.type == "file_exists" %}
-        # File existence check
-        target_file = "{{ item.target_file }}"
-        self.assertIn(target_file, self.submission_files, 
-                     f"File {target_file} not found in submission")
-        
-        file_path = self.source_dir / target_file
-        self.assertTrue(file_path.exists(), 
-                       f"File {target_file} does not exist")
-        self.assertTrue(file_path.is_file(), 
-                       f"{target_file} is not a file")
-
+    {% include 'subtemplates/file_exists_method.j2' %}
 {% elif item.type == "output_comparison" %}
-        # Output comparison test
-        target_file = "{{ item.target_file }}"
-        expected_input = """{{ item.expected_input }}"""
-        expected_output = """{{ item.expected_output }}"""
-        
-        # Check if file exists first
-        file_path = self.source_dir / target_file
-        self.assertTrue(file_path.exists(), 
-                       f"File {target_file} not found")
-        
-        # Run the program and compare output
-        try:
-{% if config.language == 'python' %}
-            result = subprocess.run(
-                [sys.executable, target_file],
-                input=expected_input,
-                capture_output=True,
-                text=True,
-                timeout={{ item.time_limit }},
-                cwd=self.source_dir
-            )
-
-{% endif %}
-            
-            if result.returncode != 0:
-                self.fail(f"Runtime error: {result.stderr}")
-            
-            actual_output = result.stdout.strip()
-            expected_output_clean = expected_output.strip()
-            
-            self.assertEqual(actual_output, expected_output_clean,
-                           f"Output mismatch.\nExpected: {expected_output_clean}\nActual: {actual_output}")
-                           
-        except subprocess.TimeoutExpired:
-            self.fail(f"Program timed out after {{ item.time_limit }} seconds")
-        except Exception as e:
-            self.fail(f"Error running program: {str(e)}")
-
+    {% include 'subtemplates/output_comparison_method.j2' %}
 {% elif item.type == "signature_check" %}
-        # Signature check
-        target_file = "{{ item.target_file }}"
-        
-        file_path = self.source_dir / target_file
-        self.assertTrue(file_path.exists(), 
-                       f"File {target_file} not found")
-        
-        try:
-            with open(file_path, 'r') as f:
-                content = f.read()
-            
-{% if config.language == 'python' %}
-            # Check for function definitions
-            self.assertIn('def ', content, 
-                         "No function definitions found in the file")
-            
-            # Additional Python-specific signature checks can be added here
-            # For example, checking for specific function names or parameters
-{% endif %}
-            
-        except Exception as e:
-            self.fail(f"Error reading file {target_file}: {str(e)}")
-
+    {% include 'subtemplates/signature_check_method.j2' %}
 {% elif item.type == "function_test" %}
-        # Function import and testing
-        target_file = "{{ item.target_file }}"
-        function_name = "{{ item.function_name }}"
-        
-        try:
-            # Import the function
-            function = self.import_function_from_file(target_file, function_name)
-            
-            # Verify it's callable
-            self.assertTrue(callable(function), 
-                           f"{function_name} is not callable")
-            
-            {% if item.test_cases %}
-            # Run test cases
-            {% for test_case in item.test_cases %}
-            {% set case_index = loop.index %}
-            # Test case {{ case_index }}
-            {% if test_case.args %}
-            args = {{ test_case.args }}
-            {% else %}
-            args = []
-            {% endif %}
-            {% if test_case.kwargs %}
-            kwargs = {{ test_case.kwargs }}
-            {% else %}
-            kwargs = {}
-            {% endif %}
-            
-            try:
-                result = function(*args, **kwargs)
-                expected = {{ test_case.expected }}
-                
-                {% if test_case.assertion_type == 'assertEqual' %}
-                self.assertEqual(result, expected,
-                               f"Test case {{ case_index }}: expected {expected}, got {result}")
-                {% elif test_case.assertion_type == 'assertAlmostEqual' %}
-                self.assertAlmostEqual(result, expected, places={{ test_case.decimal_places|default(7) }},
-                                     f"Test case {{ case_index }}: expected {expected}, got {result}")
-                {% elif test_case.assertion_type == 'assertTrue' %}
-                self.assertTrue(result,
-                              f"Test case {{ case_index }}: expected True, got {result}")
-                {% elif test_case.assertion_type == 'assertFalse' %}
-                self.assertFalse(result,
-                               f"Test case {{ case_index }}: expected False, got {result}")
-                {% elif test_case.assertion_type == 'assertIn' %}
-                self.assertIn(result, expected,
-                            f"Test case {{ case_index }}: {result} not in {expected}")
-                {% elif test_case.assertion_type == 'assertIsInstance' %}
-                self.assertIsInstance(result, expected,
-                                    f"Test case {{ case_index }}: expected type {expected}, got {type(result)}")
-                {% else %}
-                # Default to assertEqual
-                self.assertEqual(result, expected,
-                               f"Test case {{ case_index }}: expected {expected}, got {result}")
-                {% endif %}
-                
-            except Exception as e:
-                {% if test_case.should_raise %}
-                # Check if this is the expected exception
-                expected_exception = {{ test_case.expected_exception|default('Exception') }}
-                self.assertIsInstance(e, expected_exception,
-                                    f"Test case {{ case_index }}: expected {expected_exception}, got {type(e)}")
-                {% else %}
-                self.fail(f"Test case {{ case_index }} failed with exception: {str(e)}")
-                {% endif %}
-            
-            {% endfor %}
-            {% endif %}
-            
-        except ImportError as e:
-            self.fail(f"Failed to import function {function_name}: {str(e)}")
-        except Exception as e:
-            self.fail(f"Error testing function {function_name}: {str(e)}")
-
-{% elif item.type == "class_test" %}
-        # Class import and testing
-        target_file = "{{ item.target_file }}"
-        class_name = "{{ item.class_name }}"
-        
-        try:
-            # Import the class
-            cls = self.import_class_from_file(target_file, class_name)
-            
-            {% if item.test_instantiation %}
-            # Test class instantiation
-            {% if item.init_args %}
-            init_args = {{ item.init_args }}
-            {% else %}
-            init_args = []
-            {% endif %}
-            {% if item.init_kwargs %}
-            init_kwargs = {{ item.init_kwargs }}
-            {% else %}
-            init_kwargs = {}
-            {% endif %}
-            
-            try:
-                instance = cls(*init_args, **init_kwargs)
-                self.assertIsInstance(instance, cls,
-                                    f"Failed to create instance of {class_name}")
-            except Exception as e:
-                self.fail(f"Failed to instantiate {class_name}: {str(e)}")
-            {% endif %}
-            
-            {% if item.required_methods %}
-            # Check for required methods
-            required_methods = {{ item.required_methods }}
-            for method_name in required_methods:
-                self.assertTrue(hasattr(cls, method_name),
-                              f"Method {method_name} not found in class {class_name}")
-                self.assertTrue(callable(getattr(cls, method_name)),
-                              f"{method_name} is not callable")
-            {% endif %}
-            
-            {% if item.method_tests %}
-            # Test specific methods
-            {% if item.init_args or item.init_kwargs %}
-            # Use the instance created above
-            {% else %}
-            # Create a default instance
-            instance = cls()
-            {% endif %}
-            
-            {% for method_test in item.method_tests %}
-            # Test method: {{ method_test.method_name }}
-            method_name = "{{ method_test.method_name }}"
-            self.assertTrue(hasattr(instance, method_name),
-                          f"Method {method_name} not found in instance")
-            
-            method = getattr(instance, method_name)
-            {% if method_test.args %}
-            args = {{ method_test.args }}
-            {% else %}
-            args = []
-            {% endif %}
-            {% if method_test.kwargs %}
-            kwargs = {{ method_test.kwargs }}
-            {% else %}
-            kwargs = {}
-            {% endif %}
-            
-            try:
-                result = method(*args, **kwargs)
-                {% if method_test.expected %}
-                expected = {{ method_test.expected }}
-                self.assertEqual(result, expected,
-                               f"Method {method_name} returned {result}, expected {expected}")
-                {% endif %}
-            except Exception as e:
-                {% if method_test.should_raise %}
-                # Expected exception
-                expected_exception = {{ method_test.expected_exception|default('Exception') }}
-                self.assertIsInstance(e, expected_exception,
-                                    f"Method {method_name} raised {type(e)}, expected {expected_exception}")
-                {% else %}
-                self.fail(f"Method {method_name} failed: {str(e)}")
-                {% endif %}
-            {% endfor %}
-            {% endif %}
-            
-        except ImportError as e:
-            self.fail(f"Failed to import class {class_name}: {str(e)}")
-        except Exception as e:
-            self.fail(f"Error testing class {class_name}: {str(e)}")
-
+    {% include 'subtemplates/function_test_method.j2' %}
 {% endif %}
 
 {% endfor %}

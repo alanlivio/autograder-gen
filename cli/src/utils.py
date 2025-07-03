@@ -92,17 +92,17 @@ def format_error_message(error: Exception, context: str = "") -> str:
     return str(error)
 
 def print_success(message: str):
-    """Print success message with green checkmark."""
-    print(f"✅ {message}")
+    """Print success message with ASCII [OK]."""
+    print(f"[OK] {message}")
 
 def print_error(message: str):
-    """Print error message with red X."""
-    print(f"❌ {message}", file=sys.stderr)
+    """Print error message with ASCII [ERROR]."""
+    print(f"[ERROR] {message}", file=sys.stderr)
 
 def print_warning(message: str):
-    """Print warning message with yellow warning sign."""
-    print(f"⚠️  {message}")
+    """Print warning message with ASCII [WARNING]."""
+    print(f"[WARNING] {message}")
 
 def print_info(message: str):
-    """Print info message with blue info sign."""
-    print(f"ℹ️  {message}")
+    """Print info message with ASCII [INFO]."""
+    print(f"[INFO] {message}")
