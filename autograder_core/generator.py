@@ -11,7 +11,7 @@ from typing import Optional
 import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from cli.src.config_parser import AutograderConfig
+from autograder_core.config import AutograderConfig
 
 class AutograderGenerator:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
