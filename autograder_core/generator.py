@@ -7,12 +7,11 @@ import os
 import shutil
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from cli.src.config_parser import AutograderConfig, Question, MarkingItem
-from cli.src.utils import print_success, print_error, print_warning
+from cli.src.config_parser import AutograderConfig
 
 class AutograderGenerator:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
@@ -20,7 +19,7 @@ class AutograderGenerator:
     def __init__(self, config: AutograderConfig):
         self.config = config
         self.temp_dir: Optional[Path] = None
-        self.templates_dir = Path(__file__).parent.parent / "templates"
+        self.templates_dir = Path(__file__).parent / "templates"
         
         # Set up Jinja environment
         self.jinja_env = Environment(

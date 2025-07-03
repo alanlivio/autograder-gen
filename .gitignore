@@ -2,3 +2,4 @@ example-autograder/
 example-student-files/
 __pycache__/
 *.pyc
+.venv/

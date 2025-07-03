@@ -5,7 +5,7 @@ Configuration validation module for autograder JSON files using JSON Schema.
 import json
 from typing import List, Dict, Any
 from jsonschema import validate, ValidationError, Draft7Validator
-from cli.src.config_parser import AutograderConfig, Question, MarkingItem
+from cli.src.config_parser import AutograderConfig
 
 
 class ConfigValidator:

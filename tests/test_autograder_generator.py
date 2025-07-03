@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 import pytest
 
-from cli.src.autograder_generator import AutograderGenerator
-from cli.src.config_parser import ConfigParser
+from autograder_core.generator import AutograderGenerator
+from autograder_core.config import ConfigParser
 
 SAMPLE_CONFIG_PATH = 'cli/config/sample_config.json'
 
