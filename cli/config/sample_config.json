@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "language": "python",
+  "global_time_limit": 300,
+  "setup_commands": [
+    "pip install numpy pandas matplotlib"
+  ],
+  "files_necessary": [
+    "solution.py",
+    "math_functions.py"
+  ],
+  "questions": [
+    {
+      "name": "Basic File Operations",
+      "marking_items": [
+        {
+          "target_file": "solution.py",
+          "total_mark": 0,
+          "type": "file_exists",
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "solution.py",
+          "total_mark": 8,
+          "type": "output_comparison",
+          "time_limit": 30,
+          "visibility": "visible",
+          "expected_input": "5\\n10\\n",
+          "expected_output": "15"
+        }
+      ]
+    },
+    {
+      "name": "Function Testing",
+      "marking_items": [
+        {
+          "target_file": "math_functions.py",
+          "total_mark": 0,
+          "type": "file_exists",
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "math_functions.py",
+          "function_name": "add_numbers",
+          "total_mark": 10,
+          "type": "function_test",
+          "time_limit": 30,
+          "visibility": "visible",
+          "test_cases": [
+            {
+              "args": [2, 3],
+              "expected": "5"
+            },
+            {
+              "args": [-5, 10],
+              "expected": "5"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

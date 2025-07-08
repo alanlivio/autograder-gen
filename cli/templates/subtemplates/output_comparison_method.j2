@@ -1,0 +1,35 @@
+    @weight({{ item.total_mark }})
+    @number({{ question_number }}.{{ loop.index }})
+    @visibility('visible')
+    def test_{{ test_name }}(self):
+        """{{ question.name }} - Item {{ loop.index }}"""
+        print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
+        # Output comparison test
+        target_file = "{{ item.target_file }}"
+        expected_input = """{{ item.expected_input }}"""
+        expected_output = """{{ item.expected_output }}"""
+        file_path = self.source_dir / target_file
+        self.assertTrue(file_path.exists(), 
+            f"[ERROR] The file '{target_file}' required for output comparison was not found. Please ensure it is present for the question: '{{ question.name }}'.")
+        try:
+{% if config.language == 'python' %}
+            result = subprocess.run(
+                [sys.executable, target_file],
+                input=expected_input,
+                capture_output=True,
+                text=True,
+                timeout={{ item.time_limit }},
+                cwd=self.source_dir
+            )
+{% endif %}
+            if result.returncode != 0:
+                self.fail(f"[ERROR] Your program '{target_file}' exited with an error while running the test for question: '{{ question.name }}'. Error output: {result.stderr}")
+            actual_output = result.stdout
+            self.assertEqual(actual_output, expected_output,
+                f"[ERROR] Output mismatch for question: '{{ question.name }}'.\nExpected output:\n{expected_output}\nYour program output:\n{actual_output}\nPlease check your program's output format and content.")
+        except subprocess.TimeoutExpired:
+            self.fail(f"[ERROR] Your program '{target_file}' timed out after {{ item.time_limit }} seconds while running the test for question: '{{ question.name }}'.")
+        except Exception as e:
+            self.fail(f"[ERROR] An unexpected error occurred while running your program '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
+        print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
+        print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 

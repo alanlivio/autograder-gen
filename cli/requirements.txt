@@ -1,0 +1,3 @@
+# Core dependencies for TIF Autograder CLI
+jinja2>=3.0.0
+jsonschema>=4.0.0
