@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Download Autograder{% endblock %}
+
+{% block content %}
+<h1>Download Your Autograder</h1>
+{% if message %}
+  <div class="alert alert-danger">{{ message }}</div>
+  <a href="/" class="btn btn-secondary mt-3">Back to Edit</a>
+{% else %}
+  <div class="alert alert-success">Your autograder zip is ready!</div>
+  <a href="/" class="btn btn-primary">Back to Home</a>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,30 @@
+/* Drag and drop styles */
+.card.dragging {
+  opacity: 0.5;
+  border: 2px dashed #007bff;
+}
+
+.drag-handle {
+  color: #666;
+  font-size: 20px;
+  line-height: 1;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.card[draggable="true"]:hover {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: box-shadow 0.2s ease;
+}
+
+.card {
+  transition: transform 0.2s ease;
+}
+
+.card.dragging {
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+} 

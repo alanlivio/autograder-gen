@@ -1,0 +1,1 @@
+This directory is for static files (CSS, JS, images) used by the Flask app. 

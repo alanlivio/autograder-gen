@@ -1,0 +1,4 @@
+Flask>=2.2
+Jinja2>=3.0
+Flask-Cors>=3.0
+jsonschema>=4.0 

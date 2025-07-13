@@ -1,1 +1,2 @@
-pytest 
+pytest>=8.0.0
+gradescope-utils>=0.4.0 

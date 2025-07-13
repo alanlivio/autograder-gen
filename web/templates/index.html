@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Build Autograder Config{% endblock %}
+
+{% block content %}
+<h1>Build Your Autograder Config</h1>
+<form id="autograder-form" method="post" action="/validate">
+  <h3>Global Settings</h3>
+  <div class="mb-3">
+    <label for="assignment_name" class="form-label">Assignment Name</label>
+    <input type="text" class="form-control" id="assignment_name" name="assignment_name" required>
+  </div>
+  <div class="mb-3">
+    <label for="total_points" class="form-label">Total Points</label>
+    <input type="number" class="form-control" id="total_points" name="total_points" required>
+  </div>
+  <hr>
+  <h3>Questions</h3>
+  <div id="questions-list"></div>
+  <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">Add Question</button>
+  <hr>
+  <button type="submit" class="btn btn-success">Validate Config</button>
+  <button type="button" class="btn btn-primary" onclick="submitForGeneration()">Generate Autograder</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/autograder_form.js"></script>
+{% endblock %} 
