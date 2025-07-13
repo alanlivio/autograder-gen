@@ -54,54 +54,111 @@ def generate_form():
                 pass
 
 def form_to_config_dict(form):
-    # Convert flat form data to nested config dict
-    # This is a simplified parser for the dynamic form structure
+    # Convert flat form data to nested config dict matching sample_config.json structure
     config = {
-        'version': '0',
-        'language': 'python',
+        'version': form.get('version', '1.0'),
+        'language': form.get('language', 'python'),
+        'global_time_limit': int(form.get('global_time_limit', 300)),
+        'setup_commands': [],
+        'files_necessary': [],
         'questions': []
     }
-    config['assignment_name'] = form.get('assignment_name', '')
-    config['total_points'] = int(form.get('total_points', 0))
-    # Parse questions
+    
+    # Parse setup commands
+    setup_commands = form.get('setup_commands', '')
+    if setup_commands and setup_commands.strip():
+        config['setup_commands'] = [cmd.strip() for cmd in setup_commands.split('\n') if cmd.strip()]
+    
+    # Parse necessary files
+    files_necessary = form.get('files_necessary', '')
+    if files_necessary and files_necessary.strip():
+        config['files_necessary'] = [file.strip() for file in files_necessary.split('\n') if file.strip()]
+    
+    # Group form data by questions and marking items
     questions = {}
-    for key in form:
+    marking_items = {}
+    
+    for key, value in form.items():
         if key.startswith('questions['):
-            import re
-            m = re.match(r'questions\[(\d+)\]\[(\w+)\]', key)
-            if m:
-                qidx, field = m.groups()
-                if qidx not in questions:
-                    questions[qidx] = {'marking_items': []}
-                questions[qidx][field] = form.get(key)
-    # Parse marking items
-    for qidx in questions:
-        marking_items = []
-        for key in form:
-            if key.startswith(f'questions[{qidx}][marking_items]'):
-                # Not used in this structure, handled below
-                continue
-        # Find all marking_items for this question
-        mi_keys = [k for k in form if k.startswith(f'questions[{qidx}][marking_items[')]
-        mi_dict = {}
-        for k in mi_keys:
-            import re
-            m = re.match(rf'questions\[{qidx}\]\[marking_items\[(\d+)\]\]\[(\w+)\]', k)
-            if m:
-                miidx, field = m.groups()
-                if miidx not in mi_dict:
-                    mi_dict[miidx] = {}
-                mi_dict[miidx][field] = form.get(k)
-        for miidx in sorted(mi_dict.keys(), key=int):
-            marking_items.append(mi_dict[miidx])
-        questions[qidx]['marking_items'] = marking_items
-    # Build questions list
+            # Parse question field: questions[0][name] -> qidx=0, field=name
+            parts = key.split('[')
+            if len(parts) >= 3:
+                qidx = parts[1].rstrip(']')
+                
+                if 'marking_items' in key:
+                    # Marking item field: questions[0][marking_items][1][type]
+                    if len(parts) >= 5:
+                        miidx = parts[3].rstrip(']')
+                        field = parts[4].rstrip(']')
+                        
+                        # Initialize nested structure
+                        if qidx not in marking_items:
+                            marking_items[qidx] = {}
+                        if miidx not in marking_items[qidx]:
+                            marking_items[qidx][miidx] = {}
+                        
+                        # Process the value based on field type
+                        if field == 'test_cases' and value and value.strip():
+                            try:
+                                marking_items[qidx][miidx][field] = json.loads(value)
+                            except json.JSONDecodeError:
+                                marking_items[qidx][miidx][field] = []
+                        elif field == 'total_mark':
+                            marking_items[qidx][miidx][field] = int(value) if value else 0
+                        elif field == 'time_limit':
+                            marking_items[qidx][miidx][field] = int(value) if value else 30
+                        elif value and value.strip():
+                            # Only include non-empty values
+                            marking_items[qidx][miidx][field] = value.strip()
+                else:
+                    # Question field: questions[0][name]
+                    field = parts[2].rstrip(']')
+                    if qidx not in questions:
+                        questions[qidx] = {}
+                    if value and value.strip():
+                        questions[qidx][field] = value.strip()
+    
+    # Build the final structure matching sample_config.json
     for qidx in sorted(questions.keys(), key=int):
-        q = questions[qidx]
-        q['points'] = int(q.get('points', 0))
-        q['marking_items'] = q.get('marking_items', [])
-        config['questions'].append(q)
+        question = {
+            'name': questions[qidx].get('name', ''),
+            'marking_items': []
+        }
+        
+        # Add marking items for this question
+        if qidx in marking_items:
+            for miidx in sorted(marking_items[qidx].keys(), key=int):
+                item = marking_items[qidx][miidx]
+                
+                # Build marking item with required fields
+                marking_item = {
+                    'target_file': item.get('target_file', ''),
+                    'total_mark': item.get('total_mark', 0),
+                    'type': item.get('type', 'file_exists'),
+                    'time_limit': item.get('time_limit', 30),
+                    'visibility': item.get('visibility', 'visible')
+                }
+                
+                # Add optional fields only if they exist and have values
+                if item.get('expected_input'):
+                    marking_item['expected_input'] = item['expected_input']
+                if item.get('expected_output'):
+                    marking_item['expected_output'] = item['expected_output']
+                if item.get('reference_file'):
+                    marking_item['reference_file'] = item['reference_file']
+                if item.get('function_name'):
+                    marking_item['function_name'] = item['function_name']
+                if item.get('test_cases') and isinstance(item['test_cases'], list) and len(item['test_cases']) > 0:
+                    marking_item['test_cases'] = item['test_cases']
+                
+                question['marking_items'].append(marking_item)
+        
+        config['questions'].append(question)
+    
     return config
+    
+    return config
+    
 
 @app.route('/api/generate', methods=['POST'])
 def generate_autograder():

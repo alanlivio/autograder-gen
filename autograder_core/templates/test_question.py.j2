@@ -10,7 +10,7 @@ import subprocess
 import sys
 import os
 import tempfile
-{% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_test', 'class_test']) | list | length > 0 %}
+{% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_test']) | list | length > 0 %}
 {% if needs_imports %}
 import importlib.util
 import inspect

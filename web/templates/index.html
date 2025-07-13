@@ -4,26 +4,55 @@
 
 {% block content %}
 <h1>Build Your Autograder Config</h1>
+
+<!-- Alert container for validation messages -->
+<div id="alert-container"></div>
+
 <form id="autograder-form" method="post" action="/validate">
-  <h3>Global Settings</h3>
-  <div class="mb-3">
-    <label for="assignment_name" class="form-label">Assignment Name</label>
-    <input type="text" class="form-control" id="assignment_name" name="assignment_name" required>
+  <h3>Global Configuration</h3>
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label for="language" class="form-label">Programming Language</label>
+      <select class="form-select" id="language" name="language" required>
+        <option value="python">Python</option>
+      </select>
+    </div>
   </div>
   <div class="mb-3">
-    <label for="total_points" class="form-label">Total Points</label>
-    <input type="number" class="form-control" id="total_points" name="total_points" required>
+    <label for="global_time_limit" class="form-label">Global Time Limit (seconds)</label>
+    <input type="number" class="form-control" id="global_time_limit" name="global_time_limit" value="300" min="1" max="36000">
+    <div class="form-text">Maximum time allowed for all tests to complete</div>
+  </div>
+  <div class="mb-3">
+    <label for="setup_commands" class="form-label">Setup Commands (optional)</label>
+    <textarea class="form-control" id="setup_commands" name="setup_commands" rows="3" 
+              placeholder="pip install numpy pandas matplotlib&#10;apt-get update"></textarea>
+    <div class="form-text">One command per line. These will be executed before running tests.</div>
+  </div>
+  <div class="mb-3">
+    <label for="files_necessary" class="form-label">Required Files</label>
+    <textarea class="form-control" id="files_necessary" name="files_necessary" rows="3" 
+              placeholder="solution.py&#10;math_functions.py&#10;data.csv" required></textarea>
+    <div class="form-text">One filename per line. Students must submit these files.</div>
   </div>
   <hr>
   <h3>Questions</h3>
   <div id="questions-list"></div>
   <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">Add Question</button>
   <hr>
-  <button type="submit" class="btn btn-success">Validate Config</button>
+  <button type="button" class="btn btn-success" onclick="validateConfig()">Validate Config</button>
   <button type="button" class="btn btn-primary" onclick="submitForGeneration()">Generate Autograder</button>
 </form>
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/autograder_form.js"></script>
+<!-- Load JavaScript modules in dependency order -->
+<script src="/static/js/drag-drop.js"></script>
+<script src="/static/js/error-handling.js"></script>
+<script src="/static/js/form-validation.js"></script>
+<script src="/static/js/form-data-processing.js"></script>
+<script src="/static/js/marking-item-management.js"></script>
+<script src="/static/js/question-management.js"></script>
+<script src="/static/js/api-communication.js"></script>
+<script src="/static/js/main.js"></script>
 {% endblock %} 

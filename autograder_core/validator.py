@@ -101,7 +101,7 @@ class ConfigValidator:
                         },
                         "type": {
                             "type": "string",
-                            "enum": ["file_exists", "output_comparison", "signature_check", "function_test", "class_test"],
+                            "enum": ["file_exists", "output_comparison", "signature_check", "function_test"],
                             "description": "Type of test to generate"
                         },
                         "time_limit": {
@@ -175,10 +175,22 @@ class ConfigValidator:
             return len(self.errors) == 0
             
         except ValidationError as e:
-            self.errors.append(f"Schema validation error: {e.message}")
+            # Format error message with path information for better frontend highlighting
+            path_str = ""
             if e.absolute_path:
-                path = ".".join(str(p) for p in e.absolute_path)
-                self.errors[-1] += f" at path: {path}"
+                path_parts = []
+                for part in e.absolute_path:
+                    if isinstance(part, int):
+                        path_parts.append(f"[{part}]")
+                    else:
+                        path_parts.append(str(part))
+                path_str = ".".join(path_parts).replace(".[", "[")
+            
+            error_msg = f"{e.message}"
+            if path_str:
+                error_msg += f" at {path_str}"
+            
+            self.errors.append(error_msg)
             return False
     
     def validate_from_file(self, file_path: str) -> bool:
