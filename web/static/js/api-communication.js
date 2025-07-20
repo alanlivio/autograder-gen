@@ -80,23 +80,45 @@ function validateConfig() {
   })
   .then(response => response.json())
   .then(data => {
-    if (data.error) {
-      showAlert(`Validation failed: ${data.error}`, 'danger');
-      return;
-    }
     
     if (data.valid) {
-      showAlert('Configuration is valid! You can now generate the autograder.', 'success');
+      let successMessage = 'Configuration is valid! You can now generate the autograder.';
+      
+      // Add warnings if they exist
+      if (data.warnings && data.warnings.length > 0) {
+        successMessage += '<br><br><strong>Warnings (consider addressing):</strong><ul>';
+        data.warnings.forEach(warning => {
+          successMessage += `<li>${warning}</li>`;
+        });
+        successMessage += '</ul>';
+      }
+      
+      showAlert(successMessage, 'success');
+      // Enable the generate button
+      const generateBtn = document.getElementById('generate-btn');
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.classList.remove('btn-secondary');
+        generateBtn.classList.add('btn-primary');
+      }
     } else {
       let errorMessage = 'Configuration validation failed:<ul>';
+      
+      // Build error message first
       data.errors.forEach(error => {
-        // Convert technical error messages to user-friendly ones
         const friendlyError = makeErrorUserFriendly(error);
         errorMessage += `<li>${friendlyError}</li>`;
-        // Try to highlight specific fields with errors
-        highlightFieldError(error);
       });
       errorMessage += '</ul>';
+      
+      // Then highlight all fields after DOM is ready
+      setTimeout(() => {
+        console.log(`Highlighting ${data.errors.length} validation errors:`);
+        data.errors.forEach((error, index) => {
+          console.log(`  ${index + 1}. ${error}`);
+          highlightFieldError(error);
+        });
+      }, 100); // Small delay to ensure DOM is updated
       
       if (data.warnings && data.warnings.length > 0) {
         errorMessage += '<br><strong>Warnings:</strong><ul>';
@@ -107,6 +129,14 @@ function validateConfig() {
       }
       
       showAlert(errorMessage, 'danger');
+      
+      // Disable the generate button on validation failure
+      const generateBtn = document.getElementById('generate-btn');
+      if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.classList.remove('btn-primary');
+        generateBtn.classList.add('btn-secondary');
+      }
     }
   })
   .catch(error => {
@@ -120,6 +150,40 @@ function validateConfig() {
   });
 }
 
+function downloadJsonConfig() {
+  if (!validateForm()) {
+    showAlert('Please fix form validation errors before downloading the config.', 'warning');
+    return;
+  }
+  
+  clearAlerts();
+  
+  const config = formToConfigObject();
+  
+  try {
+    // Create a blob with the JSON data
+    const jsonString = JSON.stringify(config, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'autograder_config.json';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    showAlert('Configuration JSON downloaded successfully!', 'success');
+  } catch (error) {
+    console.error('JSON download error:', error);
+    showAlert('Failed to download configuration JSON. Please try again.', 'danger');
+  }
+}
+
 // Expose functions to global scope for HTML onclick handlers
 window.submitForGeneration = submitForGeneration;
 window.validateConfig = validateConfig;
+window.downloadJsonConfig = downloadJsonConfig;

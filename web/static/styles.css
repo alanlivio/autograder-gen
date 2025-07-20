@@ -9,15 +9,21 @@
   font-size: 20px;
   line-height: 1;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  padding: 5px;
 }
 
 .drag-handle:active {
   cursor: grabbing;
 }
 
-.card[draggable="true"]:hover {
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: box-shadow 0.2s ease;
+.drag-handle[draggable="true"]:hover {
+  color: #007bff;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
 }
 
 .card {
@@ -50,6 +56,31 @@
   margin-bottom: 0.25rem;
 }
 
+/* Test case container styles */
+.test-cases-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.test-case {
+  border-left: 4px solid #007bff;
+  background-color: #f8f9fa;
+}
+
+.test-case h6 {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.test-case .btn-close {
+  opacity: 0.5;
+}
+
+.test-case .btn-close:hover {
+  opacity: 1;
+}
+
 /* Enhanced form validation styles */
 .is-invalid {
   border-color: #dc3545 !important;
@@ -68,4 +99,12 @@
 button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+/* Placeholder transparency on click */
+textarea:focus::placeholder {
+  color: transparent;
+}
+input:focus::placeholder {
+  color: transparent;
 }

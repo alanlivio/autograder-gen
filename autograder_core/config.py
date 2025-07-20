@@ -13,11 +13,13 @@ class MarkingItem:
     visibility: str = "visible"  # visible, hidden, after_due_date, after_published
     expected_input: str = ""
     expected_output: str = ""
-    reference_file: str = ""
     
     # Function testing fields
     function_name: str = ""
     test_cases: List[Dict] = field(default_factory=list)
+    
+    # Signature checking fields
+    expected_parameters: str = ""
     
 
 @dataclass
@@ -108,7 +110,6 @@ class ConfigParser:
                     visibility=item_data.get('visibility', 'visible'),
                     expected_input=item_data.get('expected_input', ''),
                     expected_output=item_data.get('expected_output', ''),
-                    reference_file=item_data.get('reference_file', ''),
                     # Function testing fields
                     function_name=item_data.get('function_name', ''),
                     test_cases=item_data.get('test_cases', []),

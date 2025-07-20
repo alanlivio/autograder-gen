@@ -96,8 +96,7 @@ class ConfigValidator:
                         },
                         "total_mark": {
                             "type": "integer",
-                            "minimum": 0,
-                            "description": "Total marks for this item"
+                            "description": "Total marks for this item (can be negative for penalties)"
                         },
                         "type": {
                             "type": "string",
@@ -123,10 +122,6 @@ class ConfigValidator:
                         "expected_output": {
                             "type": "string",
                             "description": "Expected output for comparison tests"
-                        },
-                        "reference_file": {
-                            "type": "string",
-                            "description": "Reference file for comparison"
                         },
                         "function_name": {
                             "type": "string",
@@ -223,7 +218,6 @@ class ConfigValidator:
                             "visibility": item.visibility,
                             "expected_input": item.expected_input,
                             "expected_output": item.expected_output,
-                            "reference_file": item.reference_file,
                             "function_name": item.function_name,
                             "test_cases": item.test_cases,
 
@@ -267,7 +261,7 @@ class ConfigValidator:
                 # Check if target file is in files_necessary
                 target_file = item.get("target_file", "")
                 if target_file and target_file not in files_necessary:
-                    self.warnings.append(
+                    self.errors.append(
                         f"Question '{question_name}', Item {j+1}: "
                         f"Target file '{target_file}' is not listed in 'files_necessary'"
                     )
@@ -303,12 +297,6 @@ class ConfigValidator:
         
         if not item.get("expected_output"):
             self.warnings.append(f"{context}: Expected output is empty")
-        
-        if item.get("expected_input") and item.get("reference_file"):
-            self.warnings.append(
-                f"{context}: Both expected_input and reference_file provided. "
-                "expected_input will be used."
-            )
     
     def _validate_signature_check_warnings(self, item: Dict[str, Any], question_name: str, item_num: int):
         """Generate warnings for signature check items."""

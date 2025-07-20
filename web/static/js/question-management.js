@@ -10,7 +10,6 @@ function addQuestion() {
   const qId = questionCount++;
   const qDiv = document.createElement('div');
   qDiv.className = 'card mb-3';
-  qDiv.draggable = true;
   qDiv.id = `question-${qId}`;
   
   // Get next question number - only count direct children cards
@@ -20,7 +19,7 @@ function addQuestion() {
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="d-flex align-items-center">
-          <div class="drag-handle me-2">⋮⋮</div>
+          <div class="drag-handle me-2" draggable="true">⋮⋮</div>
           <h5 class="card-title mb-0">Question <span class="q-num">${nextNum}</span></h5>
         </div>
         <button type="button" class="btn-close" aria-label="Remove" onclick="removeQuestionWithConfirm(this)"></button>
@@ -37,14 +36,16 @@ function addQuestion() {
     </div>
   `;
   
-  // Add drag and drop event listeners
-  qDiv.addEventListener('dragstart', handleDragStart);
-  qDiv.addEventListener('dragend', handleDragEnd);
-  qDiv.addEventListener('dragover', handleDragOver);
-  qDiv.addEventListener('drop', handleDrop);
+  // Add drag and drop event listeners using the proper initialization
+  initializeDragAndDrop(qDiv);
   
   document.getElementById('questions-list').appendChild(qDiv);
   updateQuestionNumbers();
+  
+  // Disable generate button as form structure has changed
+  if (typeof disableGenerateButton === 'function') {
+    disableGenerateButton();
+  }
 }
 
 function removeQuestionWithConfirm(btn) {
@@ -56,6 +57,11 @@ function removeQuestionWithConfirm(btn) {
 function removeQuestion(btn) {
   btn.closest('.card').remove();
   updateQuestionNumbers();
+  
+  // Disable generate button as form structure has changed
+  if (typeof disableGenerateButton === 'function') {
+    disableGenerateButton();
+  }
 }
 
 function updateQuestionNumbers() {

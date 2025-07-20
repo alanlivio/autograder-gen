@@ -27,9 +27,9 @@
             {% endif %}
             try:
                 result = function(*args, **kwargs)
-                expected = {{ test_case.expected }}
+                expected = "{{ test_case.expected }}"
                 self.assertEqual(str(result), str(expected),
-                    f"[ERROR] Function '{function_name}' in file '{target_file}' returned '{{result}}' for arguments {args} {kwargs}, but expected '{{expected}}' for question: '{{ question.name }}'. Please check your function's return value and logic.")
+                    f"[ERROR] Function '{function_name}' in file '{target_file}' returned '{result}' for arguments {args} {kwargs}, but expected '{expected}' for question: '{{ question.name }}'. Please check your function's return value and logic.")
             except Exception as e:
                 self.fail(f"[ERROR] Test case {{ loop.index }} for function '{function_name}' in file '{target_file}' failed with exception: {str(e)} for question: '{{ question.name }}'.")
             {% endfor %}
