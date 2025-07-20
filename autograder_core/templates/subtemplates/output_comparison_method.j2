@@ -1,6 +1,6 @@
     @weight({{ item.total_mark }})
     @number({{ question_number }}.{{ loop.index }})
-    @visibility('visible')
+    @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
         """{{ question.name }} - Item {{ loop.index }}"""
         print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
@@ -25,11 +25,13 @@
             if result.returncode != 0:
                 self.fail(f"[ERROR] Your program '{target_file}' exited with an error while running the test for question: '{{ question.name }}'. Error output: {result.stderr}")
             actual_output = result.stdout
-            self.assertEqual(actual_output, expected_output,
-                f"[ERROR] Output mismatch for question: '{{ question.name }}'.\nExpected output:\n{expected_output}\nYour program output:\n{actual_output}\nPlease check your program's output format and content.")
+            self.assertEqual(
+                actual_output, expected_output,
+                f"[FEEDBACK] For question: '{{ question.name }}', your output did not match the expected result.\n--- Expected Output ---\n{expected_output}\n--- Your Output ---\n{actual_output}"
+            )
         except subprocess.TimeoutExpired:
             self.fail(f"[ERROR] Your program '{target_file}' timed out after {{ item.time_limit }} seconds while running the test for question: '{{ question.name }}'.")
         except Exception as e:
-            self.fail(f"[ERROR] An unexpected error occurred while running your program '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
+            self.fail(f"[ERROR] An error occurred while running your program '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
         print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
         print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 

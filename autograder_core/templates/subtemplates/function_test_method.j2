@@ -1,6 +1,6 @@
     @weight({{ item.total_mark }})
     @number({{ question_number }}.{{ loop.index }})
-    @visibility('visible')
+    @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
         """{{ question.name }} - Item {{ loop.index }}"""
         print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
@@ -28,8 +28,10 @@
             try:
                 result = function(*args, **kwargs)
                 expected = "{{ test_case.expected }}"
-                self.assertEqual(str(result), str(expected),
-                    f"[ERROR] Function '{function_name}' in file '{target_file}' returned '{result}' for arguments {args} {kwargs}, but expected '{expected}' for question: '{{ question.name }}'. Please check your function's return value and logic.")
+                self.assertEqual(
+                    str(result), str(expected),
+                    f"[FEEDBACK] For question: '{{ question.name }}', your function '{function_name}' did not return the expected result.\n--- Arguments Used ---\n{args} {kwargs}\n--- Expected Output ---\n{expected}\n--- Your Output ---\n{result}"
+                )
             except Exception as e:
                 self.fail(f"[ERROR] Test case {{ loop.index }} for function '{function_name}' in file '{target_file}' failed with exception: {str(e)} for question: '{{ question.name }}'.")
             {% endfor %}

@@ -1,6 +1,6 @@
     @weight({{ item.total_mark }})
     @number({{ question_number }}.{{ loop.index }})
-    @visibility('visible')
+    @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
         """{{ question.name }} - Item {{ loop.index }}"""
         print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
