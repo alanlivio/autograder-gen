@@ -166,7 +166,8 @@ function populateMarkingItem(qIndex, miIndex, item) {
                 'visibility': 'visibility',
                 'expected_input': 'expected_input',
                 'expected_output': 'expected_output',
-                'function_name': 'function_name'
+                'function_name': 'function_name',
+                'expected_parameters': 'expected_parameters'
             };
             
             // Populate basic fields
@@ -178,6 +179,14 @@ function populateMarkingItem(qIndex, miIndex, item) {
                     }
                 }
             });
+            
+            // Special handling for expected_parameters field (in case the general approach fails)
+            if (item.expected_parameters !== undefined) {
+                const expectedParamsField = markingItem.querySelector(`input[id$="-expected-params"]`);
+                if (expectedParamsField) {
+                    expectedParamsField.value = item.expected_parameters;
+                }
+            }
             
             // Handle test_cases specially (it's JSON)
             if (item.test_cases && Array.isArray(item.test_cases)) {
@@ -252,9 +261,17 @@ function populateFunctionTestCases(markingItemId, testCases) {
         
         // Populate the fields
         if (testCase.args && Array.isArray(testCase.args)) {
-            document.getElementById(`${testCaseId}-args`).value = testCase.args.map(arg => 
-                typeof arg === 'string' ? `'${arg}'` : arg
-            ).join(', ');
+            // For complex data structures, use JSON representation
+            const argsStr = testCase.args.map(arg => {
+                if (typeof arg === 'string') {
+                    return `'${arg}'`;
+                } else if (typeof arg === 'object' && arg !== null) {
+                    return JSON.stringify(arg);
+                } else {
+                    return String(arg);
+                }
+            }).join(', ');
+            document.getElementById(`${testCaseId}-args`).value = argsStr;
         }
         
         if (testCase.expected) {
@@ -262,9 +279,17 @@ function populateFunctionTestCases(markingItemId, testCases) {
         }
         
         if (testCase.kwargs) {
-            const kwargsStr = Object.entries(testCase.kwargs).map(([k, v]) => 
-                `${k}=${typeof v === 'string' ? `'${v}'` : v}`
-            ).join(', ');
+            const kwargsStr = Object.entries(testCase.kwargs).map(([k, v]) => {
+                let valueStr;
+                if (typeof v === 'string') {
+                    valueStr = `'${v}'`;
+                } else if (typeof v === 'object' && v !== null) {
+                    valueStr = JSON.stringify(v);
+                } else {
+                    valueStr = String(v);
+                }
+                return `${k}=${valueStr}`;
+            }).join(', ');
             document.getElementById(`${testCaseId}-kwargs`).value = kwargsStr;
         }
     });

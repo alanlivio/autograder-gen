@@ -63,9 +63,10 @@ def calculate_statistics(data, precision=2, include_mode=False):
     if not data:
         return {}
     
+    # Ensure float output by explicitly converting to float before rounding
     result = {
-        'mean': round(statistics.mean(data), precision),
-        'median': round(statistics.median(data), precision),
+        'mean': round(float(statistics.mean(data)), precision),
+        'median': round(float(statistics.median(data)), precision),
         'std': round(statistics.stdev(data) if len(data) > 1 else 0.0, precision)
     }
     
@@ -73,7 +74,9 @@ def calculate_statistics(data, precision=2, include_mode=False):
         try:
             result['mode'] = statistics.mode(data)
         except statistics.StatisticsError:
-            result['mode'] = None
+            # When no unique mode exists, we'll omit the field rather than set None
+            # This avoids type annotation issues and is cleaner
+            pass
     
     return result
 

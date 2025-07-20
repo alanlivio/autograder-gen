@@ -113,6 +113,8 @@ class ConfigParser:
                     # Function testing fields
                     function_name=item_data.get('function_name', ''),
                     test_cases=item_data.get('test_cases', []),
+                    # Signature checking fields
+                    expected_parameters=item_data.get('expected_parameters', ''),
                 )
                 question.marking_items.append(marking_item)
             

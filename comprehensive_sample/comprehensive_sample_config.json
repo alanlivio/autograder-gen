@@ -1,5 +1,4 @@
 {
-  "autograder_name": "Comprehensive Autograder Test Suite",
   "version": "1.0",
   "language": "python",
   "global_time_limit": 600,
@@ -237,7 +236,7 @@
           "test_cases": [
             {
               "args": [[]],
-              "expected": "null"
+              "expected": "None"
             },
             {
               "args": [null],

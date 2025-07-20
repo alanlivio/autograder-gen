@@ -352,11 +352,50 @@ function updateTestCasesJson(markingItemId) {
       // Parse arguments
       if (argsInput && argsInput.value.trim()) {
         try {
+          // Try to parse as a complete JSON array
           const argsStr = '[' + argsInput.value.trim() + ']';
           testCaseObj.args = JSON.parse(argsStr);
         } catch (e) {
-          // Fallback: split by comma and treat as strings
-          testCaseObj.args = argsInput.value.split(',').map(arg => arg.trim()).filter(arg => arg);
+          try {
+            // Try to parse individual arguments and handle complex structures
+            const argValues = [];
+            const args = argsInput.value.split(',');
+            
+            for (let arg of args) {
+              arg = arg.trim();
+              if (!arg) continue;
+              
+              try {
+                // Try to parse as JSON first (for objects, arrays, etc.)
+                argValues.push(JSON.parse(arg));
+              } catch (jsonError) {
+                // If not valid JSON, try to evaluate simple expressions
+                if (arg.startsWith("'") && arg.endsWith("'")) {
+                  // String literal
+                  argValues.push(arg.slice(1, -1));
+                } else if (arg.startsWith('"') && arg.endsWith('"')) {
+                  // String literal
+                  argValues.push(arg.slice(1, -1));
+                } else if (!isNaN(arg) && !isNaN(parseFloat(arg))) {
+                  // Number
+                  argValues.push(parseFloat(arg));
+                } else if (arg === 'true') {
+                  argValues.push(true);
+                } else if (arg === 'false') {
+                  argValues.push(false);
+                } else if (arg === 'null') {
+                  argValues.push(null);
+                } else {
+                  // Default to string
+                  argValues.push(arg);
+                }
+              }
+            }
+            testCaseObj.args = argValues;
+          } catch (e2) {
+            // Final fallback: split by comma and treat as strings
+            testCaseObj.args = argsInput.value.split(',').map(arg => arg.trim()).filter(arg => arg);
+          }
         }
       }
       
@@ -365,13 +404,32 @@ function updateTestCasesJson(markingItemId) {
         const kwargsObj = {};
         const pairs = kwargsInput.value.split(',');
         pairs.forEach(pair => {
-          const [key, value] = pair.split('=').map(s => s.trim());
-          if (key && value) {
-            // Try to parse the value as JSON, fallback to string
-            try {
-              kwargsObj[key] = JSON.parse(value);
-            } catch (e) {
-              kwargsObj[key] = value;
+          const equalIndex = pair.indexOf('=');
+          if (equalIndex > 0) {
+            const key = pair.substring(0, equalIndex).trim();
+            let value = pair.substring(equalIndex + 1).trim();
+            
+            if (key && value) {
+              // Try to parse the value as JSON first
+              try {
+                kwargsObj[key] = JSON.parse(value);
+              } catch (e) {
+                // Handle string literals
+                if ((value.startsWith("'") && value.endsWith("'")) || 
+                    (value.startsWith('"') && value.endsWith('"'))) {
+                  kwargsObj[key] = value.slice(1, -1);
+                } else if (!isNaN(value) && !isNaN(parseFloat(value))) {
+                  kwargsObj[key] = parseFloat(value);
+                } else if (value === 'true') {
+                  kwargsObj[key] = true;
+                } else if (value === 'false') {
+                  kwargsObj[key] = false;
+                } else if (value === 'null') {
+                  kwargsObj[key] = null;
+                } else {
+                  kwargsObj[key] = value;
+                }
+              }
             }
           }
         });
