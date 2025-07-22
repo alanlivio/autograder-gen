@@ -281,7 +281,7 @@ class ConfigValidator:
                 elif item_type == "signature_check":
                     self._validate_signature_check_warnings(item, question_name, j+1)
                 elif item_type == "function_test":
-                    self._validate_function_test_warnings(item, question_name, j+1)
+                    self._validate_function_test(item, question_name, j+1)
             
             # Check total marks
             if total_marks == 0:
@@ -307,17 +307,17 @@ class ConfigValidator:
                 f"{context}: expected_input/expected_output not needed for signature check"
             )
     
-    def _validate_function_test_warnings(self, item: Dict[str, Any], question_name: str, item_num: int):
+    def _validate_function_test(self, item: Dict[str, Any], question_name: str, item_num: int):
         """Generate warnings for function test items."""
         context = f"Question '{question_name}', Item {item_num}"
-        
+
         if not item.get("function_name"):
-            self.warnings.append(f"{context}: function_name is required for function_test")
-        
+            self.errors.append(f"{context}: function_name is required for function_test")
+
         test_cases = item.get("test_cases", [])
         if not test_cases:
             self.warnings.append(f"{context}: No test cases provided for function testing")
-        
+
         for i, test_case in enumerate(test_cases):
             if not test_case.get("expected") and not test_case.get("should_raise"):
                 self.warnings.append(

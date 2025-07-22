@@ -3,14 +3,16 @@
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
         """{{ question.name }} - Item {{ loop.index }}"""
-        print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
         # Output comparison test
         target_file = "{{ item.target_file }}"
         expected_input = """{{ item.expected_input }}"""
         expected_output = """{{ item.expected_output }}"""
         file_path = self.source_dir / target_file
+        print(f"Starting test for '{target_file}'")
+        # FAILED: File not found
         self.assertTrue(file_path.exists(), 
-            f"[ERROR] The file '{target_file}' required for output comparison was not found. Please ensure it is present for the question: '{{ question.name }}'.")
+            f"FAILED: File '{target_file}' not found")
+        
         try:
 {% if config.language == 'python' %}
             result = subprocess.run(
@@ -22,16 +24,23 @@
                 cwd=self.source_dir
             )
 {% endif %}
+            # FAILED: Program exited with error
             if result.returncode != 0:
-                self.fail(f"[ERROR] Your program '{target_file}' exited with an error while running the test for question: '{{ question.name }}'. Error output: {result.stderr}")
+                self.fail(f"FAILED: Program '{target_file}' exited with error: {result.stderr}")
+            
             actual_output = result.stdout
+            
+            # FAILED: Output mismatch
             self.assertEqual(
                 actual_output, expected_output,
-                f"[FEEDBACK] For question: '{{ question.name }}', your output did not match the expected result.\n--- Expected Output ---\n{expected_output}\n--- Your Output ---\n{actual_output}"
+                f"FAILED: Output mismatch\nExpected:\n{expected_output}\nActual:\n{actual_output}"
             )
+        except AssertionError:
+            raise
         except subprocess.TimeoutExpired:
-            self.fail(f"[ERROR] Your program '{target_file}' timed out after {{ item.time_limit }} seconds while running the test for question: '{{ question.name }}'.")
+            self.fail(f"TIME LIMITED EXCEEDED: Program '{target_file}' timed out after {{ item.time_limit }} seconds")
         except Exception as e:
-            self.fail(f"[ERROR] An error occurred while running your program '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
-        print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
-        print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 
+            self.fail(f"RUNTIME ERROR: Error running program '{target_file}': {str(e)}")
+        
+        # PASSED: Output matches expected
+        print(f"PASSED: Output comparison successful for '{target_file}'") 

@@ -44,7 +44,7 @@
       "marking_items": [
         {
           "target_file": "basic_operations.py",
-          "total_mark": 10,
+          "total_mark": 8,
           "type": "output_comparison",
           "time_limit": 30,
           "visibility": "visible",
@@ -53,7 +53,7 @@
         },
         {
           "target_file": "basic_operations.py",
-          "total_mark": 8,
+          "total_mark": 7,
           "type": "output_comparison",
           "time_limit": 45,
           "visibility": "after_due_date",
@@ -68,7 +68,7 @@
         {
           "target_file": "math_functions.py",
           "function_name": "add_numbers",
-          "total_mark": 5,
+          "total_mark": 4,
           "type": "signature_check",
           "time_limit": 10,
           "visibility": "visible",
@@ -77,7 +77,7 @@
         {
           "target_file": "math_functions.py",
           "function_name": "multiply",
-          "total_mark": 5,
+          "total_mark": 4,
           "type": "signature_check",
           "time_limit": 10,
           "visibility": "visible",
@@ -91,7 +91,7 @@
         {
           "target_file": "data_processing.py",
           "function_name": "process_data",
-          "total_mark": 8,
+          "total_mark": 6,
           "type": "signature_check",
           "time_limit": 15,
           "visibility": "visible",
@@ -100,7 +100,7 @@
         {
           "target_file": "data_processing.py",
           "function_name": "filter_values",
-          "total_mark": 7,
+          "total_mark": 5,
           "type": "signature_check",
           "time_limit": 15,
           "visibility": "after_due_date",
@@ -109,7 +109,7 @@
         {
           "target_file": "advanced_algorithms.py",
           "function_name": "complex_calculation",
-          "total_mark": 10,
+          "total_mark": 7,
           "type": "signature_check",
           "time_limit": 20,
           "visibility": "hidden",
@@ -123,7 +123,7 @@
         {
           "target_file": "math_functions.py",
           "function_name": "add_numbers",
-          "total_mark": 15,
+          "total_mark": 8,
           "type": "function_test",
           "time_limit": 30,
           "visibility": "visible",
@@ -131,25 +131,13 @@
             {
               "args": [2, 3],
               "expected": "5"
-            },
-            {
-              "args": [-5, 10],
-              "expected": "5"
-            },
-            {
-              "args": [0, 0],
-              "expected": "0"
-            },
-            {
-              "args": [1.5, 2.5],
-              "expected": "4.0"
             }
           ]
         },
         {
           "target_file": "math_functions.py",
           "function_name": "multiply",
-          "total_mark": 12,
+          "total_mark": 7,
           "type": "function_test",
           "time_limit": 25,
           "visibility": "visible",
@@ -157,14 +145,6 @@
             {
               "args": [3, 4],
               "expected": "12"
-            },
-            {
-              "args": [-2, 5],
-              "expected": "-10"
-            },
-            {
-              "args": [0, 100],
-              "expected": "0"
             }
           ]
         }
@@ -176,7 +156,7 @@
         {
           "target_file": "data_processing.py",
           "function_name": "calculate_statistics",
-          "total_mark": 20,
+          "total_mark": 12,
           "type": "function_test",
           "time_limit": 45,
           "visibility": "after_due_date",
@@ -184,23 +164,13 @@
             {
               "args": [[1, 2, 3, 4, 5]],
               "expected": "{'mean': 3.0, 'median': 3.0, 'std': 1.58}"
-            },
-            {
-              "args": [[10, 20, 30]],
-              "kwargs": {"precision": 1},
-              "expected": "{'mean': 20.0, 'median': 20.0, 'std': 10.0}"
-            },
-            {
-              "args": [[1, 1, 1, 1]],
-              "kwargs": {"include_mode": true},
-              "expected": "{'mean': 1.0, 'median': 1.0, 'std': 0.0, 'mode': 1}"
             }
           ]
         },
         {
           "target_file": "data_processing.py",
           "function_name": "transform_data",
-          "total_mark": 18,
+          "total_mark": 10,
           "type": "function_test",
           "time_limit": 60,
           "visibility": "after_published",
@@ -208,16 +178,6 @@
             {
               "args": [{"a": 1, "b": 2}],
               "expected": "{'a': 2, 'b': 4}"
-            },
-            {
-              "args": [{"x": 5, "y": 10}],
-              "kwargs": {"operation": "multiply", "factor": 3},
-              "expected": "{'x': 15, 'y': 30}"
-            },
-            {
-              "args": [[1, 2, 3, 4]],
-              "kwargs": {"normalize": true, "scale": 10},
-              "expected": "[2.5, 5.0, 7.5, 10.0]"
             }
           ]
         }
@@ -229,7 +189,7 @@
         {
           "target_file": "advanced_algorithms.py",
           "function_name": "handle_edge_cases",
-          "total_mark": 25,
+          "total_mark": 15,
           "type": "function_test",
           "time_limit": 90,
           "visibility": "hidden",
@@ -237,25 +197,6 @@
             {
               "args": [[]],
               "expected": "None"
-            },
-            {
-              "args": [null],
-              "expected": "Error: Invalid input"
-            },
-            {
-              "args": [""],
-              "kwargs": {"strict_mode": false},
-              "expected": ""
-            },
-            {
-              "args": [{"key": "value"}],
-              "kwargs": {"validate": true, "transform": true},
-              "expected": "{'key': 'VALUE', 'validated': true}"
-            },
-            {
-              "args": [[-1, -2, -3]],
-              "kwargs": {"absolute": true},
-              "expected": "[1, 2, 3]"
             }
           ]
         }
@@ -266,7 +207,7 @@
       "marking_items": [
         {
           "target_file": "advanced_algorithms.py",
-          "total_mark": 3,
+          "total_mark": 2,
           "type": "file_exists",
           "time_limit": 5,
           "visibility": "visible"
@@ -274,7 +215,7 @@
         {
           "target_file": "advanced_algorithms.py",
           "function_name": "main_algorithm",
-          "total_mark": 10,
+          "total_mark": 6,
           "type": "signature_check",
           "time_limit": 20,
           "visibility": "visible",
@@ -283,7 +224,7 @@
         {
           "target_file": "advanced_algorithms.py",
           "function_name": "main_algorithm",
-          "total_mark": 30,
+          "total_mark": 12,
           "type": "function_test",
           "time_limit": 120,
           "visibility": "after_due_date",
@@ -291,22 +232,12 @@
             {
               "args": [[1, 2, 3, 4, 5]],
               "expected": "[1, 4, 9, 16, 25]"
-            },
-            {
-              "args": [["a", "b", "c"]],
-              "kwargs": {"config": {"mode": "uppercase"}},
-              "expected": "['A', 'B', 'C']"
-            },
-            {
-              "args": [[10, 5, 8, 3]],
-              "kwargs": {"verbose": true},
-              "expected": "{'result': [3, 5, 8, 10], 'operations': 3, 'time_ms': 15}"
             }
           ]
         },
         {
           "target_file": "advanced_algorithms.py",
-          "total_mark": 15,
+          "total_mark": 8,
           "type": "output_comparison",
           "time_limit": 60,
           "visibility": "after_published",

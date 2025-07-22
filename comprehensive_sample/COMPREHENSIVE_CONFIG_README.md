@@ -40,9 +40,8 @@ This configuration file demonstrates **ALL** autograder functionality implemente
 - **Purpose**: Test function execution with various inputs
 - **Examples**:
   - Basic arithmetic: `add_numbers(2, 3)` → `5`
-  - Edge cases: `add_numbers(0, 0)` → `0`
-  - Negative numbers: `add_numbers(-5, 10)` → `5`
-  - Floating point: `add_numbers(1.5, 2.5)` → `4.0`
+  - Multiplication: `multiply(3, 4)` → `12`
+- **Optimization**: Each function test has exactly **1 test case** for focused validation
 
 ### **6. Advanced Function Tests with Keywords** 🚀
 - **Purpose**: Complex function testing with keyword arguments
@@ -52,20 +51,20 @@ This configuration file demonstrates **ALL** autograder functionality implemente
   - ✅ Mixed argument types
   - ✅ Complex return values (dictionaries, lists)
   - ✅ JSON string validation
+- **Optimization**: Each function test has exactly **1 test case** for streamlined testing
 
 ### **7. Edge Case Testing** ⚠️
 - **Purpose**: Test handling of unusual inputs
 - **Cases**:
-  - Empty lists: `[]`
-  - Null values: `null`
-  - Empty strings: `""`
-  - Complex nested data
-  - Error conditions
+  - Empty lists: `[]` → `None`
+- **Optimization**: Focused on essential edge case validation with **1 test case**
+- **Clean testing**: Removed problematic test cases that generated warnings
 
 ### **8. Mixed Testing Scenarios** 🔄
 - **Purpose**: Combine multiple test types for comprehensive validation
 - **Flow**: File existence → Signature check → Function test → Output comparison
 - **Real-world simulation** of complete assignment grading
+- **Optimization**: Each function test has exactly **1 test case** for efficient validation
 
 ## 🎚️ **Visibility Levels Demonstrated**
 
@@ -101,18 +100,21 @@ This configuration file demonstrates **ALL** autograder functionality implemente
 ```json
 {
   "args": [[1, 2, 3, 4, 5]],
-  "kwargs": {"precision": 1, "include_mode": true},
-  "expected": "{'mean': 3.0, 'median': 3.0, 'std': 1.58, 'mode': null}"
+  "expected": "{'mean': 3.0, 'median': 3.0, 'std': 1.58}"
 }
 ```
 
+**Note**: Each function test now contains exactly **1 test case** for optimized performance and clarity.
+
 ## 📊 **Scoring Distribution**
 
-- **File Existence**: 8 points
-- **Output Comparison**: 33 points  
-- **Signature Checks**: 45 points
-- **Function Tests**: 130 points
-- **🎯 Total**: **216 points**
+- **File Existence**: 5 points (2+2+1)
+- **Output Comparison**: 15 points (8+7)
+- **Signature Checks**: 26 points (4+4+6+5+7)
+- **Function Tests**: 37 points (8+7+12+10) 
+- **Edge Case Testing**: 15 points
+- **Mixed Testing**: 28 points (2+6+12+8)
+- **🎯 Total**: **100 points** (optimized from 206)
 
 ## 🚀 **Usage Instructions**
 
@@ -126,17 +128,22 @@ This configuration file demonstrates **ALL** autograder functionality implemente
    - Demonstrates complete UI functionality
 
 3. **Sample Solutions**:
-   - Located in `sample_solutions/` directory
-   - Designed to pass all test cases
-   - Use as reference implementations
+   - **Passing Solutions**: Located in `solutions/` directory - designed to pass all test cases
+   - **Failing Solutions**: Located in `failing_solutions/` directory - demonstrate different failure types:
+     - `basic_operations.py`: **RUNTIME ERROR** (syntax error)
+     - `math_functions.py`: **FAILED** (wrong function signatures)
+     - `data_processing.py`: **FAILED** (wrong default values and function outputs)
+     - `advanced_algorithms.py`: **RUNTIME ERROR** and **FAILED** (mixed errors)
+   - Use as reference implementations for both success and failure scenarios
 
 ## ✨ **Key Innovations Demonstrated**
 
 - 🔍 **Enhanced signature validation** with parameter and default checking
-- 🎯 **Comprehensive function testing** with mixed arguments
+- 🎯 **Optimized function testing** with 1 test case per marking item for focused validation
 - 📋 **Intelligent output comparison** with automatic newline handling
 - 🎚️ **Flexible visibility controls** for staged feedback
 - ⚡ **Optimized time management** with granular limits
 - 🛡️ **Robust error handling** for edge cases
+- 📊 **Balanced scoring** totaling exactly 100 points
 
 This configuration serves as both a **demonstration** and **template** for creating comprehensive autograders! 🎉

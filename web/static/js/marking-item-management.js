@@ -24,10 +24,10 @@ function addMarkingItem(btn) {
     <div class="mb-2">
       <select class="form-select" id="${markingItemId}-type" name="questions[${questionIdx}][marking_items][${miCount}][type]" onchange="showTypeFields(this)">
         <option value="">Select type...</option>
-        <option value="file_exists" selected>File Exists</option>
-        <option value="output_comparison">Output Comparison</option>
+        <option value="file_exists" selected>Mark a file exists</option>
+        <option value="output_comparison">Mark Main file</option>
         <option value="signature_check">Signature Check</option>
-        <option value="function_test">Function Test</option>
+        <option value="function_test">Mark function</option>
       </select>
     </div>
     <div class="type-fields" id="${markingItemId}-fields"></div>
@@ -155,7 +155,7 @@ function showTypeFields(select) {
 function getFileExistsFields() {
   return `
     <div class="alert alert-info">
-      <strong>File Exists Test:</strong> Checks if the target file exists in the submission.
+      <strong>Mark a file exists :</strong> Mark if a file exists in the submission  (e.g. README.md).
       No additional configuration needed.
     </div>
   `;
@@ -164,7 +164,7 @@ function getFileExistsFields() {
 function getOutputComparisonFields(markingItemId, questionIdx, markingItemIdx) {
   return `
     <div class="alert alert-info mb-3">
-      <strong>Output Comparison Test:</strong> Runs the target file and compares its output.
+      <strong>Mark main file:</strong> Runs main file comparing its stdout using an input as stdin.
     </div>
     <div class="mb-3">
       <label class="form-label">Expected Input (optional)</label>
@@ -192,15 +192,6 @@ function getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx) {
     </div>
     
     <div class="mb-3">
-      <label class="form-label">Target File <span class="text-danger">*</span></label>
-      <input type="text" class="form-control" 
-             id="${markingItemId}-target-file"
-             name="questions[${questionIdx}][marking_items][${markingItemIdx}][target_file]" 
-             placeholder="solution.py" required>
-      <div class="form-text">The file containing the function to validate</div>
-    </div>
-    
-    <div class="mb-3">
       <label class="form-label">Function Name <span class="text-danger">*</span></label>
       <input type="text" class="form-control" 
              id="${markingItemId}-function-name"
@@ -223,7 +214,7 @@ function getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx) {
 function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
   return `
     <div class="alert alert-info mb-3">
-      <strong>Function Test:</strong> Calls a function with test cases and checks the results.
+      <strong>Mark function:</strong> Mark function comparing its return using an input as args.
     </div>
     <div class="mb-3">
       <label class="form-label">Function Name <span class="text-danger">*</span></label>
@@ -238,9 +229,6 @@ function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
       <div id="${markingItemId}-test-cases-container" class="test-cases-container">
         <!-- Test cases will be dynamically added here -->
       </div>
-      <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addTestCase('${markingItemId}', ${questionIdx}, ${markingItemIdx})">
-        Add Test Case
-      </button>
       <!-- Hidden field to store the JSON data -->
       <textarea class="d-none" 
                 id="${markingItemId}-test-cases"

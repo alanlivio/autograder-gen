@@ -3,91 +3,84 @@
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
         """{{ question.name }} - Item {{ loop.index }}"""
-        print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
-        # Function signature check
-        target_file = "{{ item.target_file }}"
-        function_name = "{{ item.function_name }}"
-        file_path = self.source_dir / target_file
-        self.assertTrue(file_path.exists(), 
-            f"[ERROR] The file '{target_file}' required for signature check was not found. Please ensure it is present for the question: '{{ question.name }}'.")
         try:
+            # Function signature check
+            target_file = "{{ item.target_file }}"
+            function_name = "{{ item.function_name }}"
+            file_path = self.source_dir / target_file
+            
+            # FAILED: File not found
+            self.assertTrue(file_path.exists(), 
+                f"FAILED: File '{target_file}' not found")
+            
             # Import the function from the file
             function = self.import_function_from_file(target_file, function_name)
             
-            # Check if the function exists and is callable
+            # FAILED: Function not callable
             self.assertTrue(callable(function), 
-                f"[ERROR] The function '{function_name}' in file '{target_file}' is not callable. Please check your function definition for question: '{{ question.name }}'.")
-            
-            # Verify function signature exists and validate parameters
+                f"FAILED: Function '{function_name}' is not callable")
+                
+            # Verify function signature
             import inspect
-            try:
-                sig = inspect.signature(function)
-                print(f"[INFO] Function '{function_name}' signature: {sig}")
+            sig = inspect.signature(function)
+            
+            # Check expected parameters if provided
+            {% if item.expected_parameters is defined and item.expected_parameters %}
+            expected_params_str = "{{ item.expected_parameters }}"
+            if expected_params_str.strip():
+                # Parse expected parameters
+                expected_params = []
+                param_parts = [p.strip() for p in expected_params_str.split(',')]
+                for param_part in param_parts:
+                    if '=' in param_part:
+                        # Parameter with default value
+                        param_name, default_value = param_part.split('=', 1)
+                        expected_params.append((param_name.strip(), default_value.strip()))
+                    else:
+                        # Parameter without default
+                        expected_params.append((param_part.strip(), None))
                 
-                # Check expected parameters if provided
-                {% if item.expected_parameters is defined and item.expected_parameters %}
-                expected_params_str = "{{ item.expected_parameters }}"
-                if expected_params_str.strip():
-                    # Parse expected parameters
-                    expected_params = []
-                    param_parts = [p.strip() for p in expected_params_str.split(',')]
-                    for param_part in param_parts:
-                        if '=' in param_part:
-                            # Parameter with default value
-                            param_name, default_value = param_part.split('=', 1)
-                            expected_params.append((param_name.strip(), default_value.strip()))
+                # Get actual parameters from signature
+                actual_params = list(sig.parameters.items())
+                
+                # FAILED: Parameter count mismatch
+                if len(actual_params) != len(expected_params):
+                    self.fail(f"FAILED: Function '{function_name}' has {len(actual_params)} parameters, expected {len(expected_params)}")
+                # Check each parameter
+                for i, (expected_name, expected_default) in enumerate(expected_params):
+                    if i >= len(actual_params):
+                        self.fail(f"FAILED: Function '{function_name}' missing parameter '{expected_name}'")
+                    
+                    actual_name, actual_param = actual_params[i]
+                    
+                    # FAILED: Parameter name mismatch
+                    if actual_name != expected_name:
+                        self.fail(f"FAILED: Parameter {i+1} should be '{expected_name}', found '{actual_name}'")
+                    
+                    # FAILED: Default value issues
+                    if expected_default is not None:
+                        if actual_param.default == inspect.Parameter.empty:
+                            self.fail(f"FAILED: Parameter '{expected_name}' should have default value '{expected_default}'")
                         else:
-                            # Parameter without default
-                            expected_params.append((param_part.strip(), None))
-                    
-                    # Get actual parameters from signature
-                    actual_params = list(sig.parameters.items())
-                    
-                    # Check parameter count
-                    if len(actual_params) != len(expected_params):
-                        self.fail(f"[ERROR] Function '{function_name}' has {len(actual_params)} parameters but expected {len(expected_params)} parameters. Expected: {expected_params_str}")
-                    
-                    # Check each parameter
-                    for i, (expected_name, expected_default) in enumerate(expected_params):
-                        if i >= len(actual_params):
-                            self.fail(f"[ERROR] Function '{function_name}' is missing parameter '{expected_name}'")
-                        
-                        actual_name, actual_param = actual_params[i]
-                        
-                        # Check parameter name
-                        if actual_name != expected_name:
-                            self.fail(f"[ERROR] Function '{function_name}' parameter {i+1} should be named '{expected_name}' but found '{actual_name}'")
-                        
-                        # Check default value if expected
-                        if expected_default is not None:
-                            if actual_param.default == inspect.Parameter.empty:
-                                self.fail(f"[ERROR] Function '{function_name}' parameter '{expected_name}' should have a default value of '{expected_default}' but has no default")
-                            else:
-                                # Convert expected default to appropriate type for comparison
-                                try:
-                                    # Try to evaluate the expected default as a Python literal
-                                    import ast
-                                    expected_val = ast.literal_eval(expected_default)
-                                    if actual_param.default != expected_val:
-                                        self.fail(f"[ERROR] Function '{function_name}' parameter '{expected_name}' has default value '{actual_param.default}' but expected '{expected_val}'")
-                                except (ValueError, SyntaxError):
-                                    # If it's not a literal, compare as string
-                                    if str(actual_param.default) != expected_default:
-                                        print(f"[WARNING] Function '{function_name}' parameter '{expected_name}' default value '{actual_param.default}' may not match expected '{expected_default}' (string comparison)")
-                        else:
-                            # Parameter should not have a default
-                            if actual_param.default != inspect.Parameter.empty:
-                                print(f"[WARNING] Function '{function_name}' parameter '{expected_name}' has unexpected default value '{actual_param.default}'")
-                    
-                    print(f"[INFO] Parameter validation passed for function '{function_name}'")
-                {% endif %}
-                
-            except ValueError as e:
-                self.fail(f"[ERROR] Could not inspect signature of function '{function_name}' in file '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
-                
-        except ImportError as e:
-            self.fail(f"[ERROR] Failed to import function '{function_name}' from file '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
+                            # Convert expected default to appropriate type for comparison
+                            try:
+                                # Try to evaluate the expected default as a Python literal
+                                import ast
+                                expected_val = ast.literal_eval(expected_default)
+                                if actual_param.default != expected_val:
+                                    self.fail(f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}', expected '{expected_val}'")
+                            except (ValueError, SyntaxError):
+                                # If it's not a literal, compare as string
+                                if str(actual_param.default) != expected_default:
+                                    self.fail(f"FAILED: Parameter '{expected_name}' default value mismatch")
+            {% endif %}
+            
+            # PASSED: All signature checks successful
+            print(f"PASSED: Function '{function_name}' signature is correct")
+            
+        except AssertionError:
+            # Re-raise assertion errors (FAILED cases) without modification
+            raise
         except Exception as e:
-            self.fail(f"[ERROR] An error occurred while checking signature of function '{function_name}' in file '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
-        print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
-        print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 
+            # Catch any other runtime errors not already handled
+            self.fail(f"RUNTIME ERROR: Unexpected error during signature check: {str(e)}") 
