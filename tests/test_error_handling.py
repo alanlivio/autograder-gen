@@ -6,7 +6,7 @@ import json
 import os
 import pytest
 
-MAIN_PATH = 'cli/src/main.py'
+MAIN_PATH = 'cli/main.py'
 
 INVALID_CONFIG = {
     # Missing 'questions' and 'files_necessary'

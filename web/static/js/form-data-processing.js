@@ -86,6 +86,7 @@ function addTypeSpecificFields(markingItem, markingItemObj) {
   const expectedOutputField = markingItem.querySelector('textarea[id$="-expected-output"]');
   const referenceFileField = markingItem.querySelector('input[id$="-reference-file"]');
   const functionNameField = markingItem.querySelector('input[id$="-function-name"]');
+  const expectedParamsField = markingItem.querySelector('input[id$="-expected-params"]');
   const testCasesField = markingItem.querySelector('textarea[id$="-test-cases"]');
   
   // Add optional fields only if they have values
@@ -100,6 +101,9 @@ function addTypeSpecificFields(markingItem, markingItemObj) {
   }
   if (functionNameField && functionNameField.value.trim()) {
     markingItemObj.function_name = functionNameField.value.trim();
+  }
+  if (expectedParamsField && expectedParamsField.value.trim()) {
+    markingItemObj.expected_parameters = expectedParamsField.value.trim();
   }
   if (testCasesField && testCasesField.value.trim()) {
     try {

@@ -17,7 +17,7 @@ def test_cli_generates_autograder(tmp_path):
 
     # Run the CLI
     result = subprocess.run([
-        python_executable, 'cli/src/main.py',
+        python_executable, 'cli/main.py',
         '--config', str(config_path),
         '--output', str(output_dir)
     ], capture_output=True, text=True)

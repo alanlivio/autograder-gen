@@ -14,6 +14,43 @@ CORS(app)
 def index():
     return render_template('index.html')
 
+@app.route('/upload-config', methods=['POST'])
+def upload_config():
+    """Handle JSON config file upload and return the parsed configuration."""
+    if 'config_file' not in request.files:
+        return jsonify({'error': 'No config file provided'}), 400
+    
+    file = request.files['config_file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename or not file.filename.endswith('.json'):
+        return jsonify({'error': 'File must be a JSON file'}), 400
+    
+    try:
+        # Read and parse the JSON content
+        content = file.read().decode('utf-8')
+        config_data = json.loads(content)
+        
+        # Validate the configuration
+        validator = ConfigValidator()
+        if not validator.validate_json(config_data):
+            return jsonify({
+                'error': 'Invalid configuration file',
+                'validation_errors': validator.get_errors()
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'config': config_data,
+            'warnings': validator.get_warnings()
+        })
+        
+    except json.JSONDecodeError as e:
+        return jsonify({'error': f'Invalid JSON format: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+
 @app.route('/validate', methods=['POST'])
 def validate_form():
     # Convert form data to config dict
@@ -42,7 +79,19 @@ def generate_form():
         config = ConfigParser(config_path).parse()
         generator = AutograderGenerator(config)
         zip_path = generator.generate(tmp_dir)
-        return send_file(zip_path, as_attachment=True, download_name='autograder.zip')
+        # Read the file into memory before sending to avoid file locking issues
+        with open(zip_path, 'rb') as zip_file:
+            zip_data = zip_file.read()
+        # Create a BytesIO object to send the file data
+        from io import BytesIO
+        zip_buffer = BytesIO(zip_data)
+        zip_buffer.seek(0)
+        return send_file(
+            zip_buffer, 
+            as_attachment=True, 
+            download_name='autograder.zip',
+            mimetype='application/zip'
+        )
     except Exception as e:
         return render_template('download.html', message=f'Error: {str(e)}')
     finally:
@@ -50,13 +99,13 @@ def generate_form():
             try:
                 import shutil
                 shutil.rmtree(tmp_dir)
-            except Exception:
-                pass
+            except OSError:
+                pass  # Ignore cleanup errors
 
 def form_to_config_dict(form):
     # Convert flat form data to nested config dict matching sample_config.json structure
     config = {
-        'version': form.get('version', '1.0'),
+        'version': '0.1',  # Auto-populated by backend
         'language': form.get('language', 'python'),
         'global_time_limit': int(form.get('global_time_limit', 300)),
         'setup_commands': [],
@@ -144,8 +193,6 @@ def form_to_config_dict(form):
                     marking_item['expected_input'] = item['expected_input']
                 if item.get('expected_output'):
                     marking_item['expected_output'] = item['expected_output']
-                if item.get('reference_file'):
-                    marking_item['reference_file'] = item['reference_file']
                 if item.get('function_name'):
                     marking_item['function_name'] = item['function_name']
                 if item.get('test_cases') and isinstance(item['test_cases'], list) and len(item['test_cases']) > 0:
@@ -154,8 +201,6 @@ def form_to_config_dict(form):
                 question['marking_items'].append(marking_item)
         
         config['questions'].append(question)
-    
-    return config
     
     return config
     
@@ -177,12 +222,27 @@ def generate_autograder():
         generator = AutograderGenerator(config)
         with tempfile.TemporaryDirectory() as out_dir:
             zip_path = generator.generate(out_dir)
-            return send_file(zip_path, as_attachment=True, download_name='autograder.zip')
+            # Read the file into memory before sending to avoid file locking issues
+            with open(zip_path, 'rb') as zip_file:
+                zip_data = zip_file.read()
+            # Create a BytesIO object to send the file data
+            from io import BytesIO
+            zip_buffer = BytesIO(zip_data)
+            zip_buffer.seek(0)
+            return send_file(
+                zip_buffer, 
+                as_attachment=True, 
+                download_name='autograder.zip',
+                mimetype='application/zip'
+            )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
         if tmp_path is not None and os.path.exists(tmp_path):
-            os.remove(tmp_path)
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass  # Ignore file deletion errors
 
 @app.route('/api/validate', methods=['POST'])
 def validate_config():

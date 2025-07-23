@@ -1,42 +1,52 @@
     @weight({{ item.total_mark }})
     @number({{ question_number }}.{{ loop.index }})
-    @visibility('visible')
+    @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
         """{{ question.name }} - Item {{ loop.index }}"""
-        print(f"[INFO] Starting test for: {{ question.name }} (Item {{ loop.index }})")
         # Function import and testing
         target_file = "{{ item.target_file }}"
         function_name = "{{ item.function_name }}"
+        print(f"Starting test for function '{function_name}' in '{target_file}'")
         try:
             function = self.import_function_from_file(target_file, function_name)
-            self.assertTrue(callable(function), 
-                f"[ERROR] The function '{function_name}' in file '{target_file}' is not callable. Please check your function definition for question: '{{ question.name }}'.")
-            {% if item.test_cases %}
-            # Run test cases
-            {% for test_case in item.test_cases %}
-            # Test case {{ loop.index }}
-            {% if test_case.args %}
-            args = {{ test_case.args }}
-            {% else %}
-            args = []
-            {% endif %}
-            {% if test_case.kwargs %}
-            kwargs = {{ test_case.kwargs }}
-            {% else %}
-            kwargs = {}
-            {% endif %}
-            try:
-                result = function(*args, **kwargs)
-                expected = {{ test_case.expected }}
-                self.assertEqual(str(result), str(expected),
-                    f"[ERROR] Function '{function_name}' in file '{target_file}' returned '{{result}}' for arguments {args} {kwargs}, but expected '{{expected}}' for question: '{{ question.name }}'. Please check your function's return value and logic.")
-            except Exception as e:
-                self.fail(f"[ERROR] Test case {{ loop.index }} for function '{function_name}' in file '{target_file}' failed with exception: {str(e)} for question: '{{ question.name }}'.")
-            {% endfor %}
-            {% endif %}
         except ImportError as e:
-            self.fail(f"[ERROR] Failed to import function '{function_name}' from file '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
+            self.fail(f"RUNTIME ERROR: Failed to import function '{function_name}' from '{target_file}'. Check for syntax errors or missing function definition. Error: {str(e)}")
         except Exception as e:
-            self.fail(f"[ERROR] An error occurred while testing function '{function_name}' in file '{target_file}' for question: '{{ question.name }}'. Error: {str(e)}")
-        print(f"[INFO] Finished test for: {{ question.name }} (Item {{ loop.index }})")
-        print(f"[SUCCESS] Test passed for: {{ question.name }} (Item {{ loop.index }})") 
+            self.fail(f"RUNTIME ERROR: Error accessing function '{function_name}' in '{target_file}'. Error: {str(e)}")
+        
+        # FAILED: Function not callable
+        self.assertTrue(callable(function), 
+            f"FAILED: Function '{function_name}' is not callable")
+        
+        {% if item.test_cases %}
+        # Run test cases
+        {% for test_case in item.test_cases %}
+        # Test case {{ loop.index }}
+        {% if test_case.args %}
+        args = {{ test_case.args }}
+        {% else %}
+        args = []
+        {% endif %}
+        {% if test_case.kwargs %}
+        kwargs = {{ test_case.kwargs }}
+        {% else %}
+        kwargs = {}
+        {% endif %}
+        try:
+            result = function(*args, **kwargs)
+            expected = "{{ test_case.expected }}"
+            
+            # FAILED: Function output mismatch
+            self.assertEqual(
+                str(result), str(expected),
+                f"FAILED: Test case {{ loop.index }} - Expected: {expected}, Got: {result}"
+            )
+        except AssertionError:
+            raise
+        except Exception as e:
+            self.fail(f"RUNTIME ERROR: Test case {{ loop.index }} for function '{function_name}' failed with exception: {str(e)}")
+        {% endfor %}
+        {% endif %}
+        
+        # PASSED: All function tests successful
+        print(f"PASSED: All tests passed for function '{function_name}'") 

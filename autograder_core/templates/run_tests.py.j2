@@ -14,7 +14,7 @@ def main():
     suite = unittest.defaultTestLoader.discover('tests') 
     # Run tests with Gradescope utilities
     with open('/autograder/results/results.json', 'w') as f:
-        runner = JSONTestRunner(visibility='visible',stdout_visibility='visible', stream=f)
+        runner = JSONTestRunner(visibility='hidden', stream=f)
         runner.run(suite)
 
 if __name__ == '__main__':

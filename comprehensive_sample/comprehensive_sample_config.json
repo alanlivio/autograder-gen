@@ -1,0 +1,250 @@
+{
+  "version": "1.0",
+  "language": "python",
+  "global_time_limit": 600,
+  "setup_commands": [
+    "pip install numpy pandas matplotlib requests",
+    "pip install scipy scikit-learn"
+  ],
+  "files_necessary": [
+    "basic_operations.py",
+    "math_functions.py",
+    "data_processing.py",
+    "advanced_algorithms.py"
+  ],
+  "questions": [
+    {
+      "name": "File Existence Validation",
+      "marking_items": [
+        {
+          "target_file": "basic_operations.py",
+          "total_mark": 2,
+          "type": "file_exists",
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "math_functions.py",
+          "total_mark": 2,
+          "type": "file_exists",
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "data_processing.py",
+          "total_mark": 1,
+          "type": "file_exists",
+          "time_limit": 5,
+          "visibility": "hidden"
+        }
+      ]
+    },
+    {
+      "name": "Basic Output Comparison Tests",
+      "marking_items": [
+        {
+          "target_file": "basic_operations.py",
+          "total_mark": 8,
+          "type": "output_comparison",
+          "time_limit": 30,
+          "visibility": "visible",
+          "expected_input": "Hello World\n42\n3.14\n",
+          "expected_output": "Processing: Hello World\nNumber: 42\nFloat: 3.14\nDone!"
+        },
+        {
+          "target_file": "basic_operations.py",
+          "total_mark": 7,
+          "type": "output_comparison",
+          "time_limit": 45,
+          "visibility": "after_due_date",
+          "expected_input": "Test\n100\n-5.5\n",
+          "expected_output": "Processing: Test\nNumber: 100\nFloat: -5.5\nDone!"
+        }
+      ]
+    },
+    {
+      "name": "Basic Function Signature Validation",
+      "marking_items": [
+        {
+          "target_file": "math_functions.py",
+          "function_name": "add_numbers",
+          "total_mark": 4,
+          "type": "signature_check",
+          "time_limit": 10,
+          "visibility": "visible",
+          "expected_parameters": "a, b"
+        },
+        {
+          "target_file": "math_functions.py",
+          "function_name": "multiply",
+          "total_mark": 4,
+          "type": "signature_check",
+          "time_limit": 10,
+          "visibility": "visible",
+          "expected_parameters": "x, y"
+        }
+      ]
+    },
+    {
+      "name": "Advanced Signature Validation with Defaults",
+      "marking_items": [
+        {
+          "target_file": "data_processing.py",
+          "function_name": "process_data",
+          "total_mark": 6,
+          "type": "signature_check",
+          "time_limit": 15,
+          "visibility": "visible",
+          "expected_parameters": "data, threshold=0.5, normalize=True"
+        },
+        {
+          "target_file": "data_processing.py",
+          "function_name": "filter_values",
+          "total_mark": 5,
+          "type": "signature_check",
+          "time_limit": 15,
+          "visibility": "after_due_date",
+          "expected_parameters": "values, min_val=0, max_val=100, inclusive=True"
+        },
+        {
+          "target_file": "advanced_algorithms.py",
+          "function_name": "complex_calculation",
+          "total_mark": 7,
+          "type": "signature_check",
+          "time_limit": 20,
+          "visibility": "hidden",
+          "expected_parameters": "input_data, algorithm='default', precision=2, debug=False"
+        }
+      ]
+    },
+    {
+      "name": "Simple Function Testing",
+      "marking_items": [
+        {
+          "target_file": "math_functions.py",
+          "function_name": "add_numbers",
+          "total_mark": 8,
+          "type": "function_test",
+          "time_limit": 30,
+          "visibility": "visible",
+          "test_cases": [
+            {
+              "args": [2, 3],
+              "expected": "5"
+            }
+          ]
+        },
+        {
+          "target_file": "math_functions.py",
+          "function_name": "multiply",
+          "total_mark": 7,
+          "type": "function_test",
+          "time_limit": 25,
+          "visibility": "visible",
+          "test_cases": [
+            {
+              "args": [3, 4],
+              "expected": "12"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Advanced Function Testing with Keywords",
+      "marking_items": [
+        {
+          "target_file": "data_processing.py",
+          "function_name": "calculate_statistics",
+          "total_mark": 12,
+          "type": "function_test",
+          "time_limit": 45,
+          "visibility": "after_due_date",
+          "test_cases": [
+            {
+              "args": [[1, 2, 3, 4, 5]],
+              "expected": "{'mean': 3.0, 'median': 3.0, 'std': 1.58}"
+            }
+          ]
+        },
+        {
+          "target_file": "data_processing.py",
+          "function_name": "transform_data",
+          "total_mark": 10,
+          "type": "function_test",
+          "time_limit": 60,
+          "visibility": "after_published",
+          "test_cases": [
+            {
+              "args": [{"a": 1, "b": 2}],
+              "expected": "{'a': 2, 'b': 4}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Edge Case Testing",
+      "marking_items": [
+        {
+          "target_file": "advanced_algorithms.py",
+          "function_name": "handle_edge_cases",
+          "total_mark": 15,
+          "type": "function_test",
+          "time_limit": 90,
+          "visibility": "hidden",
+          "test_cases": [
+            {
+              "args": [[]],
+              "expected": "None"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mixed Testing Scenarios",
+      "marking_items": [
+        {
+          "target_file": "advanced_algorithms.py",
+          "total_mark": 2,
+          "type": "file_exists",
+          "time_limit": 5,
+          "visibility": "visible"
+        },
+        {
+          "target_file": "advanced_algorithms.py",
+          "function_name": "main_algorithm",
+          "total_mark": 6,
+          "type": "signature_check",
+          "time_limit": 20,
+          "visibility": "visible",
+          "expected_parameters": "input_list, config=None, verbose=False"
+        },
+        {
+          "target_file": "advanced_algorithms.py",
+          "function_name": "main_algorithm",
+          "total_mark": 12,
+          "type": "function_test",
+          "time_limit": 120,
+          "visibility": "after_due_date",
+          "test_cases": [
+            {
+              "args": [[1, 2, 3, 4, 5]],
+              "expected": "[1, 4, 9, 16, 25]"
+            }
+          ]
+        },
+        {
+          "target_file": "advanced_algorithms.py",
+          "total_mark": 8,
+          "type": "output_comparison",
+          "time_limit": 60,
+          "visibility": "after_published",
+          "expected_input": "run_tests\n5\n",
+          "expected_output": "Running comprehensive test suite...\nProcessing 5 test cases\nAll tests passed: 5/5\nExecution complete!"
+        }
+      ]
+    }
+  ]
+}

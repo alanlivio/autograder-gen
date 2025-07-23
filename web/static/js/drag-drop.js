@@ -7,16 +7,27 @@
 let draggedElement = null;
 
 function handleDragStart(e) {
-  draggedElement = this;
-  this.classList.add('dragging');
+  // Find the card that contains this drag handle
+  const card = e.target.closest('.card');
+  if (!card) {
+    e.preventDefault();
+    return false;
+  }
+  
+  // Set the dragged element to the card, not the handle
+  draggedElement = card;
+  card.classList.add('dragging');
   
   // Set the drag effect and data
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/html', this.innerHTML);
+  e.dataTransfer.setData('text/html', card.innerHTML);
 }
 
 function handleDragEnd(e) {
-  this.classList.remove('dragging');
+  // Remove dragging class from the card, not the handle
+  if (draggedElement) {
+    draggedElement.classList.remove('dragging');
+  }
   draggedElement = null;
   updateQuestionNumbers();
 }
@@ -52,3 +63,27 @@ function handleDrop(e) {
   
   return false;
 }
+
+// Initialize drag and drop for a specific element
+function initializeDragAndDrop(element) {
+  // Find the drag handle within the card
+  const dragHandle = element.querySelector('.drag-handle');
+  if (!dragHandle) return;
+  
+  // Remove any existing listeners to avoid duplicates
+  dragHandle.removeEventListener('dragstart', handleDragStart);
+  dragHandle.removeEventListener('dragend', handleDragEnd);
+  element.removeEventListener('dragover', handleDragOver);
+  element.removeEventListener('drop', handleDrop);
+  
+  // Add drag events to the drag handle
+  dragHandle.addEventListener('dragstart', handleDragStart);
+  dragHandle.addEventListener('dragend', handleDragEnd);
+  
+  // Add drop events to the card
+  element.addEventListener('dragover', handleDragOver);
+  element.addEventListener('drop', handleDrop);
+}
+
+// Expose functions to global scope
+window.initializeDragAndDrop = initializeDragAndDrop;

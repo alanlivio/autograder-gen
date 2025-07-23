@@ -96,8 +96,7 @@ class ConfigValidator:
                         },
                         "total_mark": {
                             "type": "integer",
-                            "minimum": 0,
-                            "description": "Total marks for this item"
+                            "description": "Total marks for this item (can be negative for penalties)"
                         },
                         "type": {
                             "type": "string",
@@ -123,10 +122,6 @@ class ConfigValidator:
                         "expected_output": {
                             "type": "string",
                             "description": "Expected output for comparison tests"
-                        },
-                        "reference_file": {
-                            "type": "string",
-                            "description": "Reference file for comparison"
                         },
                         "function_name": {
                             "type": "string",
@@ -223,7 +218,6 @@ class ConfigValidator:
                             "visibility": item.visibility,
                             "expected_input": item.expected_input,
                             "expected_output": item.expected_output,
-                            "reference_file": item.reference_file,
                             "function_name": item.function_name,
                             "test_cases": item.test_cases,
 
@@ -267,7 +261,7 @@ class ConfigValidator:
                 # Check if target file is in files_necessary
                 target_file = item.get("target_file", "")
                 if target_file and target_file not in files_necessary:
-                    self.warnings.append(
+                    self.errors.append(
                         f"Question '{question_name}', Item {j+1}: "
                         f"Target file '{target_file}' is not listed in 'files_necessary'"
                     )
@@ -287,7 +281,7 @@ class ConfigValidator:
                 elif item_type == "signature_check":
                     self._validate_signature_check_warnings(item, question_name, j+1)
                 elif item_type == "function_test":
-                    self._validate_function_test_warnings(item, question_name, j+1)
+                    self._validate_function_test(item, question_name, j+1)
             
             # Check total marks
             if total_marks == 0:
@@ -303,12 +297,6 @@ class ConfigValidator:
         
         if not item.get("expected_output"):
             self.warnings.append(f"{context}: Expected output is empty")
-        
-        if item.get("expected_input") and item.get("reference_file"):
-            self.warnings.append(
-                f"{context}: Both expected_input and reference_file provided. "
-                "expected_input will be used."
-            )
     
     def _validate_signature_check_warnings(self, item: Dict[str, Any], question_name: str, item_num: int):
         """Generate warnings for signature check items."""
@@ -319,17 +307,17 @@ class ConfigValidator:
                 f"{context}: expected_input/expected_output not needed for signature check"
             )
     
-    def _validate_function_test_warnings(self, item: Dict[str, Any], question_name: str, item_num: int):
+    def _validate_function_test(self, item: Dict[str, Any], question_name: str, item_num: int):
         """Generate warnings for function test items."""
         context = f"Question '{question_name}', Item {item_num}"
-        
+
         if not item.get("function_name"):
-            self.warnings.append(f"{context}: function_name is required for function_test")
-        
+            self.errors.append(f"{context}: function_name is required for function_test")
+
         test_cases = item.get("test_cases", [])
         if not test_cases:
             self.warnings.append(f"{context}: No test cases provided for function testing")
-        
+
         for i, test_case in enumerate(test_cases):
             if not test_case.get("expected") and not test_case.get("should_raise"):
                 self.warnings.append(

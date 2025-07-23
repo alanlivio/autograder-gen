@@ -111,10 +111,13 @@ class AutograderGenerator:
             # Use question number for filename
             question_filename = f"question_{idx}"
             
+            # Preprocess marking items to ensure output comparison tests have proper newlines
+            processed_question = self._preprocess_question_for_output_comparison(question)
+            
             # Generate content for this question
             content = question_template.render(
                 config=self.config,
-                question=question,
+                question=processed_question,
                 question_number=idx
             )
             
@@ -122,6 +125,36 @@ class AutograderGenerator:
             test_file = tests_dir / f"test_{question_filename}.py"
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write(content)
+    
+    def _preprocess_question_for_output_comparison(self, question):
+        """Preprocess question to add newlines to expected output for output comparison tests."""
+        # Create a copy of the question with processed marking items
+        from types import SimpleNamespace
+        
+        processed_question = SimpleNamespace()
+        processed_question.name = question.name
+        processed_question.marking_items = []
+        
+        for item in question.marking_items:
+            processed_item = SimpleNamespace()
+            # Copy all attributes from the original item
+            for attr in dir(item):
+                if not attr.startswith('_'):
+                    setattr(processed_item, attr, getattr(item, attr))
+            
+            # For Python output comparison tests, ensure expected_output has a newline if it doesn't end with one
+            # This matches Python's print() behavior which automatically adds newlines
+            if (self.config.language == 'python' and
+                hasattr(processed_item, 'type') and 
+                processed_item.type == 'output_comparison' and 
+                hasattr(processed_item, 'expected_output') and 
+                processed_item.expected_output and 
+                not processed_item.expected_output.endswith('\n')):
+                processed_item.expected_output += '\n'
+            
+            processed_question.marking_items.append(processed_item)
+        
+        return processed_question
     
     def _sanitize_filename(self, name: str) -> str:
         """Convert question name to a safe Python module filename."""
