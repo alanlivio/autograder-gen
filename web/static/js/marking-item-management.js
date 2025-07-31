@@ -100,7 +100,7 @@ function showTypeFields(select) {
         <input type="number" class="form-control" 
                id="${markingItemId}-total-mark"
                name="questions[${questionIdx}][marking_items][${markingItemIdx}][total_mark]" 
-               placeholder="10" required>
+               placeholder="e.g., 10" required>
         <div class="form-text">Points awarded (can be negative for penalties)</div>
       </div>
     </div>
@@ -110,7 +110,7 @@ function showTypeFields(select) {
         <input type="number" class="form-control" 
                id="${markingItemId}-time-limit"
                name="questions[${questionIdx}][marking_items][${markingItemIdx}][time_limit]" 
-               placeholder="30" min="1" value="30">
+               placeholder="Global time limit used if not set" min="1">
         <div class="form-text">Maximum execution time</div>
       </div>
       <div class="col-md-6">
@@ -118,24 +118,35 @@ function showTypeFields(select) {
         <select class="form-select" 
                 id="${markingItemId}-visibility"
                 name="questions[${questionIdx}][marking_items][${markingItemIdx}][visibility]">
-          <option value="visible">Visible - Students see results immediately</option>
           <option value="hidden">Hidden - Results not shown to students</option>
+          <option value="visible">Visible - Students see results immediately</option>
           <option value="after_due_date">After Due Date - Shown after deadline</option>
           <option value="after_published">After Published - Shown when grades published</option>
         </select>
       </div>
     </div>
   `;
-  
+
+   markingItem.classList.remove(
+    'file-exists-border',
+    'output-comparison-border',
+    'signature-check-border',
+    'function-test-border'
+  );
+
   // Type-specific fields
   if (type === 'file_exists') {
     html += getFileExistsFields();
+    markingItem.classList.add('file-exists-border');
   } else if (type === 'output_comparison') {
     html += getOutputComparisonFields(markingItemId, questionIdx, markingItemIdx);
+    markingItem.classList.add('output-comparison-border');
   } else if (type === 'signature_check') {
     html += getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx);
+    markingItem.classList.add('signature-check-border');
   } else if (type === 'function_test') {
     html += getFunctionTestFields(markingItemId, questionIdx, markingItemIdx);
+    markingItem.classList.add('function-test-border');
   }
   
   fieldsDiv.innerHTML = html;
@@ -225,7 +236,6 @@ function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
       <div class="form-text">Name of the function to test</div>
     </div>
     <div class="mb-3">
-      <label class="form-label">Test Cases <span class="text-danger">*</span></label>
       <div id="${markingItemId}-test-cases-container" class="test-cases-container">
         <!-- Test cases will be dynamically added here -->
       </div>
@@ -233,10 +243,7 @@ function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
       <textarea class="d-none" 
                 id="${markingItemId}-test-cases"
                 name="questions[${questionIdx}][marking_items][${markingItemIdx}][test_cases]" 
-                required></textarea>
-      <div class="form-text mt-2">
-        Add individual test cases with arguments and expected results. At least one test case is required.
-      </div>
+      required></textarea>
     </div>
   `;
 }
@@ -257,13 +264,9 @@ function addTestCase(markingItemId, questionIdx, markingItemIdx) {
   const testCaseId = `${markingItemId}-testcase-${testCaseCount}`;
   
   const testCaseDiv = document.createElement('div');
-  testCaseDiv.className = 'card card-body mb-2 test-case';
+  testCaseDiv.className = 'mb-2 test-case';
   testCaseDiv.id = testCaseId;
   testCaseDiv.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h6 class="mb-0">Test Case ${testCaseCount + 1}</h6>
-      <button type="button" class="btn-close btn-sm" onclick="removeTestCase('${testCaseId}', '${markingItemId}')"></button>
-    </div>
     <div class="row mb-2">
       <div class="col-md-8">
         <label class="form-label">Arguments (comma-separated)</label>
@@ -299,8 +302,8 @@ function addTestCase(markingItemId, questionIdx, markingItemIdx) {
   // If this is the first test case, add it automatically
   if (testCaseCount === 0) {
     // Set some example values
-    document.getElementById(`${testCaseId}-args`).value = "2, 3";
-    document.getElementById(`${testCaseId}-expected`).value = "5";
+    document.getElementById(`${testCaseId}-args`).value = "";
+    document.getElementById(`${testCaseId}-expected`).value = "";
     updateTestCasesJson(markingItemId);
   }
 }

@@ -15,15 +15,18 @@ function addQuestion() {
   // Get next question number - only count direct children cards
   const nextNum = document.querySelectorAll('#questions-list > .card').length + 1;
   
-  qDiv.innerHTML = `
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center">
-          <div class="drag-handle me-2" draggable="true">⋮⋮</div>
-          <h5 class="card-title mb-0">Question <span class="q-num">${nextNum}</span></h5>
-        </div>
+ qDiv.innerHTML = `
+    <div class="card-header d-flex justify-content-between align-items-center" onclick="toggleQuestionCollapse('${qDiv.id}')">
+      <div class="d-flex align-items-center">
+        <div class="drag-handle me-2" draggable="true">⋮⋮</div>
+        <h5 class="card-title mb-0">Question <span class="q-num">${nextNum}</span></h5>
+        <span class="badge bg-primary ms-2" id="question-${qId}-total-points">0 pts</span>
+      </div>
+      <div>
         <button type="button" class="btn-close" aria-label="Remove" onclick="removeQuestionWithConfirm(this)"></button>
       </div>
+    </div>
+    <div class="card-body" id="${qDiv.id}-body">
       <div class="mb-3">
         <label class="form-label">Question Name</label>
         <input type="text" class="form-control" id="question-${qId}-name" name="questions[${qId}][name]" required>
@@ -46,8 +49,20 @@ function addQuestion() {
   if (typeof disableGenerateButton === 'function') {
     disableGenerateButton();
   }
+
 }
 
+function toggleQuestionCollapse(questionId) {
+  const body = document.getElementById(`${questionId}-body`);
+  const icon = document.getElementById(`${questionId}-collapse-icon`);
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    icon.textContent = '−';
+  } else {
+    body.style.display = 'none';
+    icon.textContent = '+';
+  }
+}
 function removeQuestionWithConfirm(btn) {
   if (confirm('Are you sure you want to delete this question and all its marking items?')) {
     removeQuestion(btn);
@@ -108,7 +123,24 @@ function updateQuestionNumbers() {
             field.id = `${newMarkingItemId}-${kebabFieldName}`;
           }
         }
+        const pointsField = item.querySelector('input[id$="-total-mark"]');
+        if (pointsField) {
+          pointsField.removeEventListener('input', updateQuestionNumbers); // Prevent duplicate listeners
+          pointsField.addEventListener('input', updateQuestionNumbers);
+        }
       });
+      // Calculate and update total points
+      let totalPoints = 0;
+      markingItems.forEach(item => {
+        const pointsField = item.querySelector('input[id$="-total-mark"]');
+        if (pointsField && pointsField.value) {
+          totalPoints += Number(pointsField.value) || 0;
+        }
+      });
+      const pointsSpan = question.querySelector(`#${question.id}-total-points`);
+      if (pointsSpan) {
+        pointsSpan.textContent = `${totalPoints} pts`;
+      }
       
       // Update the type-fields container ID
       const typeFieldsDiv = item.querySelector('.type-fields');
@@ -124,3 +156,4 @@ window.addQuestion = addQuestion;
 window.removeQuestionWithConfirm = removeQuestionWithConfirm;
 window.removeQuestion = removeQuestion;
 window.updateQuestionNumbers = updateQuestionNumbers;
+window.toggleQuestionCollapse = toggleQuestionCollapse;

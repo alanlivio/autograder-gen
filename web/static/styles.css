@@ -1,7 +1,27 @@
+body {
+  background-color: #ECECEC;
+  color: rgb(65, 68, 77);
+}
+
+.main-content {
+  background-color: white;
+}
 /* Drag and drop styles */
 .card.dragging {
   opacity: 0.5;
   border: 2px dashed #007bff;
+}
+
+.navbar{
+  background-color: rgb(206, 11, 30);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  color: white;
+}
+.navbar-brand:hover {
+  color: #f8f9fa;
 }
 
 .drag-handle {
@@ -20,6 +40,7 @@
   cursor: grabbing;
 }
 
+
 .drag-handle[draggable="true"]:hover {
   color: #007bff;
   transform: scale(1.1);
@@ -34,7 +55,11 @@
   transform: scale(1.02);
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
-
+.card-header {
+  cursor: pointer;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
 /* Alert container styles */
 #alert-container {
   margin-bottom: 1rem;
@@ -56,29 +81,21 @@
   margin-bottom: 0.25rem;
 }
 
-/* Test case container styles */
-.test-cases-container {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 0.5rem 0;
-}
-
-.test-case {
-  border-left: 4px solid #007bff;
+.file-exists-border{
+  border-left:4px solid #007bff;
   background-color: #f8f9fa;
 }
-
-.test-case h6 {
-  color: #007bff;
-  font-weight: 600;
+.output-comparison-border{
+  border-left:4px solid #28a745;
+  background-color: #f8f9fa;
 }
-
-.test-case .btn-close {
-  opacity: 0.5;
+.signature-check-border{
+  border-left:4px solid #ffc107;
+  background-color: #f8f9fa;
 }
-
-.test-case .btn-close:hover {
-  opacity: 1;
+.function-test-border{
+  border-left:4px solid #dc3545;
+  background-color: #f8f9fa;
 }
 
 /* Enhanced form validation styles */
