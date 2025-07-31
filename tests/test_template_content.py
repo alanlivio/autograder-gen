@@ -17,7 +17,7 @@ def temp_output_dir():
 def test_setup_sh_contains_setup_commands(temp_output_dir):
     config_parser = ConfigParser(SAMPLE_CONFIG_PATH)
     config = config_parser.parse()
-    generator = AutograderGenerator(config)
+    generator = AutograderGenerator(config, None)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, 'r') as z:
         with z.open('setup.sh') as f:
@@ -28,7 +28,7 @@ def test_setup_sh_contains_setup_commands(temp_output_dir):
 def test_run_autograder_copies_files(temp_output_dir):
     config_parser = ConfigParser(SAMPLE_CONFIG_PATH)
     config = config_parser.parse()
-    generator = AutograderGenerator(config)
+    generator = AutograderGenerator(config, None)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, 'r') as z:
         with z.open('run_autograder') as f:
@@ -41,7 +41,7 @@ def test_run_autograder_copies_files(temp_output_dir):
 def test_per_question_test_file_content(temp_output_dir):
     config_parser = ConfigParser(SAMPLE_CONFIG_PATH)
     config = config_parser.parse()
-    generator = AutograderGenerator(config)
+    generator = AutograderGenerator(config, None)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, 'r') as z:
         # The first question should now be test_question_1.py

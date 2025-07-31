@@ -82,7 +82,11 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 
 {% for item in question.marking_items %}
 
+{% if item.name %}
+{% set test_name = (item.name|lower|replace(' ', '_')|replace('-', '_')|replace('.', '_')|replace('(', '')|replace(')', '')|replace('[', '')|replace(']', '')|replace('/', '_')|replace('\\', '_')|replace(':', '_')|replace(';', '_')|replace(',', '_')|replace('?', '_')|replace('!', '_')|replace('@', '_')|replace('#', '_')|replace('$', '_')|replace('%', '_')|replace('^', '_')|replace('&', '_')|replace('*', '_')|replace('+', '_')|replace('=', '_')|replace('|', '_')|replace('<', '_')|replace('>', '_')) %}
+{% else %}
 {% set test_name = ('item_' + loop.index|string)|lower %}
+{% endif %}
 
 {% if item.type == "file_exists" %}
     {% include 'subtemplates/file_exists_method.j2' %}

@@ -16,8 +16,9 @@ from autograder_core.config import AutograderConfig
 class AutograderGenerator:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
     
-    def __init__(self, config: AutograderConfig):
+    def __init__(self, config: AutograderConfig, original_config_dict: Optional[dict] = None):
         self.config = config
+        self.original_config_dict = original_config_dict  # Store the original JSON config
         self.temp_dir: Optional[Path] = None
         self.templates_dir = Path(__file__).parent / "templates"
         
@@ -216,22 +217,12 @@ class AutograderGenerator:
         """Generate metadata and configuration files."""
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
         
-        # Create autograder configuration reference
-        config_data = {
-            "generated_by": "TIF Autograder CLI Tool",
-            "language": self.config.language,
-            "global_time_limit": self.config.global_time_limit,
-            "questions_count": len(self.config.questions),
-            "total_tests": sum(len(q.marking_items) for q in self.config.questions),
-            "total_marks": sum(
-                sum(item.total_mark for item in q.marking_items) 
-                for q in self.config.questions
-            )
-        }
-        
-        config_file = self.temp_dir / "autograder_config.json"
-        with open(config_file, 'w', encoding='utf-8') as f:
-            json.dump(config_data, f, indent=2)
+        # Save the original configuration if provided
+        if self.original_config_dict:
+            original_config_file = self.temp_dir / "autograder_config.json"
+            with open(original_config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.original_config_dict, f, indent=2)
+
         
         # Create a README for the autograder
         readme_content = f"""# Autograder Package

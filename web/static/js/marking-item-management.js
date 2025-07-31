@@ -43,6 +43,12 @@ function addMarkingItem(btn) {
     targetFileField.addEventListener('input', validateSingleTargetFile);
   }
   
+  // Add event listener to total mark field for points updating
+  const totalMarkField = miDiv.querySelector('input[id$="-total-mark"]');
+  if (totalMarkField) {
+    totalMarkField.addEventListener('input', updateQuestionNumbers);
+  }
+  
   // Reinitialize drag and drop for the question card to handle new form elements
   if (typeof initializeDragAndDrop === 'function') {
     initializeDragAndDrop(questionCard);
@@ -86,6 +92,14 @@ function showTypeFields(select) {
   
   // Common fields for all types
   let html = `
+    <div class="mb-3">
+      <label class="form-label">Name (optional)</label>
+      <input type="text" class="form-control" 
+             id="${markingItemId}-name"
+             name="questions[${questionIdx}][marking_items][${markingItemIdx}][name]" 
+             placeholder="e.g., Check file exists, Test basic addition">
+      <div class="form-text">Descriptive name for this marking item (will be used in test names if provided)</div>
+    </div>
     <div class="row mb-3">
       <div class="col-md-6">
         <label class="form-label">Target File <span class="text-danger">*</span></label>
@@ -155,6 +169,12 @@ function showTypeFields(select) {
   const targetFileField = markingItem.querySelector('input[id$="-target-file"]');
   if (targetFileField && typeof validateSingleTargetFile === 'function') {
     targetFileField.addEventListener('input', validateSingleTargetFile);
+  }
+  
+  // Add event listener to total mark field for points updating
+  const totalMarkField = markingItem.querySelector('input[id$="-total-mark"]');
+  if (totalMarkField && typeof updateQuestionNumbers === 'function') {
+    totalMarkField.addEventListener('input', updateQuestionNumbers);
   }
   
   // Auto-add first test case for function tests

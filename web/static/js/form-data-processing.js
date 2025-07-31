@@ -66,6 +66,7 @@ function extractMarkingItemData(markingItem) {
   const totalMarkField = markingItem.querySelector('input[id$="-total-mark"]');
   const timeLimitField = markingItem.querySelector('input[id$="-time-limit"]');
   const visibilityField = markingItem.querySelector('select[id$="-visibility"]');
+  const nameField = markingItem.querySelector('input[id$="-name"]');
   
   const markingItemObj = {
     target_file: targetFileField ? targetFileField.value.trim() : '',
@@ -74,6 +75,11 @@ function extractMarkingItemData(markingItem) {
     time_limit: timeLimitField ? parseInt(timeLimitField.value) || 30 : 30,
     visibility: visibilityField ? visibilityField.value : 'visible'
   };
+  
+  // Add name field if it has a value
+  if (nameField && nameField.value.trim()) {
+    markingItemObj.name = nameField.value.trim();
+  }
   
   // Add type-specific fields
   addTypeSpecificFields(markingItem, markingItemObj);

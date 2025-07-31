@@ -115,6 +115,10 @@ class ConfigValidator:
                             "default": "visible",
                             "description": "Visibility of test results"
                         },
+                        "name": {
+                            "type": "string",
+                            "description": "Optional name for the marking item"
+                        },
                         "expected_input": {
                             "type": "string",
                             "description": "Input for output comparison tests"
@@ -216,6 +220,7 @@ class ConfigValidator:
                             "type": item.type,
                             "time_limit": item.time_limit,
                             "visibility": item.visibility,
+                            "name": item.name,
                             "expected_input": item.expected_input,
                             "expected_output": item.expected_output,
                             "function_name": item.function_name,

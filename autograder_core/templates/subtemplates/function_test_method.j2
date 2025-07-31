@@ -2,7 +2,7 @@
     @number({{ question_number }}.{{ loop.index }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ question.name }} - Item {{ loop.index }}"""
+        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
         # Function import and testing
         target_file = "{{ item.target_file }}"
         function_name = "{{ item.function_name }}"

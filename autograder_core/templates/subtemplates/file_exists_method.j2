@@ -2,7 +2,7 @@
     @number({{ question_number }}.{{ loop.index }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ question.name }} - Item {{ loop.index }}"""
+        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
         # File existence check
         target_file = "{{ item.target_file }}"
         print(f"Starting test for '{target_file}'")

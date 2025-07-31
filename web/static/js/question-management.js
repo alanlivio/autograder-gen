@@ -123,24 +123,7 @@ function updateQuestionNumbers() {
             field.id = `${newMarkingItemId}-${kebabFieldName}`;
           }
         }
-        const pointsField = item.querySelector('input[id$="-total-mark"]');
-        if (pointsField) {
-          pointsField.removeEventListener('input', updateQuestionNumbers); // Prevent duplicate listeners
-          pointsField.addEventListener('input', updateQuestionNumbers);
-        }
       });
-      // Calculate and update total points
-      let totalPoints = 0;
-      markingItems.forEach(item => {
-        const pointsField = item.querySelector('input[id$="-total-mark"]');
-        if (pointsField && pointsField.value) {
-          totalPoints += Number(pointsField.value) || 0;
-        }
-      });
-      const pointsSpan = question.querySelector(`#${question.id}-total-points`);
-      if (pointsSpan) {
-        pointsSpan.textContent = `${totalPoints} pts`;
-      }
       
       // Update the type-fields container ID
       const typeFieldsDiv = item.querySelector('.type-fields');
@@ -148,6 +131,24 @@ function updateQuestionNumbers() {
         typeFieldsDiv.id = `${newMarkingItemId}-fields`;
       }
     });
+    
+    // Calculate and update total points for this question
+    let totalPoints = 0;
+    markingItems.forEach(item => {
+      const pointsField = item.querySelector('input[id$="-total-mark"]');
+      if (pointsField) {
+        if (pointsField.value) {
+          totalPoints += Number(pointsField.value) || 0;
+        }
+        // Add event listener to update points when changed
+        pointsField.removeEventListener('input', updateQuestionNumbers); // Prevent duplicate listeners
+        pointsField.addEventListener('input', updateQuestionNumbers);
+      }
+    });
+    const pointsSpan = question.querySelector(`#${question.id}-total-points`);
+    if (pointsSpan) {
+      pointsSpan.textContent = `${totalPoints} pts`;
+    }
   });
 }
 
