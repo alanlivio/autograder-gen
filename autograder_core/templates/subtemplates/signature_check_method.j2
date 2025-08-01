@@ -22,57 +22,150 @@
                 
             # Verify function signature
             import inspect
+            import typing
             sig = inspect.signature(function)
+            
+            # Check return type annotation if available
+            return_annotation = sig.return_annotation
+            if return_annotation != inspect.Signature.empty:
+                print(f"INFO: Function '{function_name}' has return type annotation: {return_annotation}")
             
             # Check expected parameters if provided
             {% if item.expected_parameters is defined and item.expected_parameters %}
             expected_params_str = "{{ item.expected_parameters }}"
             if expected_params_str.strip():
-                # Parse expected parameters
+                # Parse expected parameters (supports type hints and defaults)
                 expected_params = []
                 param_parts = [p.strip() for p in expected_params_str.split(',')]
                 for param_part in param_parts:
-                    if '=' in param_part:
-                        # Parameter with default value
+                    param_name = param_part
+                    param_type = None
+                    default_value = None
+                    
+                    # Check for type annotation (name: type = default or name: type)
+                    if ':' in param_part:
+                        name_part, type_part = param_part.split(':', 1)
+                        param_name = name_part.strip()
+                        type_part = type_part.strip()
+                        
+                        # Check for default value after type
+                        if '=' in type_part:
+                            type_str, default_str = type_part.split('=', 1)
+                            param_type = type_str.strip()
+                            default_value = default_str.strip()
+                        else:
+                            param_type = type_part
+                    elif '=' in param_part:
+                        # Parameter with default value but no type (name = default)
                         param_name, default_value = param_part.split('=', 1)
-                        expected_params.append((param_name.strip(), default_value.strip()))
-                    else:
-                        # Parameter without default
-                        expected_params.append((param_part.strip(), None))
+                        param_name = param_name.strip()
+                        default_value = default_value.strip()
+                    
+                    expected_params.append((param_name, param_type, default_value))
                 
                 # Get actual parameters from signature
-                actual_params = list(sig.parameters.items())
+                actual_params = dict(sig.parameters.items())
                 
                 # FAILED: Parameter count mismatch
                 if len(actual_params) != len(expected_params):
                     self.fail(f"FAILED: Function '{function_name}' has {len(actual_params)} parameters, expected {len(expected_params)}")
-                # Check each parameter
-                for i, (expected_name, expected_default) in enumerate(expected_params):
-                    if i >= len(actual_params):
+                
+                # Check each expected parameter exists and matches
+                for expected_name, expected_type, expected_default in expected_params:
+                    if expected_name not in actual_params:
                         self.fail(f"FAILED: Function '{function_name}' missing parameter '{expected_name}'")
                     
-                    actual_name, actual_param = actual_params[i]
+                    actual_param = actual_params[expected_name]
                     
-                    # FAILED: Parameter name mismatch
-                    if actual_name != expected_name:
-                        self.fail(f"FAILED: Parameter {i+1} should be '{expected_name}', found '{actual_name}'")
+                    # Check parameter type annotation if expected
+                    if expected_type is not None:
+                        actual_annotation = actual_param.annotation
+                        if actual_annotation == inspect.Parameter.empty:
+                            self.fail(f"FAILED: Parameter '{expected_name}' should have type annotation '{expected_type}'")
+                        else:
+                            # Convert type annotation to string for comparison
+                            actual_type_str = str(actual_annotation)
+                            # Handle common type representation variations
+                            if expected_type.lower() not in actual_type_str.lower() and actual_type_str != expected_type:
+                                # Try some common variations
+                                type_matches = [
+                                    expected_type == actual_type_str,
+                                    expected_type.replace('typing.', '') == actual_type_str.replace('typing.', ''),
+                                    expected_type.lower() == actual_type_str.lower(),
+                                    # Handle built-in types
+                                    (expected_type == 'int' and 'int' in actual_type_str),
+                                    (expected_type == 'str' and 'str' in actual_type_str),
+                                    (expected_type == 'float' and 'float' in actual_type_str),
+                                    (expected_type == 'bool' and 'bool' in actual_type_str),
+                                    (expected_type == 'list' and 'list' in actual_type_str.lower()),
+                                    (expected_type == 'dict' and 'dict' in actual_type_str.lower()),
+                                ]
+                                if not any(type_matches):
+                                    self.fail(f"FAILED: Parameter '{expected_name}' has type '{actual_type_str}', expected '{expected_type}'")
                     
                     # FAILED: Default value issues
                     if expected_default is not None:
                         if actual_param.default == inspect.Parameter.empty:
                             self.fail(f"FAILED: Parameter '{expected_name}' should have default value '{expected_default}'")
                         else:
-                            # Convert expected default to appropriate type for comparison
+                            # Enhanced default value comparison
                             try:
                                 # Try to evaluate the expected default as a Python literal
                                 import ast
                                 expected_val = ast.literal_eval(expected_default)
-                                if actual_param.default != expected_val:
+                                
+                                # Type-aware comparison
+                                if type(actual_param.default) != type(expected_val):
+                                    # Try type conversion if types don't match
+                                    try:
+                                        converted_actual = type(expected_val)(actual_param.default)
+                                        if converted_actual != expected_val:
+                                            self.fail(f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}' ({type(actual_param.default).__name__}), expected '{expected_val}' ({type(expected_val).__name__})")
+                                    except (ValueError, TypeError):
+                                        self.fail(f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}' ({type(actual_param.default).__name__}), expected '{expected_val}' ({type(expected_val).__name__})")
+                                elif actual_param.default != expected_val:
                                     self.fail(f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}', expected '{expected_val}'")
+                                    
                             except (ValueError, SyntaxError):
-                                # If it's not a literal, compare as string
-                                if str(actual_param.default) != expected_default:
-                                    self.fail(f"FAILED: Parameter '{expected_name}' default value mismatch")
+                                # If it's not a literal, compare as string representation
+                                actual_str = str(actual_param.default)
+                                if actual_str != expected_default:
+                                    # Try some common string representations
+                                    if not (
+                                        (expected_default.lower() == 'none' and actual_param.default is None) or
+                                        (expected_default.lower() == 'true' and actual_param.default is True) or
+                                        (expected_default.lower() == 'false' and actual_param.default is False) or
+                                        (expected_default == '[]' and actual_param.default == []) or
+                                        (expected_default == '{}' and actual_param.default == {}) or
+                                        (expected_default.strip('\'"') == actual_str.strip('\'"'))
+                                    ):
+                                        self.fail(f"FAILED: Parameter '{expected_name}' has default '{actual_str}', expected '{expected_default}'")
+            {% endif %}
+            
+            # Check if function has proper return type annotation (optional validation)
+            {% if item.expected_return_type is defined and item.expected_return_type %}
+            expected_return_type = "{{ item.expected_return_type }}"
+            if expected_return_type.strip():
+                if sig.return_annotation == inspect.Signature.empty:
+                    self.fail(f"FAILED: Function '{function_name}' should have return type annotation '{expected_return_type}'")
+                else:
+                    actual_return_str = str(sig.return_annotation)
+                    # Handle common type representation variations
+                    type_matches = [
+                        expected_return_type == actual_return_str,
+                        expected_return_type.replace('typing.', '') == actual_return_str.replace('typing.', ''),
+                        expected_return_type.lower() == actual_return_str.lower(),
+                        # Handle built-in types
+                        (expected_return_type == 'int' and 'int' in actual_return_str),
+                        (expected_return_type == 'str' and 'str' in actual_return_str),
+                        (expected_return_type == 'float' and 'float' in actual_return_str),
+                        (expected_return_type == 'bool' and 'bool' in actual_return_str),
+                        (expected_return_type == 'list' and 'list' in actual_return_str.lower()),
+                        (expected_return_type == 'dict' and 'dict' in actual_return_str.lower()),
+                        (expected_return_type == 'None' and actual_return_str == 'None'),
+                    ]
+                    if not any(type_matches):
+                        self.fail(f"FAILED: Function '{function_name}' has return type '{actual_return_str}', expected '{expected_return_type}'")
             {% endif %}
             
             # PASSED: All signature checks successful

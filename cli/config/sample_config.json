@@ -62,6 +62,17 @@
               "expected": "5"
             }
           ]
+        },
+        {
+          "target_file": "math_functions.py",
+          "function_name": "calculate_average",
+          "total_mark": 5,
+          "type": "signature_check",
+          "name": "Check calculate_average signature",
+          "time_limit": 10,
+          "visibility": "visible",
+          "expected_parameters": "numbers: list, precision: int = 2",
+          "expected_return_type": "float"
         }
       ]
     }

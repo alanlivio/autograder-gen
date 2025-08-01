@@ -25,12 +25,17 @@ function formToConfigObject() {
       .filter(cmd => cmd.length > 0);
   }
   
-  // Parse necessary files (split by newlines, filter empty)
-  const filesNecessary = formData.get('files_necessary');
-  if (filesNecessary && filesNecessary.trim()) {
-    config.files_necessary = filesNecessary.split('\n')
-      .map(file => file.trim())
-      .filter(file => file.length > 0);
+  // Parse necessary files (use the required files management system)
+  if (typeof getRequiredFiles === 'function') {
+    config.files_necessary = getRequiredFiles();
+  } else {
+    // Fallback to textarea method if required files management isn't loaded
+    const filesNecessary = formData.get('files_necessary');
+    if (filesNecessary && filesNecessary.trim()) {
+      config.files_necessary = filesNecessary.split('\n')
+        .map(file => file.trim())
+        .filter(file => file.length > 0);
+    }
   }
   
   // Build questions structure directly from DOM to ensure proper nesting
@@ -62,7 +67,7 @@ function formToConfigObject() {
 function extractMarkingItemData(markingItem) {
   // Extract data from each marking item
   const typeField = markingItem.querySelector('select[id$="-type"]');
-  const targetFileField = markingItem.querySelector('input[id$="-target-file"]');
+  const targetFileField = markingItem.querySelector('select[id$="-target-file"]');
   const totalMarkField = markingItem.querySelector('input[id$="-total-mark"]');
   const timeLimitField = markingItem.querySelector('input[id$="-time-limit"]');
   const visibilityField = markingItem.querySelector('select[id$="-visibility"]');
@@ -93,6 +98,7 @@ function addTypeSpecificFields(markingItem, markingItemObj) {
   const referenceFileField = markingItem.querySelector('input[id$="-reference-file"]');
   const functionNameField = markingItem.querySelector('input[id$="-function-name"]');
   const expectedParamsField = markingItem.querySelector('input[id$="-expected-params"]');
+  const expectedReturnTypeField = markingItem.querySelector('input[id$="-expected-return-type"]');
   const testCasesField = markingItem.querySelector('textarea[id$="-test-cases"]');
   
   // Add optional fields only if they have values
@@ -110,6 +116,9 @@ function addTypeSpecificFields(markingItem, markingItemObj) {
   }
   if (expectedParamsField && expectedParamsField.value.trim()) {
     markingItemObj.expected_parameters = expectedParamsField.value.trim();
+  }
+  if (expectedReturnTypeField && expectedReturnTypeField.value.trim()) {
+    markingItemObj.expected_return_type = expectedReturnTypeField.value.trim();
   }
   if (testCasesField && testCasesField.value.trim()) {
     try {

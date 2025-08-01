@@ -131,6 +131,14 @@ class ConfigValidator:
                             "type": "string",
                             "description": "Name of function to test (for function_test type)"
                         },
+                        "expected_parameters": {
+                            "type": "string",
+                            "description": "Expected function parameters with types and defaults (for signature_check type)"
+                        },
+                        "expected_return_type": {
+                            "type": "string",
+                            "description": "Expected return type annotation (for signature_check type)"
+                        },
                         "test_cases": {
                             "type": "array",
                             "items": {
@@ -224,6 +232,8 @@ class ConfigValidator:
                             "expected_input": item.expected_input,
                             "expected_output": item.expected_output,
                             "function_name": item.function_name,
+                            "expected_parameters": item.expected_parameters,
+                            "expected_return_type": item.expected_return_type,
                             "test_cases": item.test_cases,
 
                         }

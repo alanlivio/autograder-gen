@@ -103,10 +103,12 @@ function showTypeFields(select) {
     <div class="row mb-3">
       <div class="col-md-6">
         <label class="form-label">Target File <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" 
+        <select class="form-select" 
                id="${markingItemId}-target-file"
                name="questions[${questionIdx}][marking_items][${markingItemIdx}][target_file]" 
-               placeholder="e.g., solution.py" required>
+               required>
+          <option value="">Select a file...</option>
+        </select>
         <div class="form-text">File that will be tested</div>
       </div>
       <div class="col-md-6">
@@ -165,10 +167,13 @@ function showTypeFields(select) {
   
   fieldsDiv.innerHTML = html;
   
+  // Populate target file dropdown with required files
+  populateTargetFileDropdown(markingItem.querySelector('select[id$="-target-file"]'));
+  
   // Add event listener to target file field for validation
-  const targetFileField = markingItem.querySelector('input[id$="-target-file"]');
+  const targetFileField = markingItem.querySelector('select[id$="-target-file"]');
   if (targetFileField && typeof validateSingleTargetFile === 'function') {
-    targetFileField.addEventListener('input', validateSingleTargetFile);
+    targetFileField.addEventListener('change', validateSingleTargetFile);
   }
   
   // Add event listener to total mark field for points updating
@@ -219,7 +224,7 @@ function getOutputComparisonFields(markingItemId, questionIdx, markingItemIdx) {
 function getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx) {
   return `
     <div class="alert alert-info mb-3">
-      <strong>📋 Signature Check Test:</strong> Validates that a function exists, is callable, and has proper signature.
+      <strong>📋 Signature Check Test:</strong> Validates function existence, callability, parameter signatures, type annotations, and return types.
     </div>
     
     <div class="mb-3">
@@ -236,9 +241,19 @@ function getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx) {
       <input type="text" class="form-control" 
              id="${markingItemId}-expected-params"
              name="questions[${questionIdx}][marking_items][${markingItemIdx}][expected_parameters]" 
-             placeholder="x, y, z=5">
-      <div class="form-text">Parameter names and defaults</div>
+             placeholder="x: int, y: float, z: str = 'default'">
+      <div class="form-text">Parameter names with optional type annotations and defaults (e.g., "name: str, age: int = 18")</div>
     </div>
+    
+    <div class="mb-3">
+      <label class="form-label">Expected Return Type (Optional)</label>
+      <input type="text" class="form-control" 
+             id="${markingItemId}-expected-return-type"
+             name="questions[${questionIdx}][marking_items][${markingItemIdx}][expected_return_type]" 
+             placeholder="int">
+      <div class="form-text">Expected return type annotation (e.g., "int", "str", "List[int]", "Dict[str, Any]")</div>
+    </div>
+    
   `;
 }
 
@@ -268,6 +283,58 @@ function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
   `;
 }
 
+/**
+ * Populate a target file dropdown with the current required files
+ */
+function populateTargetFileDropdown(selectElement) {
+  if (!selectElement) return;
+  
+  // Get required files from the management system
+  let requiredFiles = [];
+  if (typeof getRequiredFiles === 'function') {
+    requiredFiles = getRequiredFiles();
+  }
+  
+  // Store current value to restore it if still valid
+  const currentValue = selectElement.value;
+  
+  // Clear existing options except the first one (placeholder)
+  while (selectElement.children.length > 1) {
+    selectElement.removeChild(selectElement.lastChild);
+  }
+  
+  // Add options for each required file
+  requiredFiles.forEach(filename => {
+    const option = document.createElement('option');
+    option.value = filename;
+    option.textContent = filename;
+    selectElement.appendChild(option);
+  });
+  
+  // Restore previous value if it's still valid
+  if (currentValue && requiredFiles.includes(currentValue)) {
+    selectElement.value = currentValue;
+  }
+  
+  // If no files are available, update the placeholder text
+  if (requiredFiles.length === 0) {
+    selectElement.children[0].textContent = 'Add files in Required Files section first...';
+    selectElement.disabled = true;
+  } else {
+    selectElement.children[0].textContent = 'Select a file...';
+    selectElement.disabled = false;
+  }
+}
+
+/**
+ * Update all target file dropdowns when required files change
+ */
+function updateAllTargetFileDropdowns() {
+  document.querySelectorAll('select[id$="-target-file"]').forEach(select => {
+    populateTargetFileDropdown(select);
+  });
+}
+
 // Expose functions to global scope for HTML onclick handlers
 window.addMarkingItem = addMarkingItem;
 window.removeMarkingItemWithConfirm = removeMarkingItemWithConfirm;
@@ -276,6 +343,8 @@ window.showTypeFields = showTypeFields;
 window.addTestCase = addTestCase;
 window.removeTestCase = removeTestCase;
 window.updateTestCasesJson = updateTestCasesJson;
+window.populateTargetFileDropdown = populateTargetFileDropdown;
+window.updateAllTargetFileDropdowns = updateAllTargetFileDropdowns;
 
 // Test Case Management Functions
 function addTestCase(markingItemId, questionIdx, markingItemIdx) {

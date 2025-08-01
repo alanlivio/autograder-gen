@@ -21,6 +21,7 @@ class MarkingItem:
     
     # Signature checking fields
     expected_parameters: str = ""
+    expected_return_type: str = ""
     
 
 @dataclass
@@ -117,6 +118,7 @@ class ConfigParser:
                     test_cases=item_data.get('test_cases', []),
                     # Signature checking fields
                     expected_parameters=item_data.get('expected_parameters', ''),
+                    expected_return_type=item_data.get('expected_return_type', ''),
                 )
                 question.marking_items.append(marking_item)
             

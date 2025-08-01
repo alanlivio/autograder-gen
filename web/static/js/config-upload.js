@@ -79,7 +79,12 @@ async function populateFormFromConfig(config) {
         }
         
         if (config.files_necessary && Array.isArray(config.files_necessary)) {
-            document.getElementById('files_necessary').value = config.files_necessary.join('\n');
+            if (typeof populateRequiredFiles === 'function') {
+                populateRequiredFiles(config.files_necessary);
+            } else {
+                // Fallback to textarea method if required files management isn't loaded
+                document.getElementById('files_necessary').value = config.files_necessary.join('\n');
+            }
         }
         
         // Populate questions and marking items
@@ -201,7 +206,8 @@ function populateMarkingItemFields(qIndex, miIndex, item) {
                 'expected_input': 'expected_input',
                 'expected_output': 'expected_output',
                 'function_name': 'function_name',
-                'expected_parameters': 'expected_parameters'
+                'expected_parameters': 'expected_parameters',
+                'expected_return_type': 'expected_return_type'
             };
             
             // Populate basic fields
@@ -347,7 +353,7 @@ function populateFunctionTestCases(markingItemId, testCases) {
  */
 function clearForm() {
     // Clear global fields
-    const globalFields = ['language', 'global_time_limit', 'setup_commands', 'files_necessary'];
+    const globalFields = ['language', 'global_time_limit', 'setup_commands'];
     globalFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -360,6 +366,17 @@ function clearForm() {
             }
         }
     });
+    
+    // Clear required files using the new system
+    if (typeof clearRequiredFiles === 'function') {
+        clearRequiredFiles();
+    } else {
+        // Fallback to clearing textarea
+        const filesField = document.getElementById('files_necessary');
+        if (filesField) {
+            filesField.value = '';
+        }
+    }
     
     // Clear all questions
     const questionsList = document.getElementById('questions-list');

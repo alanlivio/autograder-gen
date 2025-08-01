@@ -138,3 +138,43 @@ textarea:focus::placeholder {
 input:focus::placeholder {
   color: transparent;
 }
+
+/* Required Files Management Styles */
+#required-files-list {
+  min-height: 60px;
+  transition: all 0.2s ease;
+}
+
+#required-files-list:empty::before {
+  content: "No required files added yet. Students must submit these files.";
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.file-name {
+  transition: all 0.2s ease;
+}
+
+.file-name:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.badge .btn-close-white {
+  background-size: 0.6rem;
+  opacity: 0.8;
+}
+
+.badge .btn-close-white:hover {
+  opacity: 1;
+}
+
+.badge {
+  transition: all 0.2s ease;
+}
+
+.badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
