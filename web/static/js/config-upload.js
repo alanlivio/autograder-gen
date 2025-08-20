@@ -60,7 +60,7 @@ function handleConfigUpload(fileInput) {
  * Populate the form fields based on the uploaded configuration
  * @param {Object} config - The configuration object from the uploaded JSON
  */
-function populateFormFromConfig(config) {
+async function populateFormFromConfig(config) {
     try {
         // Clear existing form content
         clearForm();
@@ -79,39 +79,26 @@ function populateFormFromConfig(config) {
         }
         
         if (config.files_necessary && Array.isArray(config.files_necessary)) {
-            document.getElementById('files_necessary').value = config.files_necessary.join('\n');
+            if (typeof populateRequiredFiles === 'function') {
+                populateRequiredFiles(config.files_necessary);
+            } else {
+                // Fallback to textarea method if required files management isn't loaded
+                document.getElementById('files_necessary').value = config.files_necessary.join('\n');
+            }
         }
         
         // Populate questions and marking items
         if (config.questions && Array.isArray(config.questions)) {
-            config.questions.forEach((question, qIndex) => {
-                addQuestion(); // This function should be available from question-management.js
-                
-                // Set question name
-                const questionNameInput = document.querySelector(`input[name="questions[${qIndex}][name]"]`);
-                if (questionNameInput && question.name) {
-                    questionNameInput.value = question.name;
-                }
-                
-                // Populate marking items
-                if (question.marking_items && Array.isArray(question.marking_items)) {
-                    question.marking_items.forEach((item, miIndex) => {
-                        // Get the question card by index (direct children of questions-list)
-                        const questionCard = document.querySelectorAll(`#questions-list > .card`)[qIndex];
-                        const addBtn = questionCard ? questionCard.querySelector('button[onclick*="addMarkingItem"]') : null;
-                        
-                        if (addBtn) {
-                            // Add a marking item for each one in the config
-                            addMarkingItem(addBtn);
-                            
-                            // Wait a bit for the DOM to update, then populate the fields
-                            setTimeout(() => {
-                                populateMarkingItem(qIndex, miIndex, item);
-                            }, 10);
-                        }
-                    });
-                }
-            });
+            // Process questions sequentially to ensure proper completion
+            for (let qIndex = 0; qIndex < config.questions.length; qIndex++) {
+                const question = config.questions[qIndex];
+                await populateQuestion(question, qIndex);
+            }
+        }
+        
+        // Update question numbers and total points after all questions are populated
+        if (typeof updateQuestionNumbers === 'function') {
+            updateQuestionNumbers();
         }
         
         // Trigger form change event to update button states
@@ -127,12 +114,63 @@ function populateFormFromConfig(config) {
 }
 
 /**
- * Populate a specific marking item with data
+ * Populate a single question and its marking items
+ * @param {Object} question - Question data
+ * @param {number} qIndex - Question index
+ */
+async function populateQuestion(question, qIndex) {
+    addQuestion(); // This function should be available from question-management.js
+    
+    // Set question name
+    const questionNameInput = document.querySelector(`input[name="questions[${qIndex}][name]"]`);
+    if (questionNameInput && question.name) {
+        questionNameInput.value = question.name;
+    }
+    
+    // Populate marking items
+    if (question.marking_items && Array.isArray(question.marking_items)) {
+        // Process marking items sequentially
+        for (let miIndex = 0; miIndex < question.marking_items.length; miIndex++) {
+            const item = question.marking_items[miIndex];
+            await populateMarkingItemSync(qIndex, miIndex, item);
+        }
+    }
+}
+
+/**
+ * Populate a single marking item synchronously
  * @param {number} qIndex - Question index
  * @param {number} miIndex - Marking item index
  * @param {Object} item - Marking item data
  */
-function populateMarkingItem(qIndex, miIndex, item) {
+async function populateMarkingItemSync(qIndex, miIndex, item) {
+    return new Promise((resolve) => {
+        // Get the question card by index (direct children of questions-list)
+        const questionCard = document.querySelectorAll(`#questions-list > .card`)[qIndex];
+        const addBtn = questionCard ? questionCard.querySelector('button[onclick*="addMarkingItem"]') : null;
+        
+        if (addBtn) {
+            // Add a marking item for each one in the config
+            addMarkingItem(addBtn);
+            
+            // Use requestAnimationFrame to wait for DOM updates
+            requestAnimationFrame(() => {
+                populateMarkingItemFields(qIndex, miIndex, item);
+                resolve();
+            });
+        } else {
+            resolve();
+        }
+    });
+}
+
+/**
+ * Populate marking item fields (extracted from original function)
+ * @param {number} qIndex - Question index
+ * @param {number} miIndex - Marking item index
+ * @param {Object} item - Marking item data
+ */
+function populateMarkingItemFields(qIndex, miIndex, item) {
     // Get the specific question and marking item containers
     const questionCard = document.querySelectorAll(`#questions-list > .card`)[qIndex];
     if (!questionCard) {
@@ -157,17 +195,19 @@ function populateMarkingItem(qIndex, miIndex, item) {
         // Trigger the change event to generate type-specific fields
         showTypeFields(typeField);
         
-        // Use setTimeout to ensure fields are rendered before populating them
-        setTimeout(() => {
+        // Use requestAnimationFrame to ensure fields are rendered before populating them
+        requestAnimationFrame(() => {
             const fieldMappings = {
                 'target_file': 'target_file',
                 'total_mark': 'total_mark',
                 'time_limit': 'time_limit',
                 'visibility': 'visibility',
+                'name': 'name',
                 'expected_input': 'expected_input',
                 'expected_output': 'expected_output',
                 'function_name': 'function_name',
-                'expected_parameters': 'expected_parameters'
+                'expected_parameters': 'expected_parameters',
+                'expected_return_type': 'expected_return_type'
             };
             
             // Populate basic fields
@@ -200,8 +240,18 @@ function populateMarkingItem(qIndex, miIndex, item) {
                     populateFunctionTestCases(markingItemId, item.test_cases);
                 }
             }
-        }, 50); // Small delay to ensure DOM is updated
+        });
     }
+}
+
+/**
+ * Populate a specific marking item with data (legacy function for backward compatibility)
+ * @param {number} qIndex - Question index
+ * @param {number} miIndex - Marking item index
+ * @param {Object} item - Marking item data
+ */
+function populateMarkingItem(qIndex, miIndex, item) {
+    populateMarkingItemFields(qIndex, miIndex, item);
 }
 
 /**
@@ -303,7 +353,7 @@ function populateFunctionTestCases(markingItemId, testCases) {
  */
 function clearForm() {
     // Clear global fields
-    const globalFields = ['language', 'global_time_limit', 'setup_commands', 'files_necessary'];
+    const globalFields = ['language', 'global_time_limit', 'setup_commands'];
     globalFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -316,6 +366,17 @@ function clearForm() {
             }
         }
     });
+    
+    // Clear required files using the new system
+    if (typeof clearRequiredFiles === 'function') {
+        clearRequiredFiles();
+    } else {
+        // Fallback to clearing textarea
+        const filesField = document.getElementById('files_necessary');
+        if (filesField) {
+            filesField.value = '';
+        }
+    }
     
     // Clear all questions
     const questionsList = document.getElementById('questions-list');

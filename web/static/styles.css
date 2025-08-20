@@ -1,7 +1,40 @@
+body {
+  background-color: #ECECEC;
+  color: rgb(65, 68, 77);
+}
+
+.main-content {
+  background-color: white;
+}
 /* Drag and drop styles */
 .card.dragging {
   opacity: 0.5;
   border: 2px dashed #007bff;
+}
+
+.navbar{
+  background-color: rgb(206, 11, 30);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  color: white;
+}
+.navbar-brand:hover {
+  color: #f8f9fa;
+  cursor: pointer;
+}
+
+.navbar-nav .nav-link {
+  color: white;
+  border: 1px solid white;
+  padding: 5px 10px;
+  transition: background-color 0.3s;
+  margin-left: 10px;
+}
+
+.navbar-nav .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
 .drag-handle {
@@ -20,6 +53,7 @@
   cursor: grabbing;
 }
 
+
 .drag-handle[draggable="true"]:hover {
   color: #007bff;
   transform: scale(1.1);
@@ -34,7 +68,11 @@
   transform: scale(1.02);
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
-
+.card-header {
+  cursor: pointer;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
 /* Alert container styles */
 #alert-container {
   margin-bottom: 1rem;
@@ -56,29 +94,21 @@
   margin-bottom: 0.25rem;
 }
 
-/* Test case container styles */
-.test-cases-container {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 0.5rem 0;
-}
-
-.test-case {
-  border-left: 4px solid #007bff;
+.file-exists-border{
+  border-left:4px solid #007bff;
   background-color: #f8f9fa;
 }
-
-.test-case h6 {
-  color: #007bff;
-  font-weight: 600;
+.output-comparison-border{
+  border-left:4px solid #28a745;
+  background-color: #f8f9fa;
 }
-
-.test-case .btn-close {
-  opacity: 0.5;
+.signature-check-border{
+  border-left:4px solid #ffc107;
+  background-color: #f8f9fa;
 }
-
-.test-case .btn-close:hover {
-  opacity: 1;
+.function-test-border{
+  border-left:4px solid #dc3545;
+  background-color: #f8f9fa;
 }
 
 /* Enhanced form validation styles */
@@ -107,4 +137,44 @@ textarea:focus::placeholder {
 }
 input:focus::placeholder {
   color: transparent;
+}
+
+/* Required Files Management Styles */
+#required-files-list {
+  min-height: 60px;
+  transition: all 0.2s ease;
+}
+
+#required-files-list:empty::before {
+  content: "No required files added yet. Students must submit these files.";
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.file-name {
+  transition: all 0.2s ease;
+}
+
+.file-name:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.badge .btn-close-white {
+  background-size: 0.6rem;
+  opacity: 0.8;
+}
+
+.badge .btn-close-white:hover {
+  opacity: 1;
+}
+
+.badge {
+  transition: all 0.2s ease;
+}
+
+.badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }

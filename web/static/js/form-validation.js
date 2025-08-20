@@ -66,7 +66,7 @@ function validateForm() {
     markingItems.forEach((markingItem, miIdx) => {
       // Validate required marking item fields
       const typeField = markingItem.querySelector('select[id$="-type"]');
-      const targetFileField = markingItem.querySelector('input[id$="-target-file"]');
+      const targetFileField = markingItem.querySelector('select[id$="-target-file"]');
       const totalMarkField = markingItem.querySelector('input[id$="-total-mark"]');
       
       if (typeField && !typeField.value) {
@@ -152,16 +152,27 @@ function validateForm() {
   });
 
   // Validate that target files are included in required files
-  const requiredFilesField = document.getElementById('files_necessary');
-  if (requiredFilesField) {
-    const requiredFiles = requiredFilesField.value
-      .split('\n')
-      .map(file => file.trim())
-      .filter(file => file.length > 0);
+  let requiredFiles = [];
+  
+  // Try to get required files from the new management system first
+  if (typeof getRequiredFiles === 'function') {
+    requiredFiles = getRequiredFiles();
+  } else {
+    // Fallback to old textarea method if new system not available
+    const requiredFilesField = document.getElementById('files_necessary');
+    if (requiredFilesField) {
+      requiredFiles = requiredFilesField.value
+        .split('\n')
+        .map(file => file.trim())
+        .filter(file => file.length > 0);
+    }
+  }
+  
+  if (requiredFiles.length > 0) {
     
     // Check each marking item's target file
     document.querySelectorAll('.marking-item').forEach((markingItem, index) => {
-      const targetFileField = markingItem.querySelector('input[id$="-target-file"]');
+      const targetFileField = markingItem.querySelector('select[id$="-target-file"]');
       if (targetFileField && targetFileField.value.trim()) {
         const targetFile = targetFileField.value.trim();
         

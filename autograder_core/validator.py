@@ -115,6 +115,10 @@ class ConfigValidator:
                             "default": "visible",
                             "description": "Visibility of test results"
                         },
+                        "name": {
+                            "type": "string",
+                            "description": "Optional name for the marking item"
+                        },
                         "expected_input": {
                             "type": "string",
                             "description": "Input for output comparison tests"
@@ -126,6 +130,14 @@ class ConfigValidator:
                         "function_name": {
                             "type": "string",
                             "description": "Name of function to test (for function_test type)"
+                        },
+                        "expected_parameters": {
+                            "type": "string",
+                            "description": "Expected function parameters with types and defaults (for signature_check type)"
+                        },
+                        "expected_return_type": {
+                            "type": "string",
+                            "description": "Expected return type annotation (for signature_check type)"
                         },
                         "test_cases": {
                             "type": "array",
@@ -216,9 +228,12 @@ class ConfigValidator:
                             "type": item.type,
                             "time_limit": item.time_limit,
                             "visibility": item.visibility,
+                            "name": item.name,
                             "expected_input": item.expected_input,
                             "expected_output": item.expected_output,
                             "function_name": item.function_name,
+                            "expected_parameters": item.expected_parameters,
+                            "expected_return_type": item.expected_return_type,
                             "test_cases": item.test_cases,
 
                         }

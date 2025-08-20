@@ -79,9 +79,17 @@ def main():
         config_parser = ConfigParser(args.config)
         config = config_parser.parse()
         
+        # Load original config for preservation in zip
+        original_config_dict = None
+        try:
+            import json
+            with open(args.config, 'r', encoding='utf-8') as f:
+                original_config_dict = json.load(f)
+        except Exception:
+            pass  # If we can't load original config, proceed without it
         
         # Generate autograder
-        generator = AutograderGenerator(config)
+        generator = AutograderGenerator(config, original_config_dict)
         output_path = generator.generate(args.output)
         
         print_success(f"Autograder generated successfully: {output_path}")

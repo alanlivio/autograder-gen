@@ -17,6 +17,7 @@
           "target_file": "solution.py",
           "total_mark": 0,
           "type": "file_exists",
+          "name": "Check solution.py exists",
           "time_limit": 5,
           "visibility": "visible"
         },
@@ -24,6 +25,7 @@
           "target_file": "solution.py",
           "total_mark": 8,
           "type": "output_comparison",
+          "name": "Basic addition test",
           "time_limit": 30,
           "visibility": "visible",
           "expected_input": "5\\n10\\n",
@@ -38,6 +40,7 @@
           "target_file": "math_functions.py",
           "total_mark": 0,
           "type": "file_exists",
+          "name": "Check math_functions.py exists",
           "time_limit": 5,
           "visibility": "visible"
         },
@@ -46,6 +49,7 @@
           "function_name": "add_numbers",
           "total_mark": 10,
           "type": "function_test",
+          "name": "Test add_numbers function",
           "time_limit": 30,
           "visibility": "visible",
           "test_cases": [
@@ -58,6 +62,17 @@
               "expected": "5"
             }
           ]
+        },
+        {
+          "target_file": "math_functions.py",
+          "function_name": "calculate_average",
+          "total_mark": 5,
+          "type": "signature_check",
+          "name": "Check calculate_average signature",
+          "time_limit": 10,
+          "visibility": "visible",
+          "expected_parameters": "numbers: list, precision: int = 2",
+          "expected_return_type": "float"
         }
       ]
     }

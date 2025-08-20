@@ -77,7 +77,7 @@ def generate_form():
             json.dump(config_dict, f)
         from autograder_core.config import ConfigParser
         config = ConfigParser(config_path).parse()
-        generator = AutograderGenerator(config)
+        generator = AutograderGenerator(config, config_dict)  # Pass original config dict
         zip_path = generator.generate(tmp_dir)
         # Read the file into memory before sending to avoid file locking issues
         with open(zip_path, 'rb') as zip_file:
@@ -189,6 +189,8 @@ def form_to_config_dict(form):
                 }
                 
                 # Add optional fields only if they exist and have values
+                if item.get('name'):
+                    marking_item['name'] = item['name']
                 if item.get('expected_input'):
                     marking_item['expected_input'] = item['expected_input']
                 if item.get('expected_output'):
@@ -219,7 +221,7 @@ def generate_autograder():
         # Parse and validate config
         config_parser = ConfigParser(tmp_path)
         config: AutograderConfig = config_parser.parse()
-        generator = AutograderGenerator(config)
+        generator = AutograderGenerator(config, data)  # Pass original config dict
         with tempfile.TemporaryDirectory() as out_dir:
             zip_path = generator.generate(out_dir)
             # Read the file into memory before sending to avoid file locking issues

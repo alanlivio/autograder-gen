@@ -1,12 +1,39 @@
 {% extends 'base.html' %}
 
-{% block title %}Build Autograder Config{% endblock %}
+{% block title %}Autograder-gen{% endblock %}
 
 {% block content %}
-<h1>Build Your Autograder Config</h1>
+<h1>Autograder-gen</h1>
 
 <!-- Alert container for validation messages -->
 <div id="alert-container"></div>
+
+
+<div class="d-flex gap-2 flex-wrap">
+  <button type="button" class="btn btn-success" onclick="validateConfig()">Validate Config</button>
+  <button type="button" class="btn btn-info" onclick="downloadJsonConfig()">Download JSON Config</button>
+  <button type="button" class="btn btn-primary" id="generate-btn" onclick="submitForGeneration()" disabled>Generate Autograder</button>
+</div>
+<div class="form-text mt-2">
+  <small class="text-muted">
+    <i class="fas fa-info-circle"></i> The Generate Autograder button will be enabled after successful validation.
+  </small>
+</div>
+</form>
+
+<!-- Config Upload Section -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">Upload Existing Configuration</h5>
+  </div>
+  <div class="card-body">
+    <div class="mb-3">
+      <label for="config-upload" class="form-label">Upload JSON Config File</label>
+      <input type="file" class="form-control" id="config-upload" accept=".json" onchange="handleConfigUpload(this)">
+      <div class="form-text">Upload a previously exported JSON configuration file to populate the form.</div>
+    </div>
+  </div>
+</div>
 
 <form id="autograder-form" method="post" action="/validate">
   <h3>Global Configuration</h3>
@@ -30,41 +57,27 @@
     <div class="form-text">One command per line. These will be executed before running tests.</div>
   </div>
   <div class="mb-3">
-    <label for="files_necessary" class="form-label">Required Files</label>
-    <textarea class="form-control" id="files_necessary" name="files_necessary" rows="3" 
-              placeholder="solution.py&#10;math_functions.py&#10;data.csv" required></textarea>
-    <div class="form-text">One filename per line. Students must submit these files.</div>
+    <label class="form-label">Required Files</label>
+    <div id="required-files-container">
+      <div class="input-group mb-2">
+        <input type="text" class="form-control" id="new-file-input" placeholder="Enter filename (e.g., solution.py)">
+        <button type="button" class="btn btn-outline-secondary" onclick="addRequiredFile()">
+          <i class="fas fa-plus"></i> Add File
+        </button>
+      </div>
+      <div id="required-files-list" class="border rounded p-2 bg-light" style="min-height: 60px;">
+        <small class="text-muted">No required files added yet. Students must submit these files.</small>
+      </div>
+    </div>
+    <!-- Hidden textarea to maintain form compatibility -->
+    <textarea class="d-none" id="files_necessary" name="files_necessary" required></textarea>
+    <div class="form-text">Add the files that students must submit. Click the file names to edit them.</div>
   </div>
   <hr>
   <h3>Questions</h3>
   <div id="questions-list"></div>
   <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">Add Question</button>
   <hr>
-  <div class="d-flex gap-2 flex-wrap">
-    <button type="button" class="btn btn-success" onclick="validateConfig()">Validate Config</button>
-    <button type="button" class="btn btn-info" onclick="downloadJsonConfig()">Download JSON Config</button>
-    <button type="button" class="btn btn-primary" id="generate-btn" onclick="submitForGeneration()" disabled>Generate Autograder</button>
-  </div>
-  <div class="form-text mt-2">
-    <small class="text-muted">
-      <i class="fas fa-info-circle"></i> The Generate Autograder button will be enabled after successful validation.
-    </small>
-  </div>
-</form>
-
-<!-- Config Upload Section -->
-<div class="card mb-4">
-  <div class="card-header">
-    <h5 class="mb-0">Upload Existing Configuration</h5>
-  </div>
-  <div class="card-body">
-    <div class="mb-3">
-      <label for="config-upload" class="form-label">Upload JSON Config File</label>
-      <input type="file" class="form-control" id="config-upload" accept=".json" onchange="handleConfigUpload(this)">
-      <div class="form-text">Upload a previously exported JSON configuration file to populate the form.</div>
-    </div>
-  </div>
-</div>
 
 {% endblock %}
 
@@ -72,6 +85,7 @@
 <!-- Load JavaScript modules in dependency order -->
 <script src="/static/js/drag-drop.js"></script>
 <script src="/static/js/error-handling.js"></script>
+<script src="/static/js/required-files-management.js"></script>
 <script src="/static/js/form-validation.js"></script>
 <script src="/static/js/form-data-processing.js"></script>
 <script src="/static/js/marking-item-management.js"></script>

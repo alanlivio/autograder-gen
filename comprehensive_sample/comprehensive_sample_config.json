@@ -72,7 +72,8 @@
           "type": "signature_check",
           "time_limit": 10,
           "visibility": "visible",
-          "expected_parameters": "a, b"
+          "expected_parameters": "a: int, b: int",
+          "expected_return_type": "int"
         },
         {
           "target_file": "math_functions.py",
@@ -81,7 +82,8 @@
           "type": "signature_check",
           "time_limit": 10,
           "visibility": "visible",
-          "expected_parameters": "x, y"
+          "expected_parameters": "x: float, y: float",
+          "expected_return_type": "float"
         }
       ]
     },
@@ -95,7 +97,8 @@
           "type": "signature_check",
           "time_limit": 15,
           "visibility": "visible",
-          "expected_parameters": "data, threshold=0.5, normalize=True"
+          "expected_parameters": "data: list, threshold: float = 0.5, normalize: bool = True",
+          "expected_return_type": "dict"
         },
         {
           "target_file": "data_processing.py",

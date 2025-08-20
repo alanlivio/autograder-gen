@@ -2,7 +2,7 @@
     @number({{ question_number }}.{{ loop.index }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ question.name }} - Item {{ loop.index }}"""
+        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
         # Function import and testing
         target_file = "{{ item.target_file }}"
         function_name = "{{ item.function_name }}"
@@ -33,7 +33,7 @@
         kwargs = {}
         {% endif %}
         try:
-            result = function(*args, **kwargs)
+            result = self.call_function_with_timeout(function, args, kwargs, {{ item.time_limit }})
             expected = "{{ test_case.expected }}"
             
             # FAILED: Function output mismatch
@@ -43,6 +43,8 @@
             )
         except AssertionError:
             raise
+        except TimeoutError:
+            self.fail(f"TIME LIMIT EXCEEDED: Test case {{ loop.index }} for function '{function_name}' timed out after {{ item.time_limit }} seconds")
         except Exception as e:
             self.fail(f"RUNTIME ERROR: Test case {{ loop.index }} for function '{function_name}' failed with exception: {str(e)}")
         {% endfor %}

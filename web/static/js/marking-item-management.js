@@ -43,6 +43,12 @@ function addMarkingItem(btn) {
     targetFileField.addEventListener('input', validateSingleTargetFile);
   }
   
+  // Add event listener to total mark field for points updating
+  const totalMarkField = miDiv.querySelector('input[id$="-total-mark"]');
+  if (totalMarkField) {
+    totalMarkField.addEventListener('input', updateQuestionNumbers);
+  }
+  
   // Reinitialize drag and drop for the question card to handle new form elements
   if (typeof initializeDragAndDrop === 'function') {
     initializeDragAndDrop(questionCard);
@@ -86,13 +92,23 @@ function showTypeFields(select) {
   
   // Common fields for all types
   let html = `
+    <div class="mb-3">
+      <label class="form-label">Name (optional)</label>
+      <input type="text" class="form-control" 
+             id="${markingItemId}-name"
+             name="questions[${questionIdx}][marking_items][${markingItemIdx}][name]" 
+             placeholder="e.g., Check file exists, Test basic addition">
+      <div class="form-text">Descriptive name for this marking item (will be used in test names if provided)</div>
+    </div>
     <div class="row mb-3">
       <div class="col-md-6">
         <label class="form-label">Target File <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" 
+        <select class="form-select" 
                id="${markingItemId}-target-file"
                name="questions[${questionIdx}][marking_items][${markingItemIdx}][target_file]" 
-               placeholder="e.g., solution.py" required>
+               required>
+          <option value="">Select a file...</option>
+        </select>
         <div class="form-text">File that will be tested</div>
       </div>
       <div class="col-md-6">
@@ -100,7 +116,7 @@ function showTypeFields(select) {
         <input type="number" class="form-control" 
                id="${markingItemId}-total-mark"
                name="questions[${questionIdx}][marking_items][${markingItemIdx}][total_mark]" 
-               placeholder="10" required>
+               placeholder="e.g., 10" required>
         <div class="form-text">Points awarded (can be negative for penalties)</div>
       </div>
     </div>
@@ -110,7 +126,7 @@ function showTypeFields(select) {
         <input type="number" class="form-control" 
                id="${markingItemId}-time-limit"
                name="questions[${questionIdx}][marking_items][${markingItemIdx}][time_limit]" 
-               placeholder="30" min="1" value="30">
+               placeholder="Global time limit used if not set" min="1">
         <div class="form-text">Maximum execution time</div>
       </div>
       <div class="col-md-6">
@@ -118,32 +134,52 @@ function showTypeFields(select) {
         <select class="form-select" 
                 id="${markingItemId}-visibility"
                 name="questions[${questionIdx}][marking_items][${markingItemIdx}][visibility]">
-          <option value="visible">Visible - Students see results immediately</option>
           <option value="hidden">Hidden - Results not shown to students</option>
+          <option value="visible">Visible - Students see results immediately</option>
           <option value="after_due_date">After Due Date - Shown after deadline</option>
           <option value="after_published">After Published - Shown when grades published</option>
         </select>
       </div>
     </div>
   `;
-  
+
+   markingItem.classList.remove(
+    'file-exists-border',
+    'output-comparison-border',
+    'signature-check-border',
+    'function-test-border'
+  );
+
   // Type-specific fields
   if (type === 'file_exists') {
     html += getFileExistsFields();
+    markingItem.classList.add('file-exists-border');
   } else if (type === 'output_comparison') {
     html += getOutputComparisonFields(markingItemId, questionIdx, markingItemIdx);
+    markingItem.classList.add('output-comparison-border');
   } else if (type === 'signature_check') {
     html += getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx);
+    markingItem.classList.add('signature-check-border');
   } else if (type === 'function_test') {
     html += getFunctionTestFields(markingItemId, questionIdx, markingItemIdx);
+    markingItem.classList.add('function-test-border');
   }
   
   fieldsDiv.innerHTML = html;
   
+  // Populate target file dropdown with required files
+  populateTargetFileDropdown(markingItem.querySelector('select[id$="-target-file"]'));
+  
   // Add event listener to target file field for validation
-  const targetFileField = markingItem.querySelector('input[id$="-target-file"]');
+  const targetFileField = markingItem.querySelector('select[id$="-target-file"]');
   if (targetFileField && typeof validateSingleTargetFile === 'function') {
-    targetFileField.addEventListener('input', validateSingleTargetFile);
+    targetFileField.addEventListener('change', validateSingleTargetFile);
+  }
+  
+  // Add event listener to total mark field for points updating
+  const totalMarkField = markingItem.querySelector('input[id$="-total-mark"]');
+  if (totalMarkField && typeof updateQuestionNumbers === 'function') {
+    totalMarkField.addEventListener('input', updateQuestionNumbers);
   }
   
   // Auto-add first test case for function tests
@@ -188,7 +224,7 @@ function getOutputComparisonFields(markingItemId, questionIdx, markingItemIdx) {
 function getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx) {
   return `
     <div class="alert alert-info mb-3">
-      <strong>📋 Signature Check Test:</strong> Validates that a function exists, is callable, and has proper signature.
+      <strong>📋 Signature Check Test:</strong> Validates function existence, callability, parameter signatures, type annotations, and return types.
     </div>
     
     <div class="mb-3">
@@ -205,9 +241,19 @@ function getSignatureCheckFields(markingItemId, questionIdx, markingItemIdx) {
       <input type="text" class="form-control" 
              id="${markingItemId}-expected-params"
              name="questions[${questionIdx}][marking_items][${markingItemIdx}][expected_parameters]" 
-             placeholder="x, y, z=5">
-      <div class="form-text">Parameter names and defaults</div>
+             placeholder="x: int, y: float, z: str = 'default'">
+      <div class="form-text">Parameter names with optional type annotations and defaults (e.g., "name: str, age: int = 18")</div>
     </div>
+    
+    <div class="mb-3">
+      <label class="form-label">Expected Return Type (Optional)</label>
+      <input type="text" class="form-control" 
+             id="${markingItemId}-expected-return-type"
+             name="questions[${questionIdx}][marking_items][${markingItemIdx}][expected_return_type]" 
+             placeholder="int">
+      <div class="form-text">Expected return type annotation (e.g., "int", "str", "List[int]", "Dict[str, Any]")</div>
+    </div>
+    
   `;
 }
 
@@ -225,7 +271,6 @@ function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
       <div class="form-text">Name of the function to test</div>
     </div>
     <div class="mb-3">
-      <label class="form-label">Test Cases <span class="text-danger">*</span></label>
       <div id="${markingItemId}-test-cases-container" class="test-cases-container">
         <!-- Test cases will be dynamically added here -->
       </div>
@@ -233,12 +278,61 @@ function getFunctionTestFields(markingItemId, questionIdx, markingItemIdx) {
       <textarea class="d-none" 
                 id="${markingItemId}-test-cases"
                 name="questions[${questionIdx}][marking_items][${markingItemIdx}][test_cases]" 
-                required></textarea>
-      <div class="form-text mt-2">
-        Add individual test cases with arguments and expected results. At least one test case is required.
-      </div>
+      required></textarea>
     </div>
   `;
+}
+
+/**
+ * Populate a target file dropdown with the current required files
+ */
+function populateTargetFileDropdown(selectElement) {
+  if (!selectElement) return;
+  
+  // Get required files from the management system
+  let requiredFiles = [];
+  if (typeof getRequiredFiles === 'function') {
+    requiredFiles = getRequiredFiles();
+  }
+  
+  // Store current value to restore it if still valid
+  const currentValue = selectElement.value;
+  
+  // Clear existing options except the first one (placeholder)
+  while (selectElement.children.length > 1) {
+    selectElement.removeChild(selectElement.lastChild);
+  }
+  
+  // Add options for each required file
+  requiredFiles.forEach(filename => {
+    const option = document.createElement('option');
+    option.value = filename;
+    option.textContent = filename;
+    selectElement.appendChild(option);
+  });
+  
+  // Restore previous value if it's still valid
+  if (currentValue && requiredFiles.includes(currentValue)) {
+    selectElement.value = currentValue;
+  }
+  
+  // If no files are available, update the placeholder text
+  if (requiredFiles.length === 0) {
+    selectElement.children[0].textContent = 'Add files in Required Files section first...';
+    selectElement.disabled = true;
+  } else {
+    selectElement.children[0].textContent = 'Select a file...';
+    selectElement.disabled = false;
+  }
+}
+
+/**
+ * Update all target file dropdowns when required files change
+ */
+function updateAllTargetFileDropdowns() {
+  document.querySelectorAll('select[id$="-target-file"]').forEach(select => {
+    populateTargetFileDropdown(select);
+  });
 }
 
 // Expose functions to global scope for HTML onclick handlers
@@ -249,6 +343,8 @@ window.showTypeFields = showTypeFields;
 window.addTestCase = addTestCase;
 window.removeTestCase = removeTestCase;
 window.updateTestCasesJson = updateTestCasesJson;
+window.populateTargetFileDropdown = populateTargetFileDropdown;
+window.updateAllTargetFileDropdowns = updateAllTargetFileDropdowns;
 
 // Test Case Management Functions
 function addTestCase(markingItemId, questionIdx, markingItemIdx) {
@@ -257,13 +353,9 @@ function addTestCase(markingItemId, questionIdx, markingItemIdx) {
   const testCaseId = `${markingItemId}-testcase-${testCaseCount}`;
   
   const testCaseDiv = document.createElement('div');
-  testCaseDiv.className = 'card card-body mb-2 test-case';
+  testCaseDiv.className = 'mb-2 test-case';
   testCaseDiv.id = testCaseId;
   testCaseDiv.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h6 class="mb-0">Test Case ${testCaseCount + 1}</h6>
-      <button type="button" class="btn-close btn-sm" onclick="removeTestCase('${testCaseId}', '${markingItemId}')"></button>
-    </div>
     <div class="row mb-2">
       <div class="col-md-8">
         <label class="form-label">Arguments (comma-separated)</label>
@@ -299,8 +391,8 @@ function addTestCase(markingItemId, questionIdx, markingItemIdx) {
   // If this is the first test case, add it automatically
   if (testCaseCount === 0) {
     // Set some example values
-    document.getElementById(`${testCaseId}-args`).value = "2, 3";
-    document.getElementById(`${testCaseId}-expected`).value = "5";
+    document.getElementById(`${testCaseId}-args`).value = "";
+    document.getElementById(`${testCaseId}-expected`).value = "";
     updateTestCasesJson(markingItemId);
   }
 }

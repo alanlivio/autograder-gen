@@ -11,9 +11,13 @@ import sys
 import os
 import tempfile
 {% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_test', 'signature_check']) | list | length > 0 %}
+{% set needs_timeout = question.marking_items | selectattr('type', 'equalto', 'function_test') | list | length > 0 %}
 {% if needs_imports %}
 import importlib.util
 import inspect
+{% endif %}
+{% if needs_timeout %}
+import concurrent.futures
 {% endif %}
 from pathlib import Path
 from gradescope_utils.autograder_utils.decorators import weight, visibility, number
@@ -35,6 +39,17 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
         if str(self.source_dir) not in sys.path:
             sys.path.insert(0, str(self.source_dir))
     
+{% if needs_timeout %}
+    def call_function_with_timeout(self, func, args, kwargs, timeout_seconds):
+        """Call a function with timeout using ThreadPoolExecutor."""
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(func, *args, **kwargs)
+            try:
+                return future.result(timeout=timeout_seconds)
+            except concurrent.futures.TimeoutError:
+                raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+
+{% endif %}
 {% if needs_imports %}
     def import_function_from_file(self, file_name, function_name):
         """Import a specific function from a student file."""
@@ -67,7 +82,11 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 
 {% for item in question.marking_items %}
 
+{% if item.name %}
+{% set test_name = (item.name|lower|replace(' ', '_')|replace('-', '_')|replace('.', '_')|replace('(', '')|replace(')', '')|replace('[', '')|replace(']', '')|replace('/', '_')|replace('\\', '_')|replace(':', '_')|replace(';', '_')|replace(',', '_')|replace('?', '_')|replace('!', '_')|replace('@', '_')|replace('#', '_')|replace('$', '_')|replace('%', '_')|replace('^', '_')|replace('&', '_')|replace('*', '_')|replace('+', '_')|replace('=', '_')|replace('|', '_')|replace('<', '_')|replace('>', '_')) %}
+{% else %}
 {% set test_name = ('item_' + loop.index|string)|lower %}
+{% endif %}
 
 {% if item.type == "file_exists" %}
     {% include 'subtemplates/file_exists_method.j2' %}

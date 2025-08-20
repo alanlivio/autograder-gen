@@ -11,6 +11,7 @@ class MarkingItem:
     type: str  # file_exists, output_comparison, signature_check, function_test
     time_limit: int = 30
     visibility: str = "visible"  # visible, hidden, after_due_date, after_published
+    name: str = ""  # Optional name for the marking item
     expected_input: str = ""
     expected_output: str = ""
     
@@ -20,6 +21,7 @@ class MarkingItem:
     
     # Signature checking fields
     expected_parameters: str = ""
+    expected_return_type: str = ""
     
 
 @dataclass
@@ -108,6 +110,7 @@ class ConfigParser:
                     type=item_data['type'],
                     time_limit=item_data.get('time_limit', 30),
                     visibility=item_data.get('visibility', 'visible'),
+                    name=item_data.get('name', ''),
                     expected_input=item_data.get('expected_input', ''),
                     expected_output=item_data.get('expected_output', ''),
                     # Function testing fields
@@ -115,6 +118,7 @@ class ConfigParser:
                     test_cases=item_data.get('test_cases', []),
                     # Signature checking fields
                     expected_parameters=item_data.get('expected_parameters', ''),
+                    expected_return_type=item_data.get('expected_return_type', ''),
                 )
                 question.marking_items.append(marking_item)
             
