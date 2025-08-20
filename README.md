@@ -3,7 +3,7 @@
 The autograder-gen project aims to support lecturers on creating automatic assess for students’ programs submitted to the [GradeScope Platform](https://www.gradescope.com/).
 Basically, it is template-based approach to create [GradeScope Autograder Scripts](https://gradescope-autograders.readthedocs.io/) following the GradeScope specifications and samples.
 
-The project has command-line, see more at [cli/README.md] and a web version, see more at [web/README.md].
+The project has command-line, see more at [cli/README.md](cli/README.md) and a web version, see more at [web/README.md](web/README.md).
 
 ## Main Authors
 
