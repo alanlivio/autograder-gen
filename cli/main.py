@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TIF Autograder CLI Tool
+autograder-gen
 Main entry point for the command-line interface.
 
 This tool validates JSON configuration files using JSON Schema validation
@@ -8,7 +8,6 @@ and generates Gradescope autograder scripts based on the configuration.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 

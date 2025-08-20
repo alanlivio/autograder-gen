@@ -1,5 +1,5 @@
 """
-Utility functions for the TIF Autograder CLI tool.
+Utility functions for the autograder-gen.
 """
 
 import logging

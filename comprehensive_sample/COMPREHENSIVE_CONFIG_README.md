@@ -1,6 +1,6 @@
 # 🎯 Comprehensive Autograder Configuration
 
-This configuration file demonstrates **ALL** autograder functionality implemented in the TIF Autograder system.
+This configuration file demonstrates **ALL** autograder functionality implemented in the autograder-gen.
 
 ## 📋 **Testing Categories Covered**
 

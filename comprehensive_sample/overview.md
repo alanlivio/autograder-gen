@@ -1,6 +1,6 @@
 # 📁 Comprehensive Sample Package
 
-This folder contains a complete demonstration of all TIF Autograder functionality.
+This folder contains a complete demonstration of all autograder-genfunctionality.
 
 ## 📂 Contents
 
@@ -19,20 +19,22 @@ comprehensive_sample/
 ## 🚀 Quick Start
 
 1. **Test the configuration**:
+
    ```bash
    cd comprehensive_sample
    python ../cli/main.py --config comprehensive_sample_config.json --validate-only
    ```
 
 2. **Generate autograder**:
+
    ```bash
    python ../cli/main.py --config comprehensive_sample_config.json
    ```
 
 3. **View in web interface**:
-   - Start web server: `python -m web.app`
-   - Upload `comprehensive_sample_config.json`
-   - Explore all form fields and functionality
+   * Start web server: `python -m web.app`
+   * Upload `comprehensive_sample_config.json`
+   * Explore all form fields and functionality
 
 ## 🎯 What's Demonstrated
 
@@ -44,9 +46,9 @@ comprehensive_sample/
 
 ## 💡 Usage Notes
 
-- **216 total points** across 8 question categories
-- **Sample solutions** designed to pass all tests
-- **Production-ready** configuration for real assignments
-- **Educational examples** for different complexity levels
+* **216 total points** across 8 question categories
+* **Sample solutions** designed to pass all tests
+* **Production-ready** configuration for real assignments
+* **Educational examples** for different complexity levels
 
 This package serves as both a **demonstration** and **template** for creating comprehensive autograders! 🎉

@@ -1,4 +1,4 @@
-# TIF Autograder CLI Tool
+# autograder-gen
 
 This command-line tool generates Gradescope-compatible autograder zip files from a JSON configuration file. It validates your config, renders test scripts using Jinja2 templates, and packages everything for upload to Gradescope.
 
