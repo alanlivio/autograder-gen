@@ -3,11 +3,10 @@ import zipfile
 import tempfile
 import shutil
 import json
-from pathlib import Path
 import pytest
 
-from autograder_core.generator import AutograderGenerator
-from autograder_core.config import ConfigParser
+from autograder_gen.generator import AutograderGenerator
+from autograder_gen.config import ConfigParser
 
 SAMPLE_CONFIG_PATH = 'cli/config/sample_config.json'
 

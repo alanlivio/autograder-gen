@@ -1,9 +1,9 @@
 from flask import Flask, request, send_file, jsonify, render_template
 import tempfile
 import os
-from autograder_core.config import ConfigParser, AutograderConfig
-from autograder_core.generator import AutograderGenerator
-from autograder_core.validator import ConfigValidator
+from autograder_gen.config import ConfigParser, AutograderConfig
+from autograder_gen.generator import AutograderGenerator
+from autograder_gen.validator import ConfigValidator
 import json
 from flask_cors import CORS
 
@@ -75,7 +75,7 @@ def generate_form():
         config_path = os.path.join(tmp_dir, 'config.json')
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config_dict, f)
-        from autograder_core.config import ConfigParser
+        from autograder_gen.config import ConfigParser
         config = ConfigParser(config_path).parse()
         generator = AutograderGenerator(config, config_dict)  # Pass original config dict
         zip_path = generator.generate(tmp_dir)

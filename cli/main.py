@@ -8,7 +8,6 @@ and generates Gradescope autograder scripts based on the configuration.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -16,10 +15,10 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from autograder_core.config import ConfigParser
-from autograder_core.generator import AutograderGenerator
-from autograder_core.validator import ConfigValidator
-from autograder_core.utils import setup_logging, print_success, print_error, print_warning
+from autograder_gen.config import ConfigParser
+from autograder_gen.generator import AutograderGenerator
+from autograder_gen.validator import ConfigValidator
+from autograder_gen.utils import setup_logging, print_success, print_error, print_warning
 
 def main():
     parser = argparse.ArgumentParser(

@@ -1,11 +1,10 @@
-import os
 import zipfile
 import tempfile
 import shutil
 import pytest
-from autograder_core.generator import AutograderGenerator
-from autograder_core.config import ConfigParser
-
+from autogradergen.generator import AutograderGenerator
+from autograder_gen.config import ConfigParser
+from autograder_gen
 SAMPLE_CONFIG_PATH = 'cli/config/sample_config.json'
 
 @pytest.fixture
