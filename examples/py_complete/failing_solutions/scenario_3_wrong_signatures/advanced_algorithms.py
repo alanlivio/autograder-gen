@@ -15,7 +15,7 @@ if __name__ == "__main__":
     input_val = input().strip()
     if input_val == "run_tests":
         num_tests = int(input())
-        print("Running comprehensive test suite...")
+        print("Running test suite...")
         print(f"Processing {num_tests} test cases")
         print(f"All tests passed: {num_tests}/{num_tests}")
         print("Execution complete!")

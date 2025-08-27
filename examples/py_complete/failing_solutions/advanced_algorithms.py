@@ -12,7 +12,3 @@ def handle_edge_cases(data):
 # Wrong signature
 def main_algorithm(wrong_param):  # FAILED: Wrong parameter name and count
     raise ValueError("This function always fails")  # RUNTIME ERROR during execution
-
-# Missing expected output format
-def run_comprehensive_tests():
-    print("Wrong output format")  # FAILED: Output doesn't match expected

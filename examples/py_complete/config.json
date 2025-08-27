@@ -132,7 +132,10 @@
           "visibility": "visible",
           "test_cases": [
             {
-              "args": [2, 3],
+              "args": [
+                2,
+                3
+              ],
               "expected": "5"
             }
           ]
@@ -146,7 +149,10 @@
           "visibility": "visible",
           "test_cases": [
             {
-              "args": [3, 4],
+              "args": [
+                3,
+                4
+              ],
               "expected": "12"
             }
           ]
@@ -165,7 +171,15 @@
           "visibility": "after_due_date",
           "test_cases": [
             {
-              "args": [[1, 2, 3, 4, 5]],
+              "args": [
+                [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ]
+              ],
               "expected": "{'mean': 3.0, 'median': 3.0, 'std': 1.58}"
             }
           ]
@@ -179,7 +193,12 @@
           "visibility": "after_published",
           "test_cases": [
             {
-              "args": [{"a": 1, "b": 2}],
+              "args": [
+                {
+                  "a": 1,
+                  "b": 2
+                }
+              ],
               "expected": "{'a': 2, 'b': 4}"
             }
           ]
@@ -198,7 +217,9 @@
           "visibility": "hidden",
           "test_cases": [
             {
-              "args": [[]],
+              "args": [
+                []
+              ],
               "expected": "None"
             }
           ]
@@ -233,7 +254,15 @@
           "visibility": "after_due_date",
           "test_cases": [
             {
-              "args": [[1, 2, 3, 4, 5]],
+              "args": [
+                [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ]
+              ],
               "expected": "[1, 4, 9, 16, 25]"
             }
           ]
@@ -245,7 +274,7 @@
           "time_limit": 60,
           "visibility": "after_published",
           "expected_input": "run_tests\n5\n",
-          "expected_output": "Running comprehensive test suite...\nProcessing 5 test cases\nAll tests passed: 5/5\nExecution complete!"
+          "expected_output": "Running test suite...\nProcessing 5 test cases\nAll tests passed: 5/5\nExecution complete!"
         }
       ]
     }
