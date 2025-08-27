@@ -8,7 +8,7 @@ import pytest
 from autograder_gen.generator import AutograderGenerator
 from autograder_gen.config import ConfigParser
 
-SAMPLE_CONFIG_PATH = 'cli/config/sample_config.json'
+SAMPLE_CONFIG_PATH = 'examples/py_simple/config.json'
 
 @pytest.fixture
 def temp_output_dir():

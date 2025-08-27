@@ -1,5 +1,4 @@
 import subprocess
-import os
 from pathlib import Path
 
 import sys
@@ -7,7 +6,7 @@ import sys
 
 def test_cli_generates_autograder(tmp_path):
     # Paths
-    config_path = Path('cli/config/sample_config.json')
+    config_path = Path('examples/py_simple/config.json')
     output_dir = tmp_path / 'output'
     output_dir.mkdir()
 
@@ -17,7 +16,7 @@ def test_cli_generates_autograder(tmp_path):
 
     # Run the CLI
     result = subprocess.run([
-        python_executable, 'cli/main.py',
+        python_executable, 'autograder_gen/cli.py',
         '--config', str(config_path),
         '--output', str(output_dir)
     ], capture_output=True, text=True)

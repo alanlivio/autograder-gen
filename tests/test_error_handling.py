@@ -6,7 +6,7 @@ import json
 import os
 import pytest
 
-MAIN_PATH = 'cli/main.py'
+MAIN_PATH = 'autograder_gen/cli.py'
 
 INVALID_CONFIG = {
     # Missing 'questions' and 'files_necessary'

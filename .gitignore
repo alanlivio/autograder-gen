@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 .venv/
 package-lock.json
+output/
 
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode
