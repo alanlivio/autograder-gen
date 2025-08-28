@@ -1,7 +1,7 @@
 # autograder-gen
 
-The autograder-gen project aims to support lecturers on creating automatic assess for students’ programs submitted to the [GradeScope Platform](https://www.gradescope.com/).
-It generates Gradescope-compatible Autograder scripts in a zip file for a JSON configuration file. It validates your config, renders test scripts using Jinja2 templates, and packages everything for upload to Gradescope. It follow a template-based approach based in the [refernece GradeScope Autograder scripts samples](https://gradescope-autograders.readthedocs.io/).
+Tool for supporting lecturers on creating automatic assessment of students programs submitted to the [GradeScope Platform](https://www.gradescope.com/).
+It generates Gradescope-compatible Autograder scripts in a zip file for a JSON configuration file. It validates your config, renders test scripts using Jinja2 templates, and packages everything for upload to Gradescope. It follow a template-based approach based in the [reference GradeScope Autograder scripts samples](https://gradescope-autograders.readthedocs.io/).
 
 The project has command-line and a web version (see more at [web/README.md]).
 
@@ -41,7 +41,7 @@ This will:
 
 - Validate the config file
 - Generate all necessary autograder scripts and files
-- Create `autograder.zip` in `./my_autograder`
+- Zip file as `autograder.zip` in `./output`
 
 ### Main Authors
 
