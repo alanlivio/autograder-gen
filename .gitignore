@@ -1,12 +1,3 @@
-autograder.zip/
-example-autograder/
-example-student-files/
-__pycache__/
-*.pyc
-.venv/
-package-lock.json
-output/*
-
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode
 
@@ -206,3 +197,7 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+**/*.zip
+package-lock.json
+**/output
