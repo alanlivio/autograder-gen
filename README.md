@@ -15,7 +15,7 @@ python -m venv .venv
 .venv\Scripts\activate
 # On macOS/Linux:
 source .venv/bin/activate
-pip install -r cli/requirements.txt
+pip install -r requirements.txt
 ```
 
 Run the CLI from the project root:
