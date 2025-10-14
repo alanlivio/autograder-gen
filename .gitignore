@@ -198,6 +198,5 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
-**/*.zip
+/**/autograder.zip
 package-lock.json
-**/output
