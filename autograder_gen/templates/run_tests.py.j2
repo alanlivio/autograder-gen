@@ -11,9 +11,11 @@ def main():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
     
-    suite = unittest.defaultTestLoader.discover('tests') 
+    suite = unittest.defaultTestLoader.discover('tests', pattern='*_test.py') 
     # Run tests with Gradescope utilities
-    with open('/autograder/results/results.json', 'w') as f:
+    import os
+    results_path = os.environ.get('GRADESCOPE_RESULTS_PATH', '/autograder/results/results.json')
+    with open(results_path, 'w') as f:
         runner = JSONTestRunner(visibility='hidden', stream=f)
         runner.run(suite)
 

@@ -27,7 +27,7 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.source_dir = Path('/autograder/source')
+        self.source_dir = Path(os.environ.get('GRADESCOPE_SOURCE_PATH', '/autograder/source'))
         self.submission_files = []
         
         # Get list of submitted files
