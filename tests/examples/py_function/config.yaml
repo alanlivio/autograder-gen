@@ -1,0 +1,25 @@
+version: '1.0'
+language: python
+files_necessary:
+- solution.py
+questions:
+- name: Function Signature and Logic
+  marking_items:
+  - target_file: solution.py
+    total_mark: 5
+    type: signature_check
+    function_name: multiply
+    expected_parameters: a, b
+  - target_file: solution.py
+    total_mark: 5
+    type: function_test
+    function_name: multiply
+    test_cases:
+    - args:
+      - 2
+      - 3
+      expected: '6'
+    - args:
+      - 0
+      - 10
+      expected: '0'

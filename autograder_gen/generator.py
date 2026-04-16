@@ -141,7 +141,7 @@ class AutograderGenerator:
             processed_item = SimpleNamespace()
             # Copy all attributes from the original item
             for attr in dir(item):
-                if not attr.startswith('_'):
+                if not attr.startswith('_') and not attr.startswith('model_'):
                     setattr(processed_item, attr, getattr(item, attr))
             
             # For Python output comparison tests, ensure expected_output has a newline if it doesn't end with one

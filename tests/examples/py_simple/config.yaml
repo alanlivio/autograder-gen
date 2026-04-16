@@ -1,0 +1,20 @@
+version: '1.0'
+language: python
+files_necessary:
+- solution.py
+questions:
+- name: Math Test
+  marking_items:
+  - target_file: solution.py
+    total_mark: 10
+    type: function_test
+    function_name: add
+    test_cases:
+    - args:
+      - 1
+      - 2
+      expected: '3'
+    - args:
+      - 5
+      - 5
+      expected: '10'
