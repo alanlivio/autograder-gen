@@ -6,9 +6,11 @@ Uses Jinja2 templates and gradescope-utils for proper test generation.
 import os
 import shutil
 import zipfile
+from typing import Optional, List, Dict, Any
+import yaml
+import re
+from types import SimpleNamespace
 from pathlib import Path
-from typing import Optional
-import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from autograder_gen.config import AutograderConfig
@@ -123,14 +125,13 @@ class AutograderGenerator:
             )
             
             # Write the question test file
-            test_file = tests_dir / f"test_{question_filename}.py"
+            test_file = tests_dir / f"{question_filename}_test.py"
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write(content)
     
     def _preprocess_question_for_output_comparison(self, question):
         """Preprocess question to add newlines to expected output for output comparison tests."""
         # Create a copy of the question with processed marking items
-        from types import SimpleNamespace
         
         processed_question = SimpleNamespace()
         processed_question.name = question.name
@@ -189,7 +190,6 @@ class AutograderGenerator:
         safe_name = safe_name.replace('>', '_')
         
         # Remove multiple consecutive underscores
-        import re
         safe_name = re.sub(r'_+', '_', safe_name)
         
         # Remove leading/trailing underscores
@@ -219,9 +219,9 @@ class AutograderGenerator:
         
         # Save the original configuration if provided
         if self.original_config_dict:
-            original_config_file = self.temp_dir / "autograder_config.json"
+            original_config_file = self.temp_dir / "autograder_config.yaml"
             with open(original_config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.original_config_dict, f, indent=2)
+                yaml.dump(self.original_config_dict, f, default_flow_style=False, sort_keys=False)
 
         
         # Create a README for the autograder
@@ -244,10 +244,10 @@ autograder.zip
 ├── run_tests.py            # Primary test runner using gradescope-utils
 ├── requirements.txt        # Python dependencies
 ├── tests/                  # Individual test files for each question
-│   ├── test_question_1.py
-│   ├── test_question_2.py
+│   ├── question_1_test.py
+│   ├── question_2_test.py
 │   └── ...
-├── autograder_config.json  # Original configuration file
+├── autograder_config.yaml  # Original configuration file
 └── README.md              # This file
 ```
 
@@ -354,7 +354,7 @@ Students must submit the following files:
 - All tests run in isolated environments with proper timeout handling
 - Results are automatically formatted for Gradescope integration
 
-For questions about this autograder configuration, refer to the original `autograder_config.json` file included in this package.
+For questions about this autograder configuration, refer to the original `autograder_config.yaml` file included in this package.
 """
         
         readme_file = self.temp_dir / "README.md"

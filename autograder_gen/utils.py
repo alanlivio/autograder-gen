@@ -65,12 +65,7 @@ def is_supported_language_file(file_path: str, language: str) -> bool:
     
     language_extensions = {
         'python': ['.py'],
-        'java': ['.java'],
-        'r': ['.r', '.R'],
-        'cpp': ['.cpp', '.cc', '.cxx'],
-        'c': ['.c'],
-        'javascript': ['.js'],
-        'typescript': ['.ts']
+        'java': ['.java']
     }
     
     return extension in language_extensions.get(language.lower(), [])

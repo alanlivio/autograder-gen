@@ -1,213 +1,50 @@
-"""
-Configuration validation module for autograder JSON files using JSON Schema.
-"""
-
 import json
+import yaml
 from typing import List, Dict, Any
-from jsonschema import validate, ValidationError, Draft7Validator
-from autograder_gen.config import AutograderConfig
+from autograder_gen.config import AutograderConfig, ConfigParser
+from pydantic import ValidationError
 
 
 class ConfigValidator:
-    """Validates autograder configuration files using JSON Schema."""
+    """Validates autograder configuration files using pydantic."""
     
     def __init__(self):
         self.errors = []
         self.warnings = []
-        self.schema = self._get_schema()
-        self.validator = Draft7Validator(self.schema)
-    
-    def _get_schema(self) -> Dict[str, Any]:
-        """Define the JSON schema for autograder configuration."""
-        return {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "type": "object",
-            "required": ["version", "language", "questions"],
-            "properties": {
-                "version": {
-                    "type": "string",
-                    "description": "Configuration version"
-                },
-                "language": {
-                    "type": "string",
-                    "enum": ["python"],
-                    "description": "Programming languages supported by the autograder"
-                },
-                "global_time_limit": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 36000,
-                    "default": 3000,
-                    "description": "Global time limit in milliseconds"
-                },
-                "setup_commands": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "description": "List of setup commands to run"
-                },
-                "files_necessary": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "description": "List of necessary files"
-                },
-                "questions": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "$ref": "#/definitions/question"
-                    },
-                    "description": "List of questions"
-                }
-            },
-            "definitions": {
-                "question": {
-                    "type": "object",
-                    "required": ["name", "marking_items"],
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Question name"
-                        },
-                        "marking_items": {
-                            "type": "array",
-                            "minItems": 1,
-                            "items": {
-                                "$ref": "#/definitions/marking_item"
-                            },
-                            "description": "List of marking items"
-                        }
-                    }
-                },
-                "marking_item": {
-                    "type": "object",
-                    "required": ["target_file", "total_mark", "type"],
-                    "properties": {
-                        "target_file": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Target file to be tested"
-                        },
-                        "total_mark": {
-                            "type": "integer",
-                            "description": "Total marks for this item (can be negative for penalties)"
-                        },
-                        "type": {
-                            "type": "string",
-                            "enum": ["file_exists", "output_comparison", "signature_check", "function_test"],
-                            "description": "Type of test to generate"
-                        },
-                        "time_limit": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "default": 30,
-                            "description": "Time limit in seconds"
-                        },
-                        "visibility": {
-                            "type": "string",
-                            "enum": ["visible", "hidden", "after_due_date", "after_published"],
-                            "default": "visible",
-                            "description": "Visibility of test results"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Optional name for the marking item"
-                        },
-                        "expected_input": {
-                            "type": "string",
-                            "description": "Input for output comparison tests"
-                        },
-                        "expected_output": {
-                            "type": "string",
-                            "description": "Expected output for comparison tests"
-                        },
-                        "function_name": {
-                            "type": "string",
-                            "description": "Name of function to test (for function_test type)"
-                        },
-                        "expected_parameters": {
-                            "type": "string",
-                            "description": "Expected function parameters with types and defaults (for signature_check type)"
-                        },
-                        "expected_return_type": {
-                            "type": "string",
-                            "description": "Expected return type annotation (for signature_check type)"
-                        },
-                        "test_cases": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "args": {
-                                        "type": "array",
-                                        "description": "Positional arguments for function call"
-                                    },
-                                    "kwargs": {
-                                        "type": "object",
-                                        "description": "Keyword arguments for function call"
-                                    },
-                                    "expected": {
-                                        "type": "string",
-                                        "description": "Expected return value as string"
-                                    }
-                                },
-                                "required": ["expected"],
-                                "additionalProperties": False
-                            },
-                            "description": "Test cases for function testing"
-                        }
-                    }
-                }
-            }
-        }
     
     def validate_json(self, data: Dict[str, Any]) -> bool:
-        """Validate JSON data against the schema. Returns True if valid."""
+        """Validate configuration data against the schema. Returns True if valid."""
         self.errors.clear()
         self.warnings.clear()
         
         try:
-            # Primary schema validation
-            validate(instance=data, schema=self.schema)
+            from autograder_gen.config import AutograderConfigModel
+            AutograderConfigModel.model_validate(data)
             
-            # Additional custom validations
+            # Additional custom validations (warnings only since errors are native)
             self._validate_custom_rules(data)
             
             return len(self.errors) == 0
             
         except ValidationError as e:
-            # Format error message with path information for better frontend highlighting
-            path_str = ""
-            if e.absolute_path:
-                path_parts = []
-                for part in e.absolute_path:
-                    if isinstance(part, int):
-                        path_parts.append(f"[{part}]")
-                    else:
-                        path_parts.append(str(part))
-                path_str = ".".join(path_parts).replace(".[", "[")
-            
-            error_msg = f"{e.message}"
-            if path_str:
-                error_msg += f" at {path_str}"
-            
-            self.errors.append(error_msg)
+            for error in e.errors():
+                loc = ".".join(map(str, error["loc"]))
+                self.errors.append(f"{error['msg']} at {loc}")
             return False
     
     def validate_from_file(self, file_path: str) -> bool:
-        """Validate configuration directly from JSON file."""
+        """Validate configuration directly from JSON/YAML file."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return self.validate_json(data)
-        except (json.JSONDecodeError, FileNotFoundError) as e:
-            self.errors.append(f"File error: {e}")
+            parser = ConfigParser(file_path)
+            parser.parse() # This will raise ValidationError if invalid
+            return True
+        except ValidationError as e:
+            for error in e.errors():
+                loc = ".".join(map(str, error["loc"]))
+                self.errors.append(f"{error['msg']} at {loc}")
+            return False
+        except (ValueError, FileNotFoundError) as e:
+            self.errors.append(str(e))
             return False
     
     def _config_to_dict(self, config: AutograderConfig) -> Dict[str, Any]:
@@ -273,14 +110,6 @@ class ConfigValidator:
             for j, item in enumerate(marking_items):
                 total_marks += item.get("total_mark", 0)
                 
-                # Check if target file is in files_necessary
-                target_file = item.get("target_file", "")
-                if target_file and target_file not in files_necessary:
-                    self.errors.append(
-                        f"Question '{question_name}', Item {j+1}: "
-                        f"Target file '{target_file}' is not listed in 'files_necessary'"
-                    )
-                
                 # Check time limits
                 time_limit = item.get("time_limit", 30)
                 if time_limit > 300:
@@ -326,9 +155,6 @@ class ConfigValidator:
         """Generate warnings for function test items."""
         context = f"Question '{question_name}', Item {item_num}"
 
-        if not item.get("function_name"):
-            self.errors.append(f"{context}: function_name is required for function_test")
-
         test_cases = item.get("test_cases", [])
         if not test_cases:
             self.warnings.append(f"{context}: No test cases provided for function testing")
@@ -348,15 +174,8 @@ class ConfigValidator:
         return self.warnings.copy()
     
     def get_detailed_errors(self) -> List[Dict[str, Any]]:
-        """Get detailed validation errors with paths and suggestions."""
-        detailed_errors = []
-        
-        for error in self.validator.iter_errors({}):
-            detailed_errors.append({
-                "message": error.message,
-                "path": list(error.absolute_path),
-                "invalid_value": error.instance,
-                "schema_path": list(error.schema_path),
-            })
-        
-        return detailed_errors
+        """Get detailed validation errors."""
+        detailed = []
+        for err in self.errors:
+             detailed.append({"message": err})
+        return detailed

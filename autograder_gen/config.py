@@ -1,47 +1,86 @@
-import json
+import yaml
 from pathlib import Path
 from typing import Dict, List, Any
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, field_validator, model_validator, ValidationError
 
-@dataclass
-class MarkingItem:
+class MarkingItemModel(BaseModel):
     """Represents a single marking item within a question."""
     target_file: str
     total_mark: int
-    type: str  # file_exists, output_comparison, signature_check, function_test
+    type: str
     time_limit: int = 30
-    visibility: str = "visible"  # visible, hidden, after_due_date, after_published
-    name: str = ""  # Optional name for the marking item
+    visibility: str = "visible"
+    name: str = ""
     expected_input: str = ""
     expected_output: str = ""
     
     # Function testing fields
     function_name: str = ""
-    test_cases: List[Dict] = field(default_factory=list)
+    test_cases: List[Dict[str, Any]] = Field(default_factory=list)
     
     # Signature checking fields
     expected_parameters: str = ""
     expected_return_type: str = ""
-    
 
-@dataclass
-class Question:
+    @field_validator('type')
+    @classmethod
+    def check_type(cls, v: str) -> str:
+        allowed = {"file_exists", "output_comparison", "signature_check", "function_test"}
+        if v not in allowed:
+            raise ValueError(f"type must be one of: {allowed}")
+        return v
+
+    @field_validator('visibility')
+    @classmethod
+    def check_visibility(cls, v: str) -> str:
+        allowed = {"visible", "hidden", "after_due_date", "after_published"}
+        if v not in allowed:
+            raise ValueError(f"visibility must be one of: {allowed}")
+        return v
+
+    @model_validator(mode='after')
+    def validate_type_fields(self) -> 'MarkingItemModel':
+        if self.type == "function_test" and not self.function_name:
+            raise ValueError("function_name is required for function_test")
+        return self
+
+class QuestionModel(BaseModel):
     """Represents a question with multiple marking items."""
     name: str
-    marking_items: List[MarkingItem] = field(default_factory=list)
+    marking_items: List[MarkingItemModel] = Field(min_length=1)
 
-@dataclass
-class AutograderConfig:
+class AutograderConfigModel(BaseModel):
     """Complete autograder configuration."""
-    version: str = "0"  # Changed to string to match schema
-    questions: List[Question] = field(default_factory=list)
+    version: str
+    language: str
     global_time_limit: int = 300
-    language: str = "python"  # python, java, r
-    setup_commands: List[str] = field(default_factory=list)
-    files_necessary: List[str] = field(default_factory=list)
-    
+    setup_commands: List[str] = Field(default_factory=list)
+    files_necessary: List[str] = Field(default_factory=list)
+    questions: List[QuestionModel] = Field(min_length=1)
+
+    @field_validator('language')
+    @classmethod
+    def check_language(cls, v: str) -> str:
+        allowed = {"python", "java"}
+        if v not in allowed:
+            raise ValueError(f"language must be one of: {allowed}")
+        return v
+
+    @model_validator(mode='after')
+    def validate_target_files(self) -> 'AutograderConfigModel':
+        for i, q in enumerate(self.questions):
+            for j, item in enumerate(q.marking_items):
+                target = item.target_file
+                if target and target not in self.files_necessary:
+                    raise ValueError(f"Question '{q.name}', Item {j+1}: Target file '{target}' is not listed in 'files_necessary'")
+        return self
+
+AutograderConfig = AutograderConfigModel
+Question = QuestionModel
+MarkingItem = MarkingItemModel
+
 class ConfigParser:
-    """Parses JSON configuration files for autograder generation."""
+    """Parses YAML configuration files for autograder generation."""
     
     def __init__(self, config_path: str):
         self.config_path = Path(config_path)
@@ -49,79 +88,24 @@ class ConfigParser:
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
     
     def parse(self) -> AutograderConfig:
-        """Parse the JSON configuration file."""
+        """Parse the configuration file (YAML only)."""
+        if self.config_path.suffix.lower() not in ['.yaml', '.yml']:
+            raise ValueError("Only YAML format (.yml, .yaml) is supported.")
+
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+                data = yaml.safe_load(f)
             
-            return self._parse_config(data)
+            return AutograderConfig.model_validate(data)
             
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in configuration file: {e}")
+        except yaml.YAMLError as e:
+            raise ValueError(f"Invalid format in YAML configuration file: {e}")
+        except ValidationError as e:
+            # We let ValidationError bubble up
+            raise e
         except Exception as e:
             raise ValueError(f"Error parsing configuration: {e}")
     
     def parse_and_validate(self) -> AutograderConfig:
-        """Parse the JSON configuration file with validation."""
-        try:
-            # Import here to avoid circular import
-            from validator import ConfigValidator
-            
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            # Validate first
-            validator = ConfigValidator()
-            if not validator.validate_json(data):
-                errors = validator.get_errors()
-                raise ValueError(f"Configuration validation failed: {'; '.join(errors)}")
-            
-            return self._parse_config(data)
-            
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in configuration file: {e}")
-        except Exception as e:
-            raise ValueError(f"Error parsing configuration: {e}")
-    
-    def _parse_config(self, data: Dict[str, Any]) -> AutograderConfig:
-        """Convert JSON data to AutograderConfig object."""
-        config = AutograderConfig()
-        
-        # Parse global settings
-        config.version = str(data.get('version', '0'))  # Ensure version is string
-        config.global_time_limit = data.get('global_time_limit', 300)
-        config.language = data.get('language', 'python')
-        config.setup_commands = data.get('setup_commands', [])
-        config.files_necessary = data.get('files_necessary', [])
-        
-        # Parse questions
-        questions_data = data.get('questions', [])
-        for i, q_data in enumerate(questions_data):
-            question = Question(
-                name=q_data.get('name', f'Question_{i+1}')
-            )
-            
-            # Parse marking items
-            marking_items_data = q_data.get('marking_items', [])
-            for j, item_data in enumerate(marking_items_data):
-                marking_item = MarkingItem(
-                    target_file=item_data['target_file'],
-                    total_mark=item_data['total_mark'],
-                    type=item_data['type'],
-                    time_limit=item_data.get('time_limit', 30),
-                    visibility=item_data.get('visibility', 'visible'),
-                    name=item_data.get('name', ''),
-                    expected_input=item_data.get('expected_input', ''),
-                    expected_output=item_data.get('expected_output', ''),
-                    # Function testing fields
-                    function_name=item_data.get('function_name', ''),
-                    test_cases=item_data.get('test_cases', []),
-                    # Signature checking fields
-                    expected_parameters=item_data.get('expected_parameters', ''),
-                    expected_return_type=item_data.get('expected_return_type', ''),
-                )
-                question.marking_items.append(marking_item)
-            
-            config.questions.append(question)
-        
-        return config
+        """Parse and validate the configuration file."""
+        return self.parse()

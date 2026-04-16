@@ -3,12 +3,13 @@
 TIF Autograder CLI Tool
 Main entry point for the command-line interface.
 
-This tool validates JSON configuration files using JSON Schema validation
+This tool validates YAML configuration files using pydantic
 and generates Gradescope autograder scripts based on the configuration.
 """
 
 import argparse
 import sys
+import yaml
 from pathlib import Path
 
 # Add the project root to Python path so we can import autograder_core
@@ -22,12 +23,12 @@ from autograder_gen.utils import setup_logging, print_success, print_error, prin
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate Gradescope autograder scripts from JSON configuration"
+        description="Generate Gradescope autograder scripts from YAML configuration"
     )
     parser.add_argument(
         "--config", "-c",
         required=True,
-        help="Path to JSON configuration file"
+        help="Path to YAML configuration file"
     )
     parser.add_argument(
         "--output", "-o",
@@ -81,9 +82,11 @@ def main():
         # Load original config for preservation in zip
         original_config_dict = None
         try:
-            import json
-            with open(args.config, 'r', encoding='utf-8') as f:
-                original_config_dict = json.load(f)
+            path = Path(args.config)
+            with open(path, 'r', encoding='utf-8') as f:
+                if path.suffix.lower() not in ['.yaml', '.yml']:
+                    raise ValueError("File must be a YAML file (.yml or .yaml)")
+                original_config_dict = yaml.safe_load(f)
         except Exception:
             pass  # If we can't load original config, proceed without it
         
