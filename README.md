@@ -1,55 +1,78 @@
 # autograder-gen
 
-Tool for supporting lecturers on creating automatic assessment of students programs submitted to the [GradeScope Platform](https://www.gradescope.com/).
-It generates Gradescope-compatible Autograder scripts in a zip file for a JSON configuration file. It validates your config, renders test scripts using Jinja2 templates, and packages everything for upload to Gradescope. It follow a template-based approach based in the [reference GradeScope Autograder scripts samples](https://gradescope-autograders.readthedocs.io/).
+`autograder-gen` is a tool for lecturers to generate automated assessment scripts (autograders compatible with the [GradeScope Platform](https://www.gradescope.com/). It transforms a high-level YAML configuration into a complete autograder environment packaged as a ZIP file.
 
-The project has command-line and a web version (see more at [web/README.md]).
+The project validates your configuration, renders test scripts using Jinja2 templates, and packages everything for immediate upload to Gradescope.
 
-## command-line
+## Setup
 
-1. **Create and activate a virtual environment (recommended):**
+Create and activate a virtual environment (recommended):
 
 ```bash
 python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
-# On macOS/Linux:
-source .venv/bin/activate
+```
+
+- **On Windows:**
+
+  ```bash
+  .venv\Scripts\activate
+  ```
+
+- **On macOS/Linux:**
+
+  ```bash
+  source .venv/bin/activate
+  ```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Run the CLI from the project root:
+## CLI Usage
 
-```sh
-python autograder_gen/cli.py --config <path/to/config.json> [--output <output_dir>] [--verbose] [--validate-only]
+The Command-Line Interface allows you to generate autograders directly from a configuration file.
+
+```bash
+python autograder_gen/cli.py --config <path/to/config.yaml> [options]
 ```
 
-Arguments:
+### Arguments:
 
-- `--config`, `-c` (required): Path to your JSON configuration file.
+- `--config`, `-c` (required): Path to your configuration file (YAML).
 - `--output`, `-o`: Output directory for the generated `autograder.zip` (default: `./output`).
 - `--verbose`, `-v`: Enable verbose logging.
-- `--validate-only`: Only validate the configuration file, do not generate the autograder.
+- `--validate-only`: Only validate the configuration file without generating the ZIP.
 
-Example:
+### Example:
 
-```sh
-python autograder_gen/cli.py --config examples/py_simple/config.json
+```bash
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml
 ```
 
-This will:
+## Web Interface
 
-- Validate the config file
-- Generate all necessary autograder scripts and files
-- Zip file as `autograder.zip` in `./output`
+The web interface provides a graphical form to define your autograder structure or upload existing configurations. Start the Web Server:
 
-### Main Authors
+```bash
+python web/app.py
+```
+
+## Testing
+
+To run the automated test suite and verify your installation:
+
+```bash
+python -m pytest
+```
+
+## Authors
 
 - **Alan Guedes** – [@alanlivio](https://github.com/alanlivio)  
 - **Giorgio Werberich Scur** – [@giorgioscur](https://github.com/giorgioscur)
 
-### License
+## License
 
-Contributions from others are welcome and will be credited.  
-This project is licensed under the [MIT License](LICENSE).  
-The University of Reading retains rights of original contributions.  
+Contributions are welcome and will be credited. This project is licensed under the [MIT License](LICENSE).  
+The University of Reading retains rights of original contributions.
