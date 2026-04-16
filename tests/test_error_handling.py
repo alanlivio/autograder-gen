@@ -27,7 +27,7 @@ UNSUPPORTED_LANG_CONFIG = {
 def temp_config_file():
     temp_dir = tempfile.mkdtemp()
     def _write_config(data):
-        path = os.path.join(temp_dir, 'config.json')
+        path = os.path.join(temp_dir, 'config.yaml')
         with open(path, 'w') as f:
             json.dump(data, f)
         return path

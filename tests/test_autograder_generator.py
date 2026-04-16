@@ -2,13 +2,32 @@ import os
 import zipfile
 import tempfile
 import shutil
-import json
+import yaml
 import pytest
 
 from autograder_gen.generator import AutograderGenerator
 from autograder_gen.config import ConfigParser
 
-SAMPLE_CONFIG_PATH = 'examples/py_simple/config.json'
+from autograder_gen.config import AutograderConfigModel
+
+SAMPLE_CONFIG_DICT = {
+    "version": "1.0",
+    "language": "python",
+    "files_necessary": ["solution.py"],
+    "questions": [
+        {
+            "name": "Question 1",
+            "marking_items": [
+                {
+                    "target_file": "solution.py",
+                    "total_mark": 10,
+                    "type": "file_exists",
+                    "name": "check_solution_py_exists"
+                }
+            ]
+        }
+    ]
+}
 
 @pytest.fixture
 def temp_output_dir():
@@ -17,15 +36,10 @@ def temp_output_dir():
     shutil.rmtree(d)
 
 def test_autograder_zip_contains_expected_files(temp_output_dir):
-    # Parse the sample config
-    config_parser = ConfigParser(SAMPLE_CONFIG_PATH)
-    config = config_parser.parse()
+    # Use schema to parse the manual dict
+    config = AutograderConfigModel.model_validate(SAMPLE_CONFIG_DICT)
     
-    # Load the original config dict for testing
-    with open(SAMPLE_CONFIG_PATH, 'r', encoding='utf-8') as f:
-        original_config_dict = json.load(f)
-    
-    generator = AutograderGenerator(config, original_config_dict)
+    generator = AutograderGenerator(config, SAMPLE_CONFIG_DICT)
     zip_path = generator.generate(temp_output_dir)
 
     # Check that the zip file exists
@@ -40,7 +54,7 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
             'run_autograder',
             'run_tests.py',
             'requirements.txt',
-            'autograder_config.json',
+            'autograder_config.yaml',
             'README.md',
             'tests/',
         ]
@@ -48,13 +62,11 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
             assert any(f.startswith(fname) for f in namelist), f"Missing {fname} in zip: {namelist}"
         
         # Verify the original config was saved correctly
-        with z.open('autograder_config.json') as f:
-            saved_config = json.loads(f.read().decode('utf-8'))
-            assert saved_config == original_config_dict, "Original config not preserved correctly"
+        with z.open('autograder_config.yaml') as f:
+            saved_config = yaml.safe_load(f.read().decode('utf-8'))
+            assert saved_config == SAMPLE_CONFIG_DICT, "Original config not preserved correctly"
         
         # At least one test file per question (now by number)
-        with open(SAMPLE_CONFIG_PATH) as f:
-            config_data = json.load(f)
-        for idx, q in enumerate(config_data['questions'], 1):
-            test_file = f"tests/test_question_{idx}.py"
+        for idx, q in enumerate(SAMPLE_CONFIG_DICT['questions'], 1):
+            test_file = f"tests/question_{idx}_test.py"
             assert test_file in namelist, f"Missing {test_file} in zip: {namelist}"

@@ -1,12 +1,28 @@
+import json
 import subprocess
 from pathlib import Path
-
 import sys
 
+SAMPLE_CONFIG = {
+    "version": "1.0",
+    "language": "python",
+    "files_necessary": ["solution.py"],
+    "questions": [
+        {
+            "name": "Q1",
+            "marking_items": [
+                {"target_file": "solution.py", "total_mark": 10, "type": "file_exists"}
+            ]
+        }
+    ]
+}
 
 def test_cli_generates_autograder(tmp_path):
     # Paths
-    config_path = Path('examples/py_simple/config.json')
+    config_path = tmp_path / 'config.yaml'
+    with open(config_path, 'w') as f:
+        json.dump(SAMPLE_CONFIG, f)
+        
     output_dir = tmp_path / 'output'
     output_dir.mkdir()
 
