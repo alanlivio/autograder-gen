@@ -124,3 +124,9 @@ class ConfigParser:
     def parse_and_validate(self) -> AutograderConfig:
         """Parse and validate the configuration file."""
         return self.parse()
+
+
+if __name__ == "__main__":
+    import json
+
+    print(json.dumps(MarkingItemModel.model_json_schema(), indent=2))
