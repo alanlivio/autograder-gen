@@ -49,10 +49,15 @@ def main():
         help="Only validate configuration without generating autograder",
     )
     parser.add_argument(
-        "--description",
+        "--with-description",
         "-d",
         action="store_true",
         help="Generate description.docx assessment documentation",
+    )
+    parser.add_argument(
+        "--with-skeletons",
+        action="store_true",
+        help="Generate correct_answer.zip and wrong_answer.zip skeletons",
     )
 
     args = parser.parse_args()
@@ -105,12 +110,28 @@ def main():
         print_success(f"Autograder generated successfully: {output_path}")
 
         # Generate description if requested
-        if args.description:
+        if args.with_description:
             docx_buffer = generator.generate_description_docx()
             docx_path = Path(args.output) / "description.docx"
             with open(docx_path, "wb") as f:
                 f.write(docx_buffer.getbuffer())
             print_success(f"Assessment description generated: {docx_path}")
+
+        # Generate answer samples if requested
+        if args.answer_samples_with_skeletons:
+            # Correct answer
+            correct_buffer = generator.generate_correct_answer_zip()
+            correct_path = Path(args.output) / "correct_answer.zip"
+            with open(correct_path, "wb") as f:
+                f.write(correct_buffer.getbuffer())
+            print_success(f"Correct answer sample generated: {correct_path}")
+
+            # Wrong answer
+            wrong_buffer = generator.generate_wrong_answer_zip()
+            wrong_path = Path(args.output) / "wrong_answer.zip"
+            with open(wrong_path, "wb") as f:
+                f.write(wrong_buffer.getbuffer())
+            print_success(f"Wrong answer sample generated: {wrong_path}")
 
         return 0
 
