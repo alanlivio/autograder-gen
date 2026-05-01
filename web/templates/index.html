@@ -7,27 +7,39 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Autograder Generator</h1>
     <div class="d-flex gap-2">
-      <button type="button" class="btn btn-outline-primary" onclick="downloadYamlConfig()">
-        <i class="fas fa-download me-1"></i> Export YAML
+      <input type="file" id="config-upload" class="d-none" accept=".yaml,.yml" onchange="handleConfigUpload(this)">
+      <button type="button" class="btn btn-primary" id="validate-btn" onclick="validateConfig(false)">
+        <i class="fas fa-check-circle me-1"></i> Validate & Export
       </button>
-      <button type="button" class="btn btn-success" onclick="validateConfig()">
-        <i class="fas fa-check me-1"></i> Validate Config
-      </button>
-      <button type="button" class="btn btn-secondary" id="generate-btn" onclick="submitForGeneration()" disabled>
-        <i class="fas fa-file-archive me-1"></i> Generate Autograder
+      <button type="button" class="btn btn-outline-primary d-none" id="generate-btn" onclick="submitForGeneration()">
+        <i class="fas fa-file-archive me-1"></i> Generate All ZIPs
       </button>
     </div>
 </div>
 
 <div id="alert-container"></div>
 
-<!-- Config Upload Section -->
-<div class="card bg-light border-0 mb-4">
+<div id="export-section" class="card border-primary mb-4 d-none">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">Export Assets</h5>
+  </div>
   <div class="card-body">
-    <h5 class="card-title">Import YAML Configuration</h5>
-    <div class="input-group">
-      <input type="file" class="form-control" id="config-upload" accept=".yaml,.yml" onchange="handleConfigUpload(this)">
-      <label class="input-group-text" for="config-upload">Upload YAML Config</label>
+    <div class="d-flex flex-wrap gap-3">
+      <button type="button" class="btn btn-outline-secondary" onclick="downloadYamlConfig()">
+        <i class="fas fa-download me-1"></i> Export YAML
+      </button>
+      <button type="button" class="btn btn-info text-white" onclick="downloadExport('description')">
+        <i class="fas fa-file-word me-1"></i> description.docx
+      </button>
+      <button type="button" class="btn btn-success" onclick="submitForGeneration(this)">
+        <i class="fas fa-file-zipper me-1"></i> autograder.zip
+      </button>
+      <button type="button" class="btn btn-outline-success" onclick="downloadExport('correct')">
+        <i class="fas fa-file-zipper me-1"></i> correct_answer.zip
+      </button>
+      <button type="button" class="btn btn-outline-danger" onclick="downloadExport('wrong')">
+        <i class="fas fa-file-zipper me-1"></i> wrong_answer.zip
+      </button>
     </div>
   </div>
 </div>
@@ -106,9 +118,15 @@
                 <button type="button" class="btn-close" aria-label="Remove" onclick="removeQuestionWithConfirm(this)"></button>
             </div>
             <div class="card-body">
-                <div class="mb-4">
-                    <label class="form-label font-weight-bold">Question Name</label>
-                    <input type="text" class="form-control q-name-input" placeholder="e.g., Problem 1: Fibonacci" required>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label font-weight-bold">Question Name</label>
+                        <input type="text" class="form-control q-name-input" placeholder="e.g., Problem 1: Fibonacci" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label font-weight-bold">Description (for DOCX)</label>
+                        <textarea class="form-control q-description-input" rows="1" placeholder="Describe the question for students..."></textarea>
+                    </div>
                 </div>
                 <div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -147,6 +165,7 @@
 {% block scripts %}
 <script>
 let questionCount = 0;
+let validationTimeout;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelectorAll('#questions-list > .card').length === 0) {
@@ -157,8 +176,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.name && e.target.name.includes('total_mark')) {
             updateQuestionNumbers();
         }
+        
+        // Hide export section on any change until validated again
+        disableGenerateButton();
+        
+        // Debounced validation
+        clearTimeout(validationTimeout);
+        validationTimeout = setTimeout(() => {
+            validateConfig(true); // silent validation
+        }, 1000);
     });
 });
+
+function createNewConfig() {
+    if (confirm('Create new configuration? All unsaved changes will be lost.')) {
+        document.getElementById('autograder-form').reset();
+        document.getElementById('questions-list').innerHTML = '';
+        document.getElementById('required-files-list').innerHTML = '';
+        document.getElementById('files_necessary').value = '';
+        document.getElementById('setup_commands').value = '';
+        questionCount = 0;
+        addQuestion();
+        updateQuestionNumbers();
+        disableGenerateButton();
+        clearAlerts();
+    }
+}
 
 function addQuestion() {
     const blueprint = document.getElementById('question-blueprint').firstElementChild;
@@ -171,14 +214,12 @@ function addQuestion() {
     
     initializeDragAndDrop(qDiv);
     updateQuestionNumbers();
-    disableGenerateButton();
 }
 
 function removeQuestionWithConfirm(btn) {
     if (confirm('Delete this question and all its tests?')) {
         btn.closest('.card').remove();
         updateQuestionNumbers();
-        disableGenerateButton();
     }
 }
 
@@ -192,6 +233,12 @@ function updateQuestionNumbers() {
         if (nameInput) {
             nameInput.name = `${prefix}-name`;
             nameInput.id = `${prefix}-name`;
+        }
+        
+        const descInput = question.querySelector('.q-description-input');
+        if (descInput) {
+            descInput.name = `${prefix}-description`;
+            descInput.id = `${prefix}-description`;
         }
         
         const qTotalPointsSpan = question.querySelector('.q-total-points');
@@ -290,11 +337,11 @@ function showTypeFields(select) {
         html += `
             <div class="mb-2">
                 <label class="form-label small mb-1">Standard Input</label>
-                <textarea class="form-control form-control-sm" id="${prefix}-expected_input" name="${prefix}-expected_input" rows="1"></textarea>
+                <textarea class="form-control form-control-sm font-monospace" id="${prefix}-expected_input" name="${prefix}-expected_input" rows="3"></textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label small mb-1">Expected Output *</label>
-                <textarea class="form-control form-control-sm font-monospace" id="${prefix}-expected_output" name="${prefix}-expected_output" rows="2" required></textarea>
+                <textarea class="form-control form-control-sm font-monospace" id="${prefix}-expected_output" name="${prefix}-expected_output" rows="5" required></textarea>
             </div>
         `;
     } else if (type === 'signature_check') {
@@ -479,6 +526,7 @@ function formToConfigObject() {
         const prefix = `questions-${qIdx}`;
         const question = {
             name: formData.get(`${prefix}-name`),
+            description: formData.get(`${prefix}-description`),
             marking_items: []
         };
 
@@ -515,15 +563,16 @@ function formToConfigObject() {
     return config;
 }
 
-async function validateConfig() {
-    clearAlerts();
+async function validateConfig(silent = false) {
+    if (!silent) clearAlerts();
     const config = formToConfigObject();
-    const btn = document.querySelector('button[onclick="validateConfig()"]');
-    const originalText = btn.innerHTML;
+    const btn = document.querySelector('button[onclick="validateConfig()"]'); // This button might be removed, but keeping logic for safety
+    const originalText = btn ? btn.innerHTML : '';
 
-    
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Validating...';
+    if (!silent && btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Validating...';
+    }
     
     try {
         const response = await fetch('/api/validate', {
@@ -535,29 +584,78 @@ async function validateConfig() {
         });
         const data = await response.json();
         
+        const genBtn = document.getElementById('generate-btn');
+        const exportSection = document.getElementById('export-section');
+        
         if (data.valid) {
-            showAlert('Configuration is valid!', 'success');
-            const genBtn = document.getElementById('generate-btn');
+            if (!silent) {
+                showAlert('Configuration is valid!', 'success');
+                exportSection.classList.remove('d-none');
+            }
             genBtn.disabled = false;
-            genBtn.className = 'btn btn-primary';
         } else {
-            let msg = '<strong>Validation Error:</strong><ul>' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
-            showAlert(msg, 'danger');
+            if (!silent) {
+                let msg = '<strong>Validation Error:</strong><ul>' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                showAlert(msg, 'danger');
+            }
+            genBtn.disabled = true;
+            exportSection.classList.add('d-none');
         }
+        return data.valid;
     } catch (e) {
-        showAlert('Network error during validation.', 'danger');
+        if (!silent) showAlert('Network error during validation.', 'danger');
+        return false;
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        if (!silent && btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
 }
 
-async function submitForGeneration() {
+async function downloadExport(type) {
     const config = formToConfigObject();
-    const btn = document.getElementById('generate-btn');
+    let url = '/api/generate';
+    let filename = 'autograder.zip';
+
+    if (type === 'description') {
+        url = '/api/export/description';
+        filename = 'description.docx';
+    } else if (type === 'correct') {
+        url = '/api/export/correct';
+        filename = 'correct_answer.zip';
+    } else if (type === 'wrong') {
+        url = '/api/export/wrong';
+        filename = 'wrong_answer.zip';
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        if (!response.ok) throw new Error('Export failed');
+        
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (e) {
+        showAlert(e.message, 'danger');
+    }
+}
+
+async function submitForGeneration(btnElement) {
+    const config = formToConfigObject();
+    const btn = btnElement || document.getElementById('generate-btn');
     const originalText = btn.innerHTML;
 
-    
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
     
@@ -580,7 +678,9 @@ async function submitForGeneration() {
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        showAlert('Success! Autograder ZIP downloaded.', 'success');
+        
+        document.getElementById('export-section').classList.remove('d-none');
+        showAlert('Success! Autograder assets ready for download below.', 'success');
     } catch (e) {
         showAlert(e.message, 'danger');
     } finally {
@@ -603,7 +703,7 @@ function showAlert(message, type) {
 function disableGenerateButton() {
     const btn = document.getElementById('generate-btn');
     btn.disabled = true;
-    btn.className = 'btn btn-secondary';
+    document.getElementById('export-section').classList.add('d-none');
 }
 
 function downloadYamlConfig() {
@@ -611,6 +711,7 @@ function downloadYamlConfig() {
     const yamlString = jsyaml.dump(config, {
         schema: jsyaml.DEFAULT_SCHEMA,
         noRefs: true,
+        lineWidth: -1, // Disable line wrapping
         styles: {
             '!!null': 'empty' // dump null as empty
         }
@@ -664,6 +765,7 @@ function populateFormFromConfig(config) {
         addQuestion();
         const qCard = questionsList.lastElementChild;
         qCard.querySelector('.q-name-input').value = q.name || '';
+        if (q.description) qCard.querySelector('.q-description-input').value = q.description;
         
         const miList = qCard.querySelector('.marking-items-list');
         miList.innerHTML = '';

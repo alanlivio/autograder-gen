@@ -115,7 +115,64 @@ def generate_autograder():
             try:
                 os.remove(tmp_path)
             except OSError:
-                pass  # Ignore file deletion errors
+                pass
+
+
+@app.route("/api/export/description", methods=["POST"])
+def export_description():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No config data provided"}), 400
+    try:
+        config = AutograderConfig.model_validate(data)
+        generator = AutograderGenerator(config)
+        buffer = generator.generate_description_docx()
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name="description.docx",
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/export/correct", methods=["POST"])
+def export_correct():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No config data provided"}), 400
+    try:
+        config = AutograderConfig.model_validate(data)
+        generator = AutograderGenerator(config)
+        buffer = generator.generate_correct_answer_zip()
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name="correct_answer.zip",
+            mimetype="application/zip",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/export/wrong", methods=["POST"])
+def export_wrong():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No config data provided"}), 400
+    try:
+        config = AutograderConfig.model_validate(data)
+        generator = AutograderGenerator(config)
+        buffer = generator.generate_wrong_answer_zip()
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name="wrong_answer.zip",
+            mimetype="application/zip",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/validate", methods=["POST"])

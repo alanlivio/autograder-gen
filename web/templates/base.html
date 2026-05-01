@@ -39,6 +39,12 @@
         <div class="container">
             <a class="navbar-brand" href="/">Autograder Generator</a>
             <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#" onclick="createNewConfig(); return false;">
+                    <i class="fas fa-file me-1"></i> New
+                </a>
+                <a class="nav-link" href="#" onclick="document.getElementById('config-upload').click(); return false;">
+                    <i class="fas fa-upload me-1"></i> New from YAML
+                </a>
                 <a class="nav-link" href="https://github.com/alanlivio/autograder-gen" target="_blank">Documentation</a>
             </div>
         </div>
