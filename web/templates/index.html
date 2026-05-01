@@ -11,6 +11,9 @@
       <button type="button" class="btn btn-primary" id="validate-btn" onclick="validateConfig(false)">
         <i class="fas fa-check-circle me-1"></i> Validate & Export
       </button>
+      <button type="button" class="btn btn-warning d-none" id="edit-btn" onclick="toggleFormLock(false)">
+        <i class="fas fa-edit me-1"></i> Edit Configuration
+      </button>
       <button type="button" class="btn btn-outline-primary d-none" id="generate-btn" onclick="submitForGeneration()">
         <i class="fas fa-file-archive me-1"></i> Generate All ZIPs
       </button>
@@ -24,7 +27,7 @@
     <h5 class="mb-0">Export Assets</h5>
   </div>
   <div class="card-body">
-    <div class="d-flex flex-wrap gap-3">
+    <div class="d-flex flex-wrap gap-3 align-items-center">
       <button type="button" class="btn btn-outline-secondary" onclick="downloadYamlConfig()">
         <i class="fas fa-download me-1"></i> Export YAML
       </button>
@@ -46,61 +49,73 @@
 
 <form id="autograder-form">
   
-  <div class="row mb-4">
+  <div class="row mb-4" id="global-config-section">
     <div class="col-12">
-        <h3 class="border-bottom pb-2 mb-3">Global Configuration</h3>
+        <h3 class="border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#global-config-collapse" style="cursor: pointer;">
+            Global Configuration
+            <i class="fas fa-chevron-down small text-muted"></i>
+        </h3>
     </div>
-    <div class="col-md-4">
-      <div class="mb-3">
-        <label for="language" class="form-label font-weight-bold">Language</label>
-        <select class="form-select" id="language" name="language">
-            <option value="python" selected>Python</option>
-            <option value="java">Java</option>
-        </select>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="mb-3">
-        <label for="version" class="form-label font-weight-bold">Version</label>
-        <input type="text" class="form-control" id="version" name="version" value="0.1">
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="mb-3">
-        <label for="global_time_limit" class="form-label font-weight-bold">Global Time Limit (ms)</label>
-        <input type="number" class="form-control" id="global_time_limit" name="global_time_limit" value="300" min="1">
-      </div>
-    </div>
-    <div class="col-12">
-      <div class="mb-3">
-        <label for="setup_commands" class="form-label font-weight-bold">Setup Commands (one per line)</label>
-        <textarea class="form-control" id="setup_commands" name="setup_commands" rows="3"></textarea>
-      </div>
-    </div>
-    <div class="col-12">
-      <label class="form-label font-weight-bold">Required Files</label>
-      <div id="required-files-container">
-        <div class="input-group mb-2">
-          <input type="text" class="form-control" id="new-file-input" placeholder="e.g., solution.py">
-          <button type="button" class="btn btn-primary" onclick="addRequiredFile()">Add File</button>
+    <div id="global-config-collapse" class="collapse show w-100">
+      <div class="row px-3">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="language" class="form-label font-weight-bold">Language</label>
+            <select class="form-select" id="language" name="language">
+                <option value="python" selected>Python</option>
+                <option value="java">Java</option>
+            </select>
+          </div>
         </div>
-        <div id="required-files-list" class="border rounded p-3 bg-white" style="min-height: 80px;">
-             <span class="text-muted small">No specific file requirements defined.</span>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="version" class="form-label font-weight-bold">Version</label>
+            <input type="text" class="form-control" id="version" name="version" value="0.1">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="global_time_limit" class="form-label font-weight-bold">Global Time Limit (ms)</label>
+            <input type="number" class="form-control" id="global_time_limit" name="global_time_limit" value="300" min="1">
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="mb-3">
+            <label for="setup_commands" class="form-label font-weight-bold">Setup Commands (one per line)</label>
+            <textarea class="form-control" id="setup_commands" name="setup_commands" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label font-weight-bold">Required Files</label>
+          <div id="required-files-container">
+            <div class="input-group mb-2">
+              <input type="text" class="form-control" id="new-file-input" placeholder="e.g., solution.py">
+              <button type="button" class="btn btn-primary" onclick="addRequiredFile()">Add File</button>
+            </div>
+            <div id="required-files-list" class="border rounded p-3 bg-white" style="min-height: 80px;">
+                 <span class="text-muted small">No specific file requirements defined.</span>
+            </div>
+          </div>
+          <textarea id="files_necessary" name="files_necessary" class="d-none"></textarea>
+          <div class="form-text">Files that students MUST submit.</div>
         </div>
       </div>
-      <textarea id="files_necessary" name="files_necessary" class="d-none"></textarea>
-      <div class="form-text">Files that students MUST submit.</div>
     </div>
   </div>
 
-  <div class="mt-4">
-    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
-        <h3 class="mb-0">Questions & Marking Items</h3>
-        <button type="button" class="btn btn-primary" onclick="addQuestion()">
-            <i class="fas fa-plus me-1"></i> Add Question
-        </button>
+  <div class="mt-4" id="questions-section">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4" data-bs-toggle="collapse" data-bs-target="#questions-collapse" style="cursor: pointer;">
+        <h3 class="mb-0">Questions</h3>
+        <div class="d-flex align-items-center gap-3">
+            <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); addQuestion()">
+                <i class="fas fa-plus me-1"></i> Add Question
+            </button>
+            <i class="fas fa-chevron-down small text-muted"></i>
+        </div>
     </div>
-    <div id="questions-list"></div>
+    <div id="questions-collapse" class="collapse show">
+        <div id="questions-list"></div>
+    </div>
   </div>
 </form>
 
@@ -190,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function createNewConfig() {
     if (confirm('Create new configuration? All unsaved changes will be lost.')) {
+        toggleFormLock(false);
         document.getElementById('autograder-form').reset();
         document.getElementById('questions-list').innerHTML = '';
         document.getElementById('required-files-list').innerHTML = '';
@@ -214,6 +230,36 @@ function addQuestion() {
     
     initializeDragAndDrop(qDiv);
     updateQuestionNumbers();
+}
+
+function toggleFormLock(lock) {
+    const form = document.getElementById('autograder-form');
+    const elements = form.querySelectorAll('input, select, textarea, button:not(.btn-close)');
+    elements.forEach(el => {
+        // Don't disable the hidden file input
+        if (el.id === 'config-upload') return;
+        el.disabled = lock;
+    });
+    
+    // Also disable/enable the "Add Question" button in the header
+    const addQBtn = document.querySelector('button[onclick*="addQuestion"]');
+    if (addQBtn) addQBtn.disabled = lock;
+    
+    // And remove buttons on questions
+    document.querySelectorAll('.btn-close').forEach(btn => btn.classList.toggle('d-none', lock));
+    
+    // Gray out sections (including headings)
+    document.getElementById('global-config-section').classList.toggle('locked-section', lock);
+    document.getElementById('questions-section').classList.toggle('locked-section', lock);
+
+    // Toggle button visibility
+    document.getElementById('validate-btn').classList.toggle('d-none', lock);
+    document.getElementById('edit-btn').classList.toggle('d-none', !lock);
+    
+    // Hide export section if unlocking
+    if (!lock) {
+        document.getElementById('export-section').classList.add('d-none');
+    }
 }
 
 function removeQuestionWithConfirm(btn) {
@@ -589,8 +635,9 @@ async function validateConfig(silent = false) {
         
         if (data.valid) {
             if (!silent) {
-                showAlert('Configuration is valid!', 'success');
+                showAlert('Configuration is valid! Form locked for editing.', 'success');
                 exportSection.classList.remove('d-none');
+                toggleFormLock(true);
             }
             genBtn.disabled = false;
         } else {
@@ -732,6 +779,7 @@ function handleConfigUpload(input) {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
+            toggleFormLock(false);
             let config;
             if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
                 config = jsyaml.load(e.target.result);

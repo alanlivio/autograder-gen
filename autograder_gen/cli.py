@@ -118,7 +118,7 @@ def main():
             print_success(f"Assessment description generated: {docx_path}")
 
         # Generate answer samples if requested
-        if args.answer_samples_with_skeletons:
+        if args.skeletons:
             # Correct answer
             correct_buffer = generator.generate_correct_answer_zip()
             correct_path = Path(args.output) / "correct_answer.zip"
