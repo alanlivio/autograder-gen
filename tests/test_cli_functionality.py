@@ -27,9 +27,8 @@ def test_cli_generates_autograder(tmp_path):
     output_dir = tmp_path / "output"
     output_dir.mkdir()
 
-    # Use the venv Python if available
-    venv_python = Path(".venv/Scripts/python.exe")
-    python_executable = str(venv_python) if venv_python.exists() else sys.executable
+    # Use the current Python interpreter
+    python_executable = sys.executable
 
     # Run the CLI
     result = subprocess.run(
@@ -55,3 +54,41 @@ def test_cli_generates_autograder(tmp_path):
     # Check autograder.zip exists
     zip_path = output_dir / "autograder.zip"
     assert zip_path.exists(), "autograder.zip was not created by the CLI"
+
+
+def test_cli_generates_all_assets(tmp_path):
+    # Paths
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, "w") as f:
+        json.dump(SAMPLE_CONFIG, f)
+
+    output_dir = tmp_path / "output_all"
+    output_dir.mkdir()
+
+    # Use the current Python interpreter
+    python_executable = sys.executable
+
+    # Run the CLI with new flags
+    result = subprocess.run(
+        [
+            python_executable,
+            "autograder_gen/cli.py",
+            "--config",
+            str(config_path),
+            "--output",
+            str(output_dir),
+            "--with-description",
+            "--with-skeletons",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    # Check exit code
+    assert result.returncode == 0, f"CLI failed: {result.stderr}"
+
+    # Check all assets exist
+    assert (output_dir / "autograder.zip").exists()
+    assert (output_dir / "description.docx").exists()
+    assert (output_dir / "correct_answer.zip").exists()
+    assert (output_dir / "wrong_answer.zip").exists()

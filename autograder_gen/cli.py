@@ -56,6 +56,7 @@ def main():
     )
     parser.add_argument(
         "--with-skeletons",
+        "-s",
         action="store_true",
         help="Generate correct_answer.zip and wrong_answer.zip skeletons",
     )
@@ -118,7 +119,7 @@ def main():
             print_success(f"Assessment description generated: {docx_path}")
 
         # Generate answer samples if requested
-        if args.skeletons:
+        if args.with_skeletons:
             # Correct answer
             correct_buffer = generator.generate_correct_answer_zip()
             correct_path = Path(args.output) / "correct_answer.zip"
