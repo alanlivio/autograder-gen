@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 ## CLI Usage
 
-The Command-Line Interface allows you to generate autograders directly from a configuration file.
+The Command-Line Interface allows you to generate autograders (`autograder.zip`) directly from a configuration file.
 
 ```bash
 python autograder_gen/cli.py --config <path/to/config.yaml> [options]
@@ -41,14 +41,15 @@ python autograder_gen/cli.py --config <path/to/config.yaml> [options]
 ### Arguments:
 
 - `--config`, `-c` (required): Path to your configuration file (YAML).
-- `--output`, `-o`: Output directory for the generated `autograder.zip` (default: `./output`).
+- `--output`, `-o`: Output directory for the generated files (default: `./output`).
+- `--description`, `-d`: Generate assessment documentation as `description.docx` alongside the ZIP.
 - `--verbose`, `-v`: Enable verbose logging.
 - `--validate-only`: Only validate the configuration file without generating the ZIP.
 
 ### Example:
 
 ```bash
-python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --description
 ```
 
 ## Web Interface

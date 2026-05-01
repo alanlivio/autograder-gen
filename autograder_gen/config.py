@@ -56,6 +56,7 @@ class QuestionModel(BaseModel):
     """Represents a question with multiple marking items."""
 
     name: str
+    description: str = ""
     marking_items: List[MarkingItemModel] = Field(min_length=1)
 
 

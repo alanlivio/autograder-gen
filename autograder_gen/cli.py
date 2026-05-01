@@ -48,6 +48,12 @@ def main():
         action="store_true",
         help="Only validate configuration without generating autograder",
     )
+    parser.add_argument(
+        "--description",
+        "-d",
+        action="store_true",
+        help="Generate description.docx assessment documentation",
+    )
 
     args = parser.parse_args()
 
@@ -96,8 +102,16 @@ def main():
         # Generate autograder
         generator = AutograderGenerator(config, original_config_dict)
         output_path = generator.generate(args.output)
-
         print_success(f"Autograder generated successfully: {output_path}")
+
+        # Generate description if requested
+        if args.description:
+            docx_buffer = generator.generate_description_docx()
+            docx_path = Path(args.output) / "description.docx"
+            with open(docx_path, "wb") as f:
+                f.write(docx_buffer.getbuffer())
+            print_success(f"Assessment description generated: {docx_path}")
+
         return 0
 
     except Exception as e:

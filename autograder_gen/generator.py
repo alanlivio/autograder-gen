@@ -12,6 +12,9 @@ import re
 from types import SimpleNamespace
 from pathlib import Path
 
+from io import BytesIO
+from docx import Document
+from docx.shared import Pt
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from autograder_gen.config import AutograderConfig
 
@@ -70,6 +73,139 @@ class AutograderGenerator:
             # Clean up temporary directory
             if self.temp_dir and self.temp_dir.exists():
                 shutil.rmtree(self.temp_dir)
+
+    def generate_description_docx(self) -> BytesIO:
+        """Generate a Word document containing the assessment description."""
+        doc = Document()
+        doc.add_heading("Assessment Description", 0)
+
+        for i, question in enumerate(self.config.questions, 1):
+            doc.add_heading(f"Question {i}: {question.name}", level=1)
+            if hasattr(question, "description") and question.description:
+                doc.add_paragraph(question.description)
+
+            # Calculate question total points (excluding hidden file checks)
+            question_points = sum(
+                item.total_mark
+                for item in question.marking_items
+                if item.type != "file_exists"
+            )
+            p = doc.add_paragraph()
+            run = p.add_run(f"Total Points: {question_points}")
+            run.bold = True
+
+            doc.add_heading("Marking Items", level=2)
+            visible_item_idx = 1
+            for item in question.marking_items:
+                if item.type == "file_exists":
+                    continue
+
+                item_name = getattr(item, "name", "") or f"Marking Item {visible_item_idx}"
+                doc.add_heading(f"{visible_item_idx}. {item_name}", level=3)
+                doc.add_paragraph(f"Points: {item.total_mark}")
+                
+                if item.type == "output_comparison":
+                    doc.add_paragraph(f"Requirement: Program must produce specific output for given input in '{item.target_file}'.")
+                    if item.expected_input:
+                        doc.add_heading("Example Input:", level=4)
+                        p = doc.add_paragraph()
+                        run = p.add_run(item.expected_input)
+                        run.font.name = 'Courier New'
+                    
+                    if item.expected_output:
+                        doc.add_heading("Expected Output:", level=4)
+                        p = doc.add_paragraph()
+                        run = p.add_run(item.expected_output)
+                        run.font.name = 'Courier New'
+                elif item.type == "signature_check":
+                    doc.add_paragraph(f"Requirement: Function '{item.function_name}' in '{item.target_file}' must have correct signature.")
+                elif item.type == "function_test":
+                    doc.add_paragraph(f"Requirement: Function '{item.function_name}' in '{item.target_file}' must pass unit tests.")
+                
+                visible_item_idx += 1
+
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
+
+    def generate_correct_answer_zip(self) -> BytesIO:
+        """Generate a ZIP file with correct implementation skeletons."""
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for filename in self.config.files_necessary:
+                content = self._generate_skeleton_content(filename, correct=True)
+                zipf.writestr(filename, content)
+        buffer.seek(0)
+        return buffer
+
+    def generate_wrong_answer_zip(self) -> BytesIO:
+        """Generate a ZIP file with incorrect implementation skeletons."""
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for filename in self.config.files_necessary:
+                content = self._generate_skeleton_content(filename, correct=False)
+                zipf.writestr(filename, content)
+        buffer.seek(0)
+        return buffer
+
+    def _generate_skeleton_content(self, target_file: str, correct: bool = True) -> str:
+        """Generate skeleton code for a given file."""
+        if self.config.language == "python":
+            lines = ["# Skeleton for " + target_file, ""]
+            
+            # Find all functions related to this file
+            functions = set()
+            for q in self.config.questions:
+                for item in q.marking_items:
+                    if item.target_file == target_file:
+                        if hasattr(item, "function_name") and item.function_name:
+                            functions.add(item.function_name)
+            
+            for func in sorted(functions):
+                lines.append(f"def {func}(*args, **kwargs):")
+                if correct:
+                    lines.append("    # TODO: Implement correct logic")
+                    lines.append("    pass")
+                else:
+                    lines.append("    # TODO: Implement incorrect logic for testing")
+                    lines.append("    return None")
+                lines.append("")
+            
+            if not functions:
+                lines.append("# No specific functions defined for this file.")
+                if not correct:
+                    lines.append("# This file might be intentionally wrong or missing logic.")
+
+            return "\n".join(lines)
+        
+        elif self.config.language == "java":
+            # Very basic Java skeleton
+            class_name = target_file.replace(".java", "")
+            lines = [f"public class {class_name} {{", ""]
+            
+            functions = set()
+            for q in self.config.questions:
+                for item in q.marking_items:
+                    if item.target_file == target_file:
+                        if hasattr(item, "function_name") and item.function_name:
+                            functions.add(item.function_name)
+            
+            for func in sorted(functions):
+                lines.append(f"    public static Object {func}(Object... args) {{")
+                if correct:
+                    lines.append("        // TODO: Implement correct logic")
+                    lines.append("        return null;")
+                else:
+                    lines.append("        // TODO: Implement incorrect logic")
+                    lines.append("        throw new RuntimeException(\"Not implemented\");")
+                lines.append("    }")
+                lines.append("")
+                
+            lines.append("}")
+            return "\n".join(lines)
+
+        return "# Skeleton for " + target_file
 
     def _generate_setup_sh(self):
         """Generate setup.sh using Jinja template."""
