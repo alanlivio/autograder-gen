@@ -267,3 +267,49 @@ def test_cli_run_stubs_submissions_direct_arg():
     assert result.returncode == 0
     assert "stub_correct_answer.log" in result.stdout
     assert "[AutograderRunner: Student View]" not in result.stdout
+
+
+def test_cli_run_multiple_submissions():
+    python_executable = sys.executable
+    result = subprocess.run(
+        [
+            python_executable,
+            "autograder_gen/cli.py",
+            "--config",
+            "tests/examples/py_simple/config.yaml",
+            "--run-submission",
+            "correct_answer",
+            "--run-submission",
+            "wrong_answer",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "correct_answer.log" in result.stdout
+    assert "wrong_answer.log" in result.stdout
+    assert (Path("tests/examples/py_simple") / "correct_answer.log").exists()
+    assert (Path("tests/examples/py_simple") / "wrong_answer.log").exists()
+
+
+def test_cli_run_stubs_and_submissions_together():
+    python_executable = sys.executable
+    result = subprocess.run(
+        [
+            python_executable,
+            "autograder_gen/cli.py",
+            "--config",
+            "tests/examples/py_simple/config.yaml",
+            "--run-stub-submissions",
+            "--run-submission",
+            "correct_answer",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "stub_correct_answer.log" in result.stdout
+    assert "stub_wrong_answer.log" in result.stdout
+    assert "correct_answer.log" in result.stdout
+    assert (Path("tests/examples/py_simple") / "correct_answer.log").exists()
+

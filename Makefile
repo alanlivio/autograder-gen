@@ -40,10 +40,10 @@ deps:
 	$(PYTHON) -m pip install -r requirements.txt -r requirements-dev.txt
 
 wheel:
-	$(PYTHON) -m pip install --upgrade build wheel setuptools twine
 	rm -rf dist build ./*.egg-info
-	$(PYTHON) -m build --wheel
+	$(PYTHON) -m build --wheel --no-isolation
 	$(PYTHON) -m twine check dist/*
+
 
 install-global: wheel
 	$(GLOBAL_PYTHON) -m pip install --force-reinstall --break-system-packages dist/*.whl
@@ -60,10 +60,10 @@ test:
 	$(PYTHON) -m pytest tests
 
 run-examples:
-	PYTHONPATH=. $(PYTHON) -m autograder_gen.batch_run tests/examples
+	PYTHONPATH=. $(PYTHON) -m autograder_gen.batch tests/examples --run-stub-submissions
 
-gen-examples:
-	PYTHONPATH=. $(PYTHON) -m autograder_gen.batch_gen tests/examples
+
+
 
 format:
 	$(PYTHON) -m black .

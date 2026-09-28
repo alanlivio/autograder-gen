@@ -62,3 +62,133 @@ def test_web_app_import_and_export_all_templates(client, template_name):
     assert export_resp.status_code == 200
     assert export_resp.headers["Content-Type"] == "application/zip"
     assert export_resp.data.startswith(b"PK\x03\x04")
+
+
+def test_generate_page_contains_new_fields(client):
+    response = client.get("/generate")
+    assert response.status_code == 200
+    assert b"retrieve_student_id" in response.data
+    assert b"wrong_file_location_deduction" in response.data
+    assert b"manual_review" in response.data
+
+
+def test_web_validate_and_export_with_retrieve_student_id(client):
+    config = {
+        "version": "1.0",
+        "language": "python",
+        "retrieve_student_id": True,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    assert val_resp.get_json()["valid"] is True
+
+    export_resp = client.post("/api/export/bundle", json=config)
+    assert export_resp.status_code == 200
+    assert export_resp.headers["Content-Type"] == "application/zip"
+    assert export_resp.data.startswith(b"PK\x03\x04")
+
+
+def test_web_validate_and_export_with_wrong_file_location_deduction(client):
+    config = {
+        "version": "1.0",
+        "language": "python",
+        "wrong_file_location_deduction": 2.5,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    assert val_resp.get_json()["valid"] is True
+
+    export_resp = client.post("/api/export/bundle", json=config)
+    assert export_resp.status_code == 200
+    assert export_resp.headers["Content-Type"] == "application/zip"
+    assert export_resp.data.startswith(b"PK\x03\x04")
+
+
+def test_web_validate_and_export_with_manual_review(client):
+    config = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["report.pdf"],
+        "questions": [
+            {
+                "name": "Report",
+                "marking_items": [
+                    {
+                        "name": "Manual PDF Review",
+                        "target_file": "report.pdf",
+                        "total_mark": 20.0,
+                        "type": "manual_review",
+                    },
+                    {
+                        "name": "Oral Presentation",
+                        "total_mark": 10.0,
+                        "type": "manual_review",
+                    },
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    assert val_resp.get_json()["valid"] is True
+
+    export_resp = client.post("/api/export/bundle", json=config)
+    assert export_resp.status_code == 200
+    assert export_resp.headers["Content-Type"] == "application/zip"
+    assert export_resp.data.startswith(b"PK\x03\x04")
+
+
+def test_upload_config_with_new_fields(client):
+    import io
+
+    yaml_content = """version: '1.0'
+language: python
+retrieve_student_id: true
+wrong_file_location_deduction: 3.0
+required_files:
+  - doc.pdf
+questions:
+  - name: Q1
+    marking_items:
+      - name: Review
+        type: manual_review
+        target_file: doc.pdf
+        total_mark: 15.0
+"""
+    data = {"config_file": (io.BytesIO(yaml_content.encode("utf-8")), "config.yaml")}
+    resp = client.post("/upload-config", data=data, content_type="multipart/form-data")
+    assert resp.status_code == 200
+    res_json = resp.get_json()
+    assert res_json["success"] is True
+    assert res_json["config"]["retrieve_student_id"] is True
+    assert res_json["config"]["wrong_file_location_deduction"] == 3.0

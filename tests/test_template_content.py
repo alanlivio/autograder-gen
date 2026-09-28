@@ -379,3 +379,25 @@ def test_student_message_compilation_error():
 
     assert StudentMessage.COMPILATION_ERROR == "[COMPILATION_ERROR] Check compile errors above."
     assert not hasattr(StudentMessage, "COMPILER_ERROR")
+
+
+def test_shell_scripts_bash_syntax_validation(temp_output_dir):
+    import subprocess
+
+    for lang in ["python", "java"]:
+        cfg_dict = CONFIG_FOR_TEMPLATES.copy()
+        cfg_dict["language"] = lang
+        config = ag.Config.model_validate(cfg_dict)
+        generator = ag.Engine(config, cfg_dict)
+        zip_path = generator.generate(temp_output_dir)
+        with zipfile.ZipFile(zip_path, "r") as z:
+            for script_name in ["setup.sh", "run_autograder"]:
+                script_bytes = z.read(script_name)
+                res = subprocess.run(
+                    ["bash", "-n"],
+                    input=script_bytes,
+                    capture_output=True,
+                )
+                assert (
+                    res.returncode == 0
+                ), f"{script_name} for {lang} failed bash -n: {res.stderr.decode()}"

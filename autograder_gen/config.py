@@ -119,11 +119,18 @@ class Config(BaseModel):
     @classmethod
     def handle_global_wrong_file_location_deduction(cls, data: Any) -> Any:
         if isinstance(data, dict) and "wrong_file_location_deduction" in data:
+            data = data.copy()
             global_ded = data.pop("wrong_file_location_deduction")
             if "questions" in data and isinstance(data["questions"], list):
+                new_questions = []
                 for q in data["questions"]:
                     if isinstance(q, dict) and "wrong_file_location_deduction" not in q:
-                        q["wrong_file_location_deduction"] = global_ded
+                        q_copy = q.copy()
+                        q_copy["wrong_file_location_deduction"] = global_ded
+                        new_questions.append(q_copy)
+                    else:
+                        new_questions.append(q)
+                data["questions"] = new_questions
         return data
 
     @model_validator(mode="before")

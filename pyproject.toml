@@ -47,15 +47,16 @@ Repository = "https://github.com/alanlivio/autograder_gen"
 
 [project.scripts]
 autograder-gen = "autograder_gen.cli:main"
+autograder-gen-batch = "autograder_gen.batch:main"
 autograder-gen-web = "autograder_gen.web.app:main"
-autograder-gen-batch = "autograder_gen.batch_gen:main"
-autograder-run-batch = "autograder_gen.batch_run:main"
+
+
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["autograder_gen*"]
 exclude = ["tests*", "scripts*"]
-namespaces = false
+namespaces = true
 
 [tool.setuptools.package-data]
 autograder_gen = ["templates/*", "templates/**/*"]
@@ -66,7 +67,7 @@ autograder_gen = ["templates/*", "templates/**/*"]
 version = { attr = "autograder_gen.version.__version__" }
 
 [tool.black]
-extend-exclude = '.*compiler_error.*'
+extend-exclude = '.*compiler_error.*|.*compilation_error.*'
 line-length = 100
 
 [tool.pytest.ini_options]

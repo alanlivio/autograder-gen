@@ -107,6 +107,10 @@
             transform: translateY(0);
         }
     }
+
+    .manual-review-border {
+        border-left-color: #6f42c1 !important;
+    }
 </style>
 <div id="text-mode-container" class="fade-in mb-4">
     <div class="stats-bar py-3 px-4 mb-3 d-flex gap-4 align-items-center">
@@ -154,6 +158,22 @@
                                 (ms)</label>
                             <input type="number" class="form-control" id="global_time_limit" name="global_time_limit"
                                 value="300" min="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="wrong_file_location_deduction" class="form-label font-weight-bold">Wrong File Location Deduction</label>
+                            <input type="number" step="any" min="0" class="form-control" id="wrong_file_location_deduction" name="wrong_file_location_deduction" value="0">
+                            <div class="form-text">Points deducted per question if file is submitted in wrong folder.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check mt-1">
+                            <input class="form-check-input" type="checkbox" id="retrieve_student_id" name="retrieve_student_id">
+                            <label class="form-check-label font-weight-bold" for="retrieve_student_id">
+                                Retrieve Student ID
+                            </label>
+                            <div class="form-text">Extract student ID from submission path or metadata.</div>
                         </div>
                     </div>
                     <div class="col-12">
@@ -262,6 +282,7 @@
                         <option value="function_test">Unit Test Function</option>
                         <option value="gitlab_submission_exists">Check GitLab Submission</option>
                         <option value="github_submission_exists">Check GitHub Submission</option>
+                        <option value="manual_review">Manual Review</option>
                     </select>
                 </div>
                 <button type="button" class="btn-close align-self-start" aria-label="Remove"
@@ -352,6 +373,10 @@
         document.getElementById('required-files-list').innerHTML = '';
         document.getElementById('required_files').value = '';
         document.getElementById('setup_commands').value = '';
+        const retrieveStudentIdEl = document.getElementById('retrieve_student_id');
+        if (retrieveStudentIdEl) retrieveStudentIdEl.checked = false;
+        const wrongFileLocEl = document.getElementById('wrong_file_location_deduction');
+        if (wrongFileLocEl) wrongFileLocEl.value = '0';
         questionCount = 0;
         addQuestion();
         updateQuestionNumbers();
@@ -486,6 +511,8 @@
         const miIdx = Array.from(mi.parentElement.children).indexOf(mi);
         const prefix = `questions-${qIdx}-marking_items-${miIdx}`;
         mi.className = 'marking-item card card-body mb-3 border-start ' + type.replace(/_/g, '-') + '-border';
+        const hasTimeLimit = (type === 'output_comparison' || type === 'function_test');
+        const isTargetFileOptional = (type === 'gitlab_submission_exists' || type === 'github_submission_exists' || type === 'manual_review');
         let html = `
         <div class="row mb-2">
             <div class="col-md-9">
@@ -498,17 +525,18 @@
             </div>
         </div>
         <div class="row mb-2">
-            <div class="col-md-6">
-                <label class="form-label small mb-1">${(type === 'gitlab_submission_exists' || type === 'github_submission_exists') ? 'Target File (optional)' : 'Target File *'}</label>
-                <select class="form-select form-select-sm" data-suffix="target_file" id="${prefix}-target_file" name="${prefix}-target_file" ${(type === 'gitlab_submission_exists' || type === 'github_submission_exists') ? '' : 'required'}>
+            <div class="${hasTimeLimit ? 'col-md-6' : 'col-md-8'}">
+                <label class="form-label small mb-1">${isTargetFileOptional ? 'Target File (optional)' : 'Target File *'}</label>
+                <select class="form-select form-select-sm" data-suffix="target_file" id="${prefix}-target_file" name="${prefix}-target_file" ${isTargetFileOptional ? '' : 'required'}>
                     <option value="">Select file...</option>
                 </select>
             </div>
+            ${hasTimeLimit ? `
             <div class="col-md-3">
                 <label class="form-label small mb-1">Time Limit (s)</label>
                 <input type="number" class="form-control form-control-sm" data-suffix="time_limit" id="${prefix}-time_limit" name="${prefix}-time_limit" value="30">
-            </div>
-            <div class="col-md-3">
+            </div>` : ''}
+            <div class="${hasTimeLimit ? 'col-md-3' : 'col-md-4'}">
                 <label class="form-label small mb-1">Visibility</label>
                 <select class="form-select form-select-sm" data-suffix="visibility" id="${prefix}-visibility" name="${prefix}-visibility">
                     <option value="visible">Visible</option>
@@ -555,6 +583,12 @@
             <div class="mb-2">
                 <label class="form-label small mb-1">Test Cases (YAML) *</label>
                 <textarea class="form-control form-control-sm font-monospace" data-suffix="test_cases" id="${prefix}-test_cases" name="${prefix}-test_cases" rows="3" required></textarea>
+            </div>
+        `;
+        } else if (type === 'manual_review') {
+            html += `
+            <div class="alert alert-secondary py-2 small mb-0">
+                <i class="fas fa-info-circle me-1"></i> Graded manually by instructor. If a target file is specified, the autograder checks if the file was submitted.
             </div>
         `;
         }
@@ -713,6 +747,14 @@
             required_files: (formData.get('required_files') || '').split('\n').filter(f => f.trim()),
             questions: []
         };
+        const retrieveStudentIdVal = formData.get('retrieve_student_id');
+        if (retrieveStudentIdVal === 'on' || retrieveStudentIdVal === 'true' || retrieveStudentIdVal === true) {
+            config.retrieve_student_id = true;
+        }
+        const wrongFileLocVal = parseFloat(formData.get('wrong_file_location_deduction'));
+        if (!isNaN(wrongFileLocVal) && wrongFileLocVal > 0) {
+            config.wrong_file_location_deduction = wrongFileLocVal;
+        }
         const questions = document.querySelectorAll('#questions-list > .card');
         questions.forEach((q, qIdx) => {
             const prefix = `questions-${qIdx}`;
@@ -729,11 +771,16 @@
                 const item = {
                     type: type,
                     name: formData.get(`${miPrefix}-name`),
-                    target_file: formData.get(`${miPrefix}-target_file`),
                     total_mark: parseFloat(formData.get(`${miPrefix}-total_mark`)),
-                    time_limit: parseInt(formData.get(`${miPrefix}-time_limit`)) || 30,
                     visibility: formData.get(`${miPrefix}-visibility`) || 'visible'
                 };
+                const targetFileVal = formData.get(`${miPrefix}-target_file`);
+                if (targetFileVal) {
+                    item.target_file = targetFileVal;
+                }
+                if (type === 'output_comparison' || type === 'function_test') {
+                    item.time_limit = parseInt(formData.get(`${miPrefix}-time_limit`)) || 30;
+                }
                 if (type === 'output_comparison') {
                     item.expected_input = formData.get(`${miPrefix}-expected_input`);
                     item.expected_output = formData.get(`${miPrefix}-expected_output`);
@@ -1022,6 +1069,13 @@
                 if (config.language) setElVal('language', config.language);
                 if (config.version) setElVal('version', config.version);
                 if (config.global_time_limit) setElVal('global_time_limit', config.global_time_limit);
+                if (config.retrieve_student_id !== undefined) {
+                    const retIdEl = document.getElementById('retrieve_student_id');
+                    if (retIdEl) retIdEl.checked = Boolean(config.retrieve_student_id);
+                }
+                if (config.wrong_file_location_deduction !== undefined) {
+                    setElVal('wrong_file_location_deduction', config.wrong_file_location_deduction);
+                }
                 if (config.setup_commands) setElVal('setup_commands', (config.setup_commands || []).join('\n'));
                 if (config.required_files || config.src_files) {
                     const filesStr = (config.required_files || config.src_files || []).join('\n');
@@ -1047,7 +1101,17 @@
                         const miList = qCard.querySelector('.marking-items-list');
                         if (miList) miList.innerHTML = '';
 
-                        (q.marking_items || []).forEach((mi, miIdx) => {
+                        let markingItemsData = q.marking_items || [];
+                        if (markingItemsData.length === 0 && q.manual_review) {
+                            markingItemsData = [{
+                                name: q.name || 'Manual Review',
+                                total_mark: q.total_mark || 0,
+                                type: 'manual_review',
+                                target_file: q.target_file || ''
+                            }];
+                        }
+
+                        markingItemsData.forEach((mi, miIdx) => {
                             const blueprint = document.getElementById('marking-item-blueprint').firstElementChild;
                             if (blueprint && miList) {
                                 const miDiv = blueprint.cloneNode(true);
