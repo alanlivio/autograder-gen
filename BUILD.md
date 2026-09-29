@@ -1,0 +1,105 @@
+# Building from Source
+
+Run `make help` to inspect available Makefile targets.
+
+## Setup
+
+Set up the virtual environment and install all dependencies:
+
+```bash
+make deps
+```
+
+## Running Python Scripts
+
+### CLI Generator
+
+Run `autograder_gen/cli.py` directly using Python:
+
+```bash
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml
+```
+
+Options:
+
+- Generate assessment descriptions (`description.docx` and `description.md`):
+
+```bash
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --descriptions
+```
+
+- Run a submission directory or zip against an autograder configuration:
+
+```bash
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --run-submission tests/examples/py_simple/correct_answer
+```
+
+- Run autograder against generated stub submissions:
+
+```bash
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --run-stub-submissions
+```
+
+### Batch Processor
+
+Run `autograder_gen/cli_batch.py` directly using Python to batch generate or test across directories:
+
+```bash
+# Generate autograders for all configurations in a directory
+python autograder_gen/cli_batch.py tests/examples
+
+# Run stub submissions in batch
+python autograder_gen/cli_batch.py tests/examples --run-stub-submissions
+```
+
+### Web Interface
+
+Run `autograder_gen/web/app.py` directly to start the web server:
+
+```bash
+python autograder_gen/web/app.py
+```
+
+Or run via Makefile:
+
+```bash
+make serve
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+make test
+```
+
+Or invoke pytest directly:
+
+```bash
+python -m pytest
+```
+
+## Formatting
+
+Format Python code using Black:
+
+```bash
+make format
+```
+
+## Building Distribution Packages
+
+Build wheel and source distributions:
+
+```bash
+make build
+```
+
+Or build wheel only and verify with twine:
+
+```bash
+make wheel
+```
+
+Run `make help` to see all available Makefile targets.
