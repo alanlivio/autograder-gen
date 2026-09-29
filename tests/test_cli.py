@@ -89,10 +89,22 @@ def test_cli_generates_descriptions(tmp_path):
     assert (tmp_path / "description.md").exists()
 
 
-def test_cli_missing_config():
+def test_cli_no_args_shows_help():
     python_executable = sys.executable
     result = subprocess.run(
         [python_executable, "autograder_gen/cli.py"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "usage:" in result.stdout.lower()
+    assert "--config" in result.stdout
+
+
+def test_cli_missing_config():
+    python_executable = sys.executable
+    result = subprocess.run(
+        [python_executable, "autograder_gen/cli.py", "--descriptions"],
         capture_output=True,
         text=True,
     )
@@ -312,4 +324,3 @@ def test_cli_run_stubs_and_submissions_together():
     assert "stub_wrong_answer.log" in result.stdout
     assert "correct_answer.log" in result.stdout
     assert (Path("tests/examples/py_simple") / "correct_answer.log").exists()
-

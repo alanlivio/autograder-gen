@@ -1,10 +1,9 @@
+import subprocess
 import sys
 from pathlib import Path
 import pytest
 
-from autograder_gen.batch import find_configs, main as batch_main
-from autograder_gen.batch_gen import main as batch_gen_main
-from autograder_gen.batch_run import main as batch_run_main
+from autograder_gen.cli_batch import find_configs, main as batch_main
 
 
 def test_find_configs_single_file(tmp_path: Path):
@@ -38,6 +37,15 @@ def test_find_configs_directory_nested(tmp_path: Path):
 
 def test_batch_main_no_args(capsys):
     sys.argv = ["autograder-gen-batch"]
+    ret = batch_main()
+    assert ret == 0
+    captured = capsys.readouterr()
+    assert "usage:" in captured.out.lower()
+    assert "folder_or_config_path" in captured.out
+
+
+def test_batch_main_missing_targets(capsys):
+    sys.argv = ["autograder-gen-batch", "--descriptions"]
     with pytest.raises(SystemExit) as exc_info:
         batch_main()
     assert exc_info.value.code == 2
@@ -45,13 +53,15 @@ def test_batch_main_no_args(capsys):
     assert "usage:" in captured.err.lower()
 
 
-def test_batch_run_main_no_args(capsys):
-    sys.argv = ["autograder-run-batch"]
-    with pytest.raises(SystemExit) as exc_info:
-        batch_run_main()
-    assert exc_info.value.code == 2
-    captured = capsys.readouterr()
-    assert "usage:" in captured.err.lower()
+def test_batch_cli_subprocess_no_args():
+    result = subprocess.run(
+        [sys.executable, "autograder_gen/cli_batch.py"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "usage:" in result.stdout.lower()
+    assert "folder_or_config_path" in result.stdout
 
 
 def test_batch_gen_execution(tmp_path: Path, monkeypatch, capsys):
@@ -144,40 +154,6 @@ questions:
         sys, "argv", ["autograder-gen-batch", "--run-stub-submissions", str(tmp_path)]
     )
     batch_main()
-
-    captured = capsys.readouterr()
-    for log_name in [
-        "stub_correct_answer.log",
-        "stub_wrong_answer.log",
-        "stub_compiler_error.log",
-        "stub_correct_answer_wrong_location.log",
-    ]:
-        assert log_name in captured.out
-        assert (tmp_path / log_name).exists()
-
-
-def test_legacy_batch_run_main(tmp_path: Path, monkeypatch, capsys):
-    cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
-language: python
-required_files:
-  - solution.py
-questions:
-  - name: Q1
-    marking_items:
-      - name: Item 1
-        total_mark: 10
-        type: function_test
-        target_file: solution.py
-        function_name: add
-        test_cases:
-          - args: [1, 2]
-            expected: "3"
-"""
-    cfg_path.write_text(cfg_content, encoding="utf-8")
-
-    monkeypatch.setattr(sys, "argv", ["autograder-run-batch", str(tmp_path)])
-    batch_run_main()
 
     captured = capsys.readouterr()
     for log_name in [
@@ -431,5 +407,3 @@ questions:
     assert "stub_wrong_answer.log" in captured.out
     assert "custom_answer.log" in captured.out
     assert (tmp_path / "custom_answer.log").exists()
-
-

@@ -5,6 +5,7 @@ Provides CLI commands for validating configurations and generating Gradescope au
 
 import argparse
 import json
+import shutil
 import sys
 import zipfile
 from pathlib import Path
@@ -20,7 +21,7 @@ from autograder_gen.engine_utils import (
 )
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description=(
             "Generate Gradescope autograder script from YAML configuration. "
@@ -61,7 +62,12 @@ def main():
         default=False,
         help="Print full autograder execution logs instead of only paths to log files",
     )
-    args = parser.parse_args()
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
+        parser.print_help()
+        return 0
+    args = parser.parse_args(argv)
     setup_logging()
     try:
         config_arg = args.config
@@ -155,7 +161,11 @@ def main():
                 res = runner.run_autograder_for_submission(
                     sub_path, log_path=log_file, verbose=args.verbose
                 )
-                if len(args.run_submissions) == 1 and not args.run_stubs_submissions and clean_sub != "submission":
+                if (
+                    len(args.run_submissions) == 1
+                    and not args.run_stubs_submissions
+                    and clean_sub != "submission"
+                ):
                     try:
                         shutil.copy2(log_file, output_dir / f"{clean_sub}.log")
                     except Exception:

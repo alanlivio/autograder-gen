@@ -32,7 +32,7 @@ def find_configs(target: Path) -> list[Path]:
     return sorted(set(sub_configs))
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Batch generate or run autograders for configuration files found in target folders.",
         allow_abbrev=False,
@@ -72,7 +72,13 @@ def main():
         help="Print full autograder execution logs instead of only paths to log files",
     )
 
-    args = parser.parse_args()
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
+        parser.print_help()
+        return 0
+
+    args = parser.parse_args(argv)
 
     all_configs: list[Path] = []
     for arg in args.targets:
@@ -121,7 +127,11 @@ def main():
                     log_path=log_file,
                     verbose=args.verbose,
                 )
-                if len(args.run_submissions) == 1 and not args.run_stub_submissions and clean_sub != "submission":
+                if (
+                    len(args.run_submissions) == 1
+                    and not args.run_stub_submissions
+                    and clean_sub != "submission"
+                ):
                     try:
                         shutil.copy2(log_file, config_path.parent / f"{clean_sub}.log")
                     except Exception:
@@ -166,7 +176,8 @@ def main():
                     except ValueError:
                         display_path = str(asset)
                     print(display_path)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
