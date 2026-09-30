@@ -25,14 +25,8 @@ help:
 		"  clean         Clean build and temporary files"
 
 deps:
-	$(PYTHON) -m venv $(VENV)
-	$(VENV)/bin/pip install --upgrade pip
-	$(VENV)/bin/pip install -r requirements.txt -r requirements-dev.txt
-	@printf "%s\n" \
-		"" \
-		"Virtual environment created in $(VENV)." \
-		"To activate in your terminal shell, run:" \
-		"  source $(VENV)/bin/activate"
+	pip install --upgrade pip
+	pip install -r requirements.txt -r requirements-dev.txt
 
 wheel:
 	rm -rf dist build ./*.egg-info

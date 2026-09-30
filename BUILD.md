@@ -2,9 +2,21 @@
 
 Run `make help` to inspect available Makefile targets.
 
-## Setup
+## Environment Setup
 
-Set up the virtual environment and install all dependencies:
+Create and activate a virtual environment:
+
+```bash
+# Windows (PowerShell)
+python -m venv .venv
+. .venv\Scripts\Activate.ps1
+
+# Linux / macOS (Bash)
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+## Install Dependencies
 
 ```bash
 make deps
