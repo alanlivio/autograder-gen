@@ -13,7 +13,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import autograder_gen as ag
-from autograder_gen.engine_utils import (
+from autograder_gen.logger import (
     print_error,
     print_success,
     print_warning,
@@ -135,7 +135,7 @@ def main(argv=None):
 
         output_dir = path.parent if str(path.parent) != "" else Path(".")
         if args.run_stubs_submissions or args.run_submissions:
-            runner = ag.AutograderRunner(path, verbose=args.verbose)
+            runner = ag.AutograderRun(path, verbose=args.verbose)
             if args.run_stubs_submissions:
                 runner.run_autograder_for_generated_submissions(verbose=args.verbose)
 
@@ -198,7 +198,7 @@ def main(argv=None):
         print(f"  Required Files: {', '.join(summary['required_files'])}")
 
         output_dir = path.parent if str(path.parent) != "" else Path(".")
-        generator = ag.Engine(config, original_config_dict, base_dir=path.parent)
+        generator = ag.AutograderGen(config, original_config_dict, base_dir=path.parent)
         output_path = generator.generate(str(output_dir), descriptions=args.descriptions)
         print_success(f"Autograder package generated successfully at: {output_dir}")
         assets_desc = "description.docx, description.md, " if args.descriptions else ""

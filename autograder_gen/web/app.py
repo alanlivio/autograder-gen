@@ -81,7 +81,7 @@ def export_bundle():
         return jsonify({"error": "No config data provided"}), 400
     try:
         config = ag.Config.model_validate(data)
-        generator = ag.Engine(config, data)
+        generator = ag.AutograderGen(config, data)
         with tempfile.TemporaryDirectory() as out_dir:
             generator.generate(out_dir)
             out_path = Path(out_dir)

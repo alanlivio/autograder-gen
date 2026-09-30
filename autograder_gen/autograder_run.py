@@ -15,10 +15,10 @@ from typing import Any
 import yaml
 
 from autograder_gen.config import Config
-from autograder_gen.engine import Engine
+from autograder_gen.autograder_gen import AutograderGen, Engine
 
 
-class AutograderRunner:
+class AutograderRun:
     def __init__(
         self,
         config_src: str | Path | Config | dict[str, Any],
@@ -405,7 +405,7 @@ class AutograderRunner:
         with zipfile.ZipFile(output_zip, "r") as z:
             z.extractall(source_dir)
 
-    def _get_engine(self) -> Engine:
+    def _get_engine(self) -> AutograderGen:
         if isinstance(self.config, (str, Path)):
             cfg_path = Path(self.config)
             if not cfg_path.exists():
@@ -417,19 +417,19 @@ class AutograderRunner:
                     if "autograder_gen.yaml" in z.namelist():
                         data = yaml.safe_load(z.read("autograder_gen.yaml"))
                         parsed_config = Config.model_validate(data)
-                        return Engine(parsed_config, data, base_dir=cfg_path.parent)
+                        return AutograderGen(parsed_config, data, base_dir=cfg_path.parent)
             parsed_config = Config.parse(cfg_path)
             with open(cfg_path, "r", encoding="utf-8") as f:
                 if cfg_path.suffix.lower() in [".yaml", ".yml"]:
                     original_config = yaml.safe_load(f)
                 else:
                     original_config = json.load(f)
-            return Engine(parsed_config, original_config, base_dir=cfg_path.parent)
+            return AutograderGen(parsed_config, original_config, base_dir=cfg_path.parent)
         elif isinstance(self.config, Config):
-            return Engine(self.config)
+            return AutograderGen(self.config)
         elif isinstance(self.config, dict):
             parsed_config = Config.model_validate(self.config)
-            return Engine(parsed_config, self.config)
+            return AutograderGen(parsed_config, self.config)
         else:
             raise TypeError(f"Unsupported config type: {type(self.config)}")
 
@@ -678,3 +678,6 @@ class AutograderRunner:
                     if found_matches:
                         lines.append(f"Found file '{req_file}' at {found_matches[0]}")
         return lines
+
+
+AutograderRunner = AutograderRun

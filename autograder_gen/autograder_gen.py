@@ -2,7 +2,7 @@ import os
 import shutil
 import zipfile
 import tempfile
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 import yaml
 import json
 import re
@@ -14,10 +14,10 @@ from docx import Document
 from docx.shared import Pt
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from autograder_gen.config import Config
-from autograder_gen.engine_utils import print_error, print_success, print_warning
+from autograder_gen.logger import print_error, print_success, print_warning
 
 
-class Engine:
+class AutograderGen:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
 
     def __init__(
@@ -1342,3 +1342,55 @@ autograder.zip
                 if file_path.is_file():
                     arcname = file_path.relative_to(self.temp_dir)
                     zipf.write(file_path, arcname)
+
+
+Engine = AutograderGen
+
+
+def validate_file_path(file_path: str, description: str = "File") -> Path:
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"{description} not found: {file_path}")
+    if not path.is_file():
+        raise ValueError(f"{description} is not a file: {file_path}")
+    return path
+
+
+def validate_directory_path(dir_path: str, description: str = "Directory") -> Path:
+    path = Path(dir_path)
+    if not path.exists():
+        raise FileNotFoundError(f"{description} not found: {dir_path}")
+    if not path.is_dir():
+        raise ValueError(f"{description} is not a directory: {dir_path}")
+    return path
+
+
+def create_directory(dir_path: str, description: str = "Directory") -> Path:
+    path = Path(dir_path)
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+    except Exception as e:
+        raise ValueError(f"Failed to create {description.lower()}: {dir_path}. Error: {e}")
+
+
+def get_file_extension(file_path: str) -> str:
+    return Path(file_path).suffix.lower()
+
+
+def is_supported_language_file(file_path: str, language: str) -> bool:
+    extension = get_file_extension(file_path)
+    language_extensions = {"python": [".py"], "java": [".java"]}
+    return extension in language_extensions.get(language.lower(), [])
+
+
+def sanitize_filename(filename: str) -> str:
+    sanitized = re.sub(r'[<>:"/\\|?*]', "_", filename)
+    sanitized = sanitized.strip(" .")
+    return sanitized if sanitized else "unnamed"
+
+
+def format_error_message(error: Exception, context: str = "") -> str:
+    if context:
+        return f"{context}: {str(error)}"
+    return str(error)

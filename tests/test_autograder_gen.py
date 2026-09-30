@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import zipfile
+from pathlib import Path
 import yaml
 import pytest
 
@@ -194,3 +195,73 @@ def test_skeleton_generation_compiler_error():
         assert "solution.py" in z.namelist()
         content = z.read("solution.py").decode("utf-8")
         assert "def add(*args, **kwargs)" in content
+
+
+def test_autograder_gen_class_alias():
+    assert ag.AutograderGen is ag.Engine
+    config = ag.Config.model_validate(SAMPLE_CONFIG_DICT)
+    generator = ag.AutograderGen(config, SAMPLE_CONFIG_DICT)
+    assert isinstance(generator, ag.AutograderGen)
+
+
+def test_autograder_run_class_alias():
+    assert ag.AutograderRun is ag.AutograderRunner
+
+
+def test_validate_file_path(tmp_path):
+    f = tmp_path / "sample.txt"
+    f.write_text("content")
+
+    validated = ag.validate_file_path(str(f))
+    assert validated == f
+
+    with pytest.raises(FileNotFoundError):
+        ag.validate_file_path(str(tmp_path / "non_existent.txt"))
+
+    with pytest.raises(ValueError):
+        ag.validate_file_path(str(tmp_path))
+
+
+def test_validate_directory_path(tmp_path):
+    validated = ag.validate_directory_path(str(tmp_path))
+    assert validated == tmp_path
+
+    with pytest.raises(FileNotFoundError):
+        ag.validate_directory_path(str(tmp_path / "non_existent_dir"))
+
+    f = tmp_path / "file.txt"
+    f.write_text("hello")
+    with pytest.raises(ValueError):
+        ag.validate_directory_path(str(f))
+
+
+def test_create_directory(tmp_path):
+    target = tmp_path / "new_dir" / "sub_dir"
+    created = ag.create_directory(str(target))
+    assert created == target
+    assert target.is_dir()
+
+
+def test_get_file_extension():
+    assert ag.get_file_extension("foo.py") == ".py"
+    assert ag.get_file_extension("foo.BAR.JAVA") == ".java"
+    assert ag.get_file_extension("foo") == ""
+
+
+def test_is_supported_language_file():
+    assert ag.is_supported_language_file("main.py", "python")
+    assert ag.is_supported_language_file("Main.java", "java")
+    assert not ag.is_supported_language_file("main.cpp", "python")
+    assert not ag.is_supported_language_file("main.py", "unknown")
+
+
+def test_sanitize_filename():
+    assert ag.sanitize_filename("test:file*name?.txt") == "test_file_name_.txt"
+    assert ag.sanitize_filename("   ...clean...   ") == "clean"
+    assert ag.sanitize_filename("   ...   ") == "unnamed"
+
+
+def test_format_error_message():
+    err = ValueError("Something broke")
+    assert ag.format_error_message(err) == "Something broke"
+    assert ag.format_error_message(err, "Context") == "Context: Something broke"

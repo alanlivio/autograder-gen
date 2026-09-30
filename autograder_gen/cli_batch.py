@@ -11,9 +11,11 @@ import sys
 from pathlib import Path
 import yaml
 
-from autograder_gen.autograder_runner import AutograderRunner
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from autograder_gen.autograder_run import AutograderRun
 from autograder_gen.config import Config
-from autograder_gen.engine import Engine
+from autograder_gen.autograder_gen import AutograderGen, Engine
 
 
 def find_configs(target: Path) -> list[Path]:
@@ -90,7 +92,7 @@ def main(argv=None):
 
     if args.run_stub_submissions or args.run_submissions:
         for config_path in all_configs:
-            runner = AutograderRunner(config_path, verbose=args.verbose)
+            runner = AutograderRun(config_path, verbose=args.verbose)
             cfg_obj = runner.config_obj
             if (
                 cfg_obj is not None
@@ -152,7 +154,7 @@ def main(argv=None):
                 else:
                     original_config = json.load(f)
 
-            engine = Engine(config, original_config)
+            engine = AutograderGen(config, original_config)
             out_dir = config_path.parent
             engine.generate(str(out_dir), descriptions=args.descriptions)
             generated_assets = [
