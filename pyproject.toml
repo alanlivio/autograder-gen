@@ -50,8 +50,6 @@ autograder-gen = "autograder_gen.cli:main"
 autograder-gen-batch = "autograder_gen.cli_batch:main"
 autograder-gen-web = "autograder_gen.web.app:main"
 
-
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["autograder_gen*"]
@@ -60,7 +58,13 @@ namespaces = true
 
 [tool.setuptools.package-data]
 autograder_gen = ["templates/*", "templates/**/*"]
-"autograder_gen.web" = ["templates/*", "templates/**/*", "static/*", "static/**/*", "wsgi/*"]
+"autograder_gen.web" = [
+    "templates/*",
+    "templates/**/*",
+    "static/*",
+    "static/**/*",
+    "wsgi/*",
+]
 "autograder_gen.web.wsgi" = ["*"]
 
 [tool.setuptools.dynamic]
@@ -79,4 +83,3 @@ addopts = "-ra"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-
