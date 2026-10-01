@@ -109,7 +109,7 @@ def test_template_generation_gitlab(tmp_path):
         test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_verify_git_submission(self):" in test_content
-        assert 'print(f"# 1.1) verify_git_submission")' in test_content
+        assert 'print(f"# Question 1) verify_git_submission")' in test_content
         assert "submission_metadata.json" in test_content
         assert "StudentMessage.WRONG_GITLAB_NOT_USED" in test_content
         assert "GitLab" in test_content

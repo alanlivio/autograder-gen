@@ -125,7 +125,7 @@ def test_output_comparison_template(tmp_path):
         test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_output_test(self):" in test_content
-        assert 'print(f"# 1.1) output_test")' in test_content
+        assert 'print(f"# Question 1) output_test")' in test_content
         assert (
             "from grader_utils import StudentMessage, normalize_output, compare_outputs"
             in test_content
@@ -169,7 +169,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
     with zipfile.ZipFile(zip_path, "r") as z:
         assert "grader_utils.py" in z.namelist()
         test_content = z.read("question_1_test.py").decode("utf-8")
-        assert 'print(f"# 1.1) Math Test")' in test_content
+        assert 'print(f"# Math Test) Math Test")' in test_content
         assert 'expected_out = normalize_output("3")' in test_content
         assert "actual_out = normalize_output(str(result))" in test_content
         assert (
