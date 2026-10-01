@@ -49,18 +49,12 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
             "setup.sh",
             "run_autograder",
             "run_tests.py",
-            "autograder_gen.yaml",
             "README.md",
             "grader_utils.py",
         ]
-        assert "requirements.txt" not in namelist
         assert not any(f.startswith("tests/") for f in namelist)
         for fname in expected_files:
             assert any(f.startswith(fname) for f in namelist), f"Missing {fname} in zip: {namelist}"
-
-        with z.open("autograder_gen.yaml") as f:
-            saved_config = yaml.safe_load(f.read().decode("utf-8"))
-            assert saved_config == SAMPLE_CONFIG_DICT, "Original config not preserved correctly"
 
         for idx, q in enumerate(SAMPLE_CONFIG_DICT["questions"], 1):
             test_file = f"question_{idx}_test.py"

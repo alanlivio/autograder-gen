@@ -186,9 +186,7 @@ def test_autograder_integration_java_simple():
                 "setup.sh",
                 "run_autograder",
                 "run_tests.py",
-                "autograder_gen.yaml",
             ]
-            assert "requirements.txt" not in namelist
             for fname in expected_files:
                 assert any(f.startswith(fname) for f in namelist)
             with z.open("setup.sh") as f:

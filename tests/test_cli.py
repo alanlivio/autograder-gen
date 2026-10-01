@@ -248,6 +248,9 @@ def test_cli_run_stubs_submissions_with_zip(tmp_path):
     autograder_zip = tmp_path / "autograder.zip"
     assert autograder_zip.exists()
 
+    with zipfile.ZipFile(autograder_zip, "a") as z:
+        z.writestr("autograder_gen.yaml", cfg_src)
+
     result = subprocess.run(
         [
             python_executable,
@@ -262,6 +265,40 @@ def test_cli_run_stubs_submissions_with_zip(tmp_path):
     assert result.returncode == 0
     assert "stub_correct_answer.log" in result.stdout
     assert "[AutograderRunner: Student View]" not in result.stdout
+
+
+def test_cli_run_stubs_submissions_with_generated_zip_missing_config(tmp_path):
+    cfg_src = Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8")
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(cfg_src, encoding="utf-8")
+    python_executable = sys.executable
+    gen_result = subprocess.run(
+        [
+            python_executable,
+            "autograder_gen/cli.py",
+            "--config",
+            str(cfg_file),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert gen_result.returncode == 0
+    autograder_zip = tmp_path / "autograder.zip"
+    assert autograder_zip.exists()
+
+    result = subprocess.run(
+        [
+            python_executable,
+            "autograder_gen/cli.py",
+            "--config",
+            str(autograder_zip),
+            "--run-stub-submissions",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert "autograder_gen.yaml not found in zip archive" in result.stderr
 
 
 def test_cli_run_stubs_submissions_direct_arg():
