@@ -14,7 +14,7 @@ export GRADESCOPE_RESULTS_PATH="${GRADESCOPE_RESULTS_PATH:-$RESULTS_DIR/results.
 export GRADESCOPE_SOURCE_PATH="${GRADESCOPE_SOURCE_PATH:-$SOURCE_DIR}"
 
 FILE_CHECK_LOG="$RESULTS_DIR/file_check.log"
-> "$FILE_CHECK_LOG"
+true > "$FILE_CHECK_LOG"
 
 echo "Starting autograder..."
 echo "Copying required submission files to source directory..."
