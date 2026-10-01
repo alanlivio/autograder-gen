@@ -106,7 +106,7 @@ def test_template_generation_gitlab(tmp_path):
 
     with zipfile.ZipFile(zip_path, "r") as z:
         assert "grader_utils.py" in z.namelist()
-        test_content = z.read("tests/question_1_test.py").decode("utf-8")
+        test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_verify_git_submission(self):" in test_content
         assert 'print(f"# 1.1) verify_git_submission")' in test_content

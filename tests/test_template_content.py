@@ -71,7 +71,7 @@ def test_per_question_test_file_content(temp_output_dir):
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         # The first question should now be question_1_test.py
-        test_file = "tests/question_1_test.py"
+        test_file = "question_1_test.py"
         assert test_file in z.namelist()
         with z.open(test_file) as f:
             content = f.read().decode()
@@ -122,7 +122,7 @@ def test_output_comparison_template(tmp_path):
 
     with zipfile.ZipFile(zip_path, "r") as z:
         assert "grader_utils.py" in z.namelist()
-        test_content = z.read("tests/question_1_test.py").decode("utf-8")
+        test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_output_test(self):" in test_content
         assert 'print(f"# 1.1) output_test")' in test_content
@@ -168,7 +168,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
 
     with zipfile.ZipFile(zip_path, "r") as z:
         assert "grader_utils.py" in z.namelist()
-        test_content = z.read("tests/question_1_test.py").decode("utf-8")
+        test_content = z.read("question_1_test.py").decode("utf-8")
         assert 'print(f"# 1.1) Math Test")' in test_content
         assert 'expected_out = normalize_output("3")' in test_content
         assert "actual_out = normalize_output(str(result))" in test_content
@@ -248,7 +248,7 @@ def test_java_remove_package_template(tmp_path):
 
     with zipfile.ZipFile(zip_path, "r") as z:
         assert "grader_utils.py" in z.namelist()
-        test_content = z.read("tests/question_1_test.py").decode("utf-8")
+        test_content = z.read("question_1_test.py").decode("utf-8")
         assert (
             "from grader_utils import StudentMessage, normalize_output, compare_outputs, remove_package_line"
             in test_content

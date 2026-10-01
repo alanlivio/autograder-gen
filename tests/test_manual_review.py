@@ -268,6 +268,6 @@ def test_manual_review_generation_and_inspection(tmp_path: Path):
     with zipfile.ZipFile(output_zip, "r") as z:
         z.extractall(work_dir)
 
-    test_q0 = (work_dir / "tests" / "question_1_test.py").read_text(encoding="utf-8")
+    test_q0 = (work_dir / "question_1_test.py").read_text(encoding="utf-8")
     assert "[MANUAL_REVIEW]" in test_q0
     assert "report.pdf" in test_q0

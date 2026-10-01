@@ -60,12 +60,10 @@ class AutograderGen:
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
         self.temp_dir.mkdir()
-        tests_dir = self.temp_dir / "tests"
-        tests_dir.mkdir()
         try:
             self._generate_setup_sh()
             self._generate_run_autograder()
-            self._generate_run_tests(tests_dir)
+            self._generate_run_tests()
             self._generate_metadata_files()
             zip_path = output_path / "autograder.zip"
             self._create_zip(zip_path)
@@ -1109,7 +1107,7 @@ class AutograderGen:
             f.write(content)
         os.chmod(filepath, 0o755)
 
-    def _generate_run_tests(self, tests_dir: Path):
+    def _generate_run_tests(self):
         """Generate modular test files: main run_tests.py and individual question test files."""
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
         template = self.jinja_env.get_template("run_tests.py.j2")
@@ -1122,13 +1120,13 @@ class AutograderGen:
         grader_utils_src = Path(__file__).parent / "grader_utils.py"
         if grader_utils_src.exists():
             shutil.copy2(grader_utils_src, self.temp_dir / "grader_utils.py")
-            shutil.copy2(grader_utils_src, tests_dir / "grader_utils.py")
 
-        self._generate_question_test_files(tests_dir)
+        self._generate_question_test_files()
 
-    def _generate_question_test_files(self, tests_dir: Path):
+    def _generate_question_test_files(self):
         """Generate individual test files for each question."""
-        question_template = self.jinja_env.get_template("test_question.py.j2")
+        assert self.temp_dir is not None, "temp_dir must be set before generating files"
+        question_template = self.jinja_env.get_template("question_test.py.j2")
 
         for idx, question in enumerate(self.config.questions, 1):
             question_filename = f"question_{idx}"
@@ -1139,7 +1137,7 @@ class AutograderGen:
                 config=self.config, question=processed_question, question_number=idx
             )
 
-            test_file = tests_dir / f"{question_filename}_test.py"
+            test_file = self.temp_dir / f"{question_filename}_test.py"
             with open(test_file, "w", encoding="utf-8") as f:
                 f.write(content)
 
@@ -1243,10 +1241,9 @@ autograder.zip
 ├── setup.sh                # Environment setup script
 ├── run_autograder          # Main autograder execution script
 ├── run_tests.py            # Primary test runner using gradescope-utils
-├── tests/                  # Individual test files for each question
-│   ├── question_1_test.py
-│   ├── question_2_test.py
-│   └── ...
+├── question_1_test.py      # Individual test files for each question
+├── question_2_test.py
+├── grader_utils.py         # Helper utilities for tests
 ├── config.yaml             # Original configuration file
 └── README.md               # This file
 ```

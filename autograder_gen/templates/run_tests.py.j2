@@ -38,7 +38,7 @@ def main():
         print(f"[WARNING] Could not retrieve student ID: {e}")
 {% endif %}
     loader = NaturalOrderTestLoader()
-    suite = loader.discover("tests", pattern="*_test.py")
+    suite = loader.discover(str(Path(__file__).resolve().parent), pattern="question_*_test.py")
 
     def question_sort_key(s):
         desc = str(s)

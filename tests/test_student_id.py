@@ -148,7 +148,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     zip_path = engine.generate(str(out_dir))
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        test_py = z.read("tests/question_1_test.py").decode("utf-8")
+        test_py = z.read("question_1_test.py").decode("utf-8")
         assert "get_student_id" in test_py
         assert "self.student_id = get_student_id()" in test_py
         assert 'os.environ["STUDENT_ID"] = self.student_id' in test_py
