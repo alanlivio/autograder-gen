@@ -49,11 +49,11 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
             "setup.sh",
             "run_autograder",
             "run_tests.py",
-            "requirements.txt",
             "autograder_gen.yaml",
             "README.md",
             "tests/",
         ]
+        assert "requirements.txt" not in namelist
         for fname in expected_files:
             assert any(f.startswith(fname) for f in namelist), f"Missing {fname} in zip: {namelist}"
 

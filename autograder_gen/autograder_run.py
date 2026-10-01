@@ -590,9 +590,9 @@ class AutograderRun:
         self._prepare_source(source_dir, gen_dir)
         self._stage_submission(submission_path, sub_dir)
 
-        script_path = source_dir / "run_autograder.sh"
+        script_path = source_dir / "run_autograder"
         if not script_path.exists():
-            script_path = source_dir / "run_autograder"
+            script_path = source_dir / "run_autograder.sh"
 
         if not script_path.exists():
             raise RuntimeError(f"Autograder runner script not found in {source_dir}")

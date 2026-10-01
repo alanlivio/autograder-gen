@@ -66,7 +66,6 @@ class AutograderGen:
             self._generate_setup_sh()
             self._generate_run_autograder()
             self._generate_run_tests(tests_dir)
-            self._generate_requirements_txt()
             self._generate_metadata_files()
             zip_path = output_path / "autograder.zip"
             self._create_zip(zip_path)
@@ -1105,11 +1104,10 @@ class AutograderGen:
         template = self.jinja_env.get_template("run_autograder.j2")
         content = template.render(config=self.config)
 
-        for filename in ("run_autograder", "run_autograder.sh"):
-            filepath = self.temp_dir / filename
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(content)
-            os.chmod(filepath, 0o755)
+        filepath = self.temp_dir / "run_autograder"
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.chmod(filepath, 0o755)
 
     def _generate_run_tests(self, tests_dir: Path):
         """Generate modular test files: main run_tests.py and individual question test files."""
@@ -1213,16 +1211,6 @@ class AutograderGen:
 
         return safe_name
 
-    def _generate_requirements_txt(self):
-        """Generate requirements.txt using Jinja template."""
-        assert self.temp_dir is not None, "temp_dir must be set before generating files"
-
-        template = self.jinja_env.get_template("requirements.txt.j2")
-        content = template.render(config=self.config)
-
-        requirements_file = self.temp_dir / "requirements.txt"
-        with open(requirements_file, "w", encoding="utf-8") as f:
-            f.write(content)
 
     def _generate_metadata_files(self):
         """Generate metadata and configuration files."""
@@ -1255,7 +1243,6 @@ autograder.zip
 ├── setup.sh                # Environment setup script
 ├── run_autograder          # Main autograder execution script
 ├── run_tests.py            # Primary test runner using gradescope-utils
-├── requirements.txt        # Python dependencies
 ├── tests/                  # Individual test files for each question
 │   ├── question_1_test.py
 │   ├── question_2_test.py
