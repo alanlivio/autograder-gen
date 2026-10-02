@@ -22,7 +22,7 @@ autograder-gen
 ```
 
 ```text
-usage: autograder-gen [-h] [--config CONFIG] [--descriptions]
+usage: autograder-gen [-h] [--config CONFIG] [--description]
                       [--run-submission RUN_SUBMISSIONS]
                       [--run-stub-submissions [RUN_STUBS_SUBMISSIONS]]
                       [--verbose]
@@ -30,14 +30,13 @@ usage: autograder-gen [-h] [--config CONFIG] [--descriptions]
 Generate Gradescope autograder script from YAML configuration. Generated files
 will be at the same folder as the config (autograder.zip, stub submissions for
 testing, and optionally description.docx and description.md when
---descriptions is specified).
+--description is specified).
 
 options:
   -h, --help            show this help message and exit
   --config, -c CONFIG   Path to YAML configuration file
-  --descriptions, --description
-                        Generate description.docx and description.md
-                        assessment descriptions
+  --description         Generate description.docx and description.md
+                        assessment description
   --run-submission, -r RUN_SUBMISSIONS
                         Path or folder name of submission directory or zip
                         file to run (can be specified multiple times)
@@ -58,10 +57,10 @@ Generate an autograder package:
 autograder-gen --config config.yaml
 ```
 
-Generate assessment descriptions (`description.docx` and `description.md`):
+Generate assessment description (`description.docx` and `description.md`):
 
 ```bash
-autograder-gen --config config.yaml --descriptions
+autograder-gen --config config.yaml --description
 ```
 
 Run student submission against an autograder configuration:
@@ -78,10 +77,10 @@ autograder-gen --config config.yaml --run-stub-submissions
 
 ## Batch Processing
 
-Use `autograder-gen-batch` to process multiple configuration files or directories at once:
+Use `autograder-gen-batch` to process multiple configuration files or directories at once. When passing a directory, each subfolder should be a config folder containing a `config.yaml` (or `config.yml`):
 
 ```bash
-# Generate autograders for all configurations in a folder
+# Generate autograders for all configurations in a folder (each subfolder should contain a config.yaml)
 autograder-gen-batch path/to/assignments/
 
 # Run autograders for stub submissions across all configurations
@@ -98,7 +97,7 @@ autograder-gen-web
 
 ## Development and Building from Source
 
-For development instructions, building from source, and running Python source files directly, see [BUILD.md](BUILD.md). 
+For development instructions, building from source, and running Python source files directly, see [BUILD.md](BUILD.md).
 
 ## Authors
 

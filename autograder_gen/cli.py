@@ -27,17 +27,16 @@ def main(argv=None):
             "Generate Gradescope autograder script from YAML configuration. "
             "Generated files will be at the same folder as the config "
             "(autograder.zip, stub submissions for testing, "
-            "and optionally description.docx and description.md when --descriptions is specified)."
+            "and optionally description.docx and description.md when --description is specified)."
         ),
         allow_abbrev=False,
     )
     parser.add_argument("--config", "-c", help="Path to YAML configuration file")
     parser.add_argument(
-        "--descriptions",
         "--description",
         action="store_true",
         default=False,
-        help="Generate description.docx and description.md assessment descriptions",
+        help="Generate description.docx and description.md assessment description",
     )
     parser.add_argument(
         "--run-submission",
@@ -68,6 +67,7 @@ def main(argv=None):
         parser.print_help()
         return 0
     args = parser.parse_args(argv)
+    args.description = args.description
     setup_logging()
     try:
         config_arg = args.config
@@ -199,9 +199,9 @@ def main(argv=None):
 
         output_dir = path.parent if str(path.parent) != "" else Path(".")
         generator = ag.AutograderGen(config, original_config_dict, base_dir=path.parent)
-        output_path = generator.generate(str(output_dir), descriptions=args.descriptions)
+        output_path = generator.generate(str(output_dir), description=args.description)
         print_success(f"Autograder package generated successfully at: {output_dir}")
-        assets_desc = "description.docx, description.md, " if args.descriptions else ""
+        assets_desc = "description.docx, description.md, " if args.description else ""
         print_success(
             f"Generated assets: autograder.zip, {assets_desc}"
             "stub submissions for testing (stub_correct_answer.zip, stub_wrong_answer.zip, stub_compiler_error.zip, stub_correct_answer_wrong_location.zip)"

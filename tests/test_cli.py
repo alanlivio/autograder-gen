@@ -1,8 +1,9 @@
 import json
-import subprocess
 from pathlib import Path
+import subprocess
 import sys
 import zipfile
+import pytest
 
 SAMPLE_CONFIG = {
     "version": "1.0",
@@ -67,7 +68,8 @@ def test_cli_generates_all_assets(tmp_path):
     assert (tmp_path / "stub_correct_answer_wrong_location.zip").exists()
 
 
-def test_cli_generates_descriptions(tmp_path):
+@pytest.mark.parametrize("flag", ["--description", "--description"])
+def test_cli_generates_description(tmp_path, flag):
     config_path = tmp_path / "config.yaml"
     with open(config_path, "w") as f:
         json.dump(SAMPLE_CONFIG, f)
@@ -78,7 +80,7 @@ def test_cli_generates_descriptions(tmp_path):
             "autograder_gen/cli.py",
             "--config",
             str(config_path),
-            "--descriptions",
+            flag,
         ],
         capture_output=True,
         text=True,
@@ -99,12 +101,13 @@ def test_cli_no_args_shows_help():
     assert result.returncode == 0
     assert "usage:" in result.stdout.lower()
     assert "--config" in result.stdout
+    assert "--description" in result.stdout
 
 
 def test_cli_missing_config():
     python_executable = sys.executable
     result = subprocess.run(
-        [python_executable, "autograder_gen/cli.py", "--descriptions"],
+        [python_executable, "autograder_gen/cli.py", "--description"],
         capture_output=True,
         text=True,
     )

@@ -48,12 +48,12 @@ class AutograderGen:
     def generate(
         self,
         output_dir: str,
-        descriptions: bool = False,
-        generate_descriptions: bool | None = None,
+        description: bool = False,
+        generate_description: bool | None = None,
     ) -> str:
         """Generate the autograder.zip file using Jinja templates."""
-        if generate_descriptions is not None:
-            descriptions = generate_descriptions
+        if generate_description is not None:
+            description = generate_description
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         self.temp_dir = output_path / "temp_autograder"
@@ -72,7 +72,7 @@ class AutograderGen:
                 print_error(f"  [ERROR] {err}")
             for warn in verification.get("warnings", []):
                 print_warning(f"  [WARNING] {warn}")
-            if descriptions:
+            if description:
                 docx_buffer = self.generate_description_docx()
                 with open(output_path / "description.docx", "wb") as f:
                     f.write(docx_buffer.getbuffer())
@@ -1208,7 +1208,6 @@ class AutograderGen:
             safe_name = "question_" + safe_name
 
         return safe_name
-
 
     def _generate_metadata_files(self):
         """Generate metadata and configuration files."""

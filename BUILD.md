@@ -34,10 +34,10 @@ python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml
 
 Options:
 
-- Generate assessment descriptions (`description.docx` and `description.md`):
+- Generate assessment description (`description.docx` and `description.md`):
 
 ```bash
-python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --descriptions
+python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --description
 ```
 
 - Run a submission directory or zip against an autograder configuration:

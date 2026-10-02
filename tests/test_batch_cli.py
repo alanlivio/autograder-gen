@@ -42,10 +42,11 @@ def test_batch_main_no_args(capsys):
     captured = capsys.readouterr()
     assert "usage:" in captured.out.lower()
     assert "folder_or_config_path" in captured.out
+    assert "--description" in captured.out
 
 
 def test_batch_main_missing_targets(capsys):
-    sys.argv = ["autograder-gen-batch", "--descriptions"]
+    sys.argv = ["autograder-gen-batch", "--description"]
     with pytest.raises(SystemExit) as exc_info:
         batch_main()
     assert exc_info.value.code == 2
@@ -97,7 +98,7 @@ questions:
     assert not (tmp_path / "description.md").exists()
 
 
-def test_batch_gen_with_descriptions(tmp_path: Path, monkeypatch, capsys):
+def test_batch_gen_with_description(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = """version: '1.0'
 language: python
@@ -113,7 +114,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    monkeypatch.setattr(sys, "argv", ["autograder-gen-batch", "--descriptions", str(tmp_path)])
+    monkeypatch.setattr(sys, "argv", ["autograder-gen-batch", "--description", str(tmp_path)])
     batch_main()
 
     captured = capsys.readouterr()

@@ -46,11 +46,10 @@ def main(argv=None):
         help="One or more directories or config files to process",
     )
     parser.add_argument(
-        "--descriptions",
         "--description",
         action="store_true",
         default=False,
-        help="Generate description.docx and description.md assessment descriptions",
+        help="Generate description.docx and description.md assessment description",
     )
     parser.add_argument(
         "--run-stub-submissions",
@@ -81,6 +80,7 @@ def main(argv=None):
         return 0
 
     args = parser.parse_args(argv)
+    args.description = args.description
 
     all_configs: list[Path] = []
     for arg in args.targets:
@@ -156,7 +156,7 @@ def main(argv=None):
 
             engine = AutograderGen(config, original_config)
             out_dir = config_path.parent
-            engine.generate(str(out_dir), descriptions=args.descriptions)
+            engine.generate(str(out_dir), description=args.description)
             generated_assets = [
                 out_dir / "autograder.zip",
                 out_dir / "stub_correct_answer.zip",
@@ -164,7 +164,7 @@ def main(argv=None):
                 out_dir / "stub_compiler_error.zip",
                 out_dir / "stub_correct_answer_wrong_location.zip",
             ]
-            if args.descriptions:
+            if args.description:
                 generated_assets.extend(
                     [
                         out_dir / "description.docx",
