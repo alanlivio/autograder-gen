@@ -72,15 +72,7 @@ class Question(BaseModel):
     description: str = ""
     strict_float: bool = False
     manual_review: bool = False
-    wrong_file_location_deduction: float = 0.0
     marking_items: List[MarkingItem] = Field(min_length=1)
-
-    @field_validator("wrong_file_location_deduction")
-    @classmethod
-    def check_wrong_file_location_deduction(cls, v: float) -> float:
-        if v < 0:
-            raise ValueError("wrong_file_location_deduction must be non-negative")
-        return v
 
     @model_validator(mode="before")
     @classmethod
@@ -111,27 +103,17 @@ class Config(BaseModel):
     strict_file_location: bool = False
     remove_use_of_java_package: bool = False
     retrieve_student_id: bool = False
+    wrong_file_location_deduction: float = 0.0
     setup_commands: List[str] = Field(default_factory=list)
     required_files: List[str] = Field(default_factory=list)
     questions: List[Question] = Field(min_length=1)
 
-    @model_validator(mode="before")
+    @field_validator("wrong_file_location_deduction")
     @classmethod
-    def handle_global_wrong_file_location_deduction(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "wrong_file_location_deduction" in data:
-            data = data.copy()
-            global_ded = data.pop("wrong_file_location_deduction")
-            if "questions" in data and isinstance(data["questions"], list):
-                new_questions = []
-                for q in data["questions"]:
-                    if isinstance(q, dict) and "wrong_file_location_deduction" not in q:
-                        q_copy = q.copy()
-                        q_copy["wrong_file_location_deduction"] = global_ded
-                        new_questions.append(q_copy)
-                    else:
-                        new_questions.append(q)
-                data["questions"] = new_questions
-        return data
+    def check_wrong_file_location_deduction(cls, v: float) -> float:
+        if v < 0.0 or v > 1.0:
+            raise ValueError("wrong_file_location_deduction must be between 0.0 and 1.0")
+        return v
 
     @model_validator(mode="before")
     @classmethod
@@ -147,12 +129,6 @@ class Config(BaseModel):
             if "files_necessary" not in data and "required_files" in data:
                 data["files_necessary"] = data["required_files"]
         return data
-
-    @property
-    def wrong_file_location_deduction(self) -> float:
-        if self.questions:
-            return self.questions[0].wrong_file_location_deduction
-        return 0.0
 
     @property
     def files_necessary(self) -> List[str]:
@@ -183,12 +159,10 @@ class Config(BaseModel):
 
     @model_validator(mode="after")
     def validate_wrong_file_location_deduction(self) -> "Config":
-        if self.strict_file_location:
-            for q in self.questions:
-                if q.wrong_file_location_deduction > 0:
-                    raise ValueError(
-                        "wrong_file_location_deduction is only supported when strict_file_location is False"
-                    )
+        if self.strict_file_location and self.wrong_file_location_deduction > 0:
+            raise ValueError(
+                "wrong_file_location_deduction is only supported when strict_file_location is False"
+            )
         return self
 
     @property

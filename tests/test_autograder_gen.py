@@ -60,6 +60,15 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
             test_file = f"question_{idx}_test.py"
             assert test_file in namelist, f"Missing {test_file} in zip: {namelist}"
 
+        readme_text = z.read("README.md").decode("utf-8")
+        assert "## Rubric Matrix" in readme_text
+        assert (
+            "| Question | Marking Item | Type | Target File | Marks | Time Limit | Visibility |"
+            in readme_text
+        )
+        for q in SAMPLE_CONFIG_DICT["questions"]:
+            assert f"| {q['name']} |" in readme_text
+
 
 def test_skeleton_generation():
     config_dict = {
@@ -141,8 +150,13 @@ def test_generator_essential_exports():
     md_buf = generator.generate_description_md()
     assert b"Assessment Description" in md_buf.getvalue()
 
-    csv_buf = generator.generate_rubric_csv()
-    assert b"Question,Marking Item,Type,Target File" in csv_buf.getvalue()
+    rubric_md_buf = generator.generate_rubric_md()
+    assert b"Assessment Grading Rubric Matrix" in rubric_md_buf.getvalue()
+    assert b"## Detailed Rubric Matrix" in rubric_md_buf.getvalue()
+    assert (
+        b"| Question | Marking Item | Type | Target File | Marks | Time Limit | Visibility |"
+        in rubric_md_buf.getvalue()
+    )
 
     correct_buf = generator.generate_correct_answer_zip()
     with zipfile.ZipFile(correct_buf, "r") as zf:

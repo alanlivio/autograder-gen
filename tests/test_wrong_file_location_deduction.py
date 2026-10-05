@@ -29,7 +29,6 @@ def test_config_wrong_file_location_deduction_default():
         ],
     }
     cfg = ag.Config.model_validate(data)
-    assert cfg.questions[0].wrong_file_location_deduction == 0.0
     assert cfg.wrong_file_location_deduction == 0.0
 
 
@@ -37,11 +36,11 @@ def test_config_wrong_file_location_deduction_custom():
     data = {
         "version": "1.0",
         "language": "python",
+        "wrong_file_location_deduction": 0.5,
         "files_necessary": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
-                "wrong_file_location_deduction": 2.5,
                 "marking_items": [
                     {
                         "target_file": "solution.py",
@@ -53,8 +52,7 @@ def test_config_wrong_file_location_deduction_custom():
         ],
     }
     cfg = ag.Config.model_validate(data)
-    assert cfg.questions[0].wrong_file_location_deduction == 2.5
-    assert cfg.wrong_file_location_deduction == 2.5
+    assert cfg.wrong_file_location_deduction == 0.5
 
 
 def test_config_wrong_file_location_deduction_requires_strict_false():
@@ -62,11 +60,11 @@ def test_config_wrong_file_location_deduction_requires_strict_false():
         "version": "1.0",
         "language": "python",
         "strict_file_location": True,
+        "wrong_file_location_deduction": 0.5,
         "files_necessary": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
-                "wrong_file_location_deduction": 2.5,
                 "marking_items": [
                     {
                         "target_file": "solution.py",
@@ -85,15 +83,14 @@ def test_config_wrong_file_location_deduction_requires_strict_false():
     )
 
 
-def test_config_wrong_file_location_deduction_negative_fails():
-    data = {
+def test_config_wrong_file_location_deduction_out_of_bounds_fails():
+    base_data = {
         "version": "1.0",
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
-                "wrong_file_location_deduction": -1.0,
                 "marking_items": [
                     {
                         "target_file": "solution.py",
@@ -105,43 +102,12 @@ def test_config_wrong_file_location_deduction_negative_fails():
         ],
     }
     with pytest.raises(ValidationError) as exc:
-        ag.Config.model_validate(data)
-    assert "wrong_file_location_deduction must be non-negative" in str(exc.value)
+        ag.Config.model_validate({**base_data, "wrong_file_location_deduction": -0.1})
+    assert "wrong_file_location_deduction must be between 0.0 and 1.0" in str(exc.value)
 
-
-def test_config_wrong_file_location_deduction_global_fallback():
-    data = {
-        "version": "1.0",
-        "language": "python",
-        "wrong_file_location_deduction": 1.5,
-        "files_necessary": ["solution.py"],
-        "questions": [
-            {
-                "name": "Q1",
-                "marking_items": [
-                    {
-                        "target_file": "solution.py",
-                        "total_mark": 10,
-                        "type": "output_comparison",
-                    }
-                ],
-            },
-            {
-                "name": "Q2",
-                "wrong_file_location_deduction": 3.0,
-                "marking_items": [
-                    {
-                        "target_file": "solution.py",
-                        "total_mark": 10,
-                        "type": "output_comparison",
-                    }
-                ],
-            },
-        ],
-    }
-    cfg = ag.Config.model_validate(data)
-    assert cfg.questions[0].wrong_file_location_deduction == 1.5
-    assert cfg.questions[1].wrong_file_location_deduction == 3.0
+    with pytest.raises(ValidationError) as exc:
+        ag.Config.model_validate({**base_data, "wrong_file_location_deduction": 1.5})
+    assert "wrong_file_location_deduction must be between 0.0 and 1.0" in str(exc.value)
 
 
 def test_wrong_file_location_deduction_execution(tmp_path: Path):
@@ -149,11 +115,11 @@ def test_wrong_file_location_deduction_execution(tmp_path: Path):
         "version": "1.0",
         "language": "python",
         "strict_file_location": False,
+        "wrong_file_location_deduction": 0.5,
         "files_necessary": ["solution.py"],
         "questions": [
             {
                 "name": "File Check",
-                "wrong_file_location_deduction": 3.0,
                 "marking_items": [
                     {
                         "target_file": "solution.py",
@@ -198,7 +164,7 @@ def test_wrong_file_location_deduction_execution(tmp_path: Path):
         results = json.load(f)
 
     test_res = results["tests"][0]
-    assert test_res["score"] == 7.0
+    assert test_res["score"] == 5.0
     assert test_res["max_score"] == 10.0
 
 
@@ -207,11 +173,11 @@ def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_pat
         "version": "1.0",
         "language": "python",
         "strict_file_location": False,
+        "wrong_file_location_deduction": 0.5,
         "files_necessary": ["solution.py"],
         "questions": [
             {
                 "name": "File Check",
-                "wrong_file_location_deduction": 3.0,
                 "marking_items": [
                     {
                         "target_file": "solution.py",
@@ -259,16 +225,16 @@ def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_pat
     assert test_res["max_score"] == 10.0
 
 
-def test_wrong_file_location_deduction_by_question_execution(tmp_path: Path):
+def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
     config_dict = {
         "version": "1.0",
         "language": "python",
         "strict_file_location": False,
+        "wrong_file_location_deduction": 0.5,
         "files_necessary": ["solution.py"],
         "questions": [
             {
-                "name": "Q1 With Deduction",
-                "wrong_file_location_deduction": 4.0,
+                "name": "Q1 10pts",
                 "marking_items": [
                     {
                         "target_file": "solution.py",
@@ -279,12 +245,11 @@ def test_wrong_file_location_deduction_by_question_execution(tmp_path: Path):
                 ],
             },
             {
-                "name": "Q2 Without Deduction",
-                "wrong_file_location_deduction": 0.0,
+                "name": "Q2 20pts",
                 "marking_items": [
                     {
                         "target_file": "solution.py",
-                        "total_mark": 10.0,
+                        "total_mark": 20.0,
                         "type": "output_comparison",
                         "expected_output": "hello",
                     }
@@ -326,7 +291,7 @@ def test_wrong_file_location_deduction_by_question_execution(tmp_path: Path):
 
     tests = results["tests"]
     assert len(tests) == 2
-    assert tests[0]["score"] == 6.0
+    assert tests[0]["score"] == 5.0
     assert tests[0]["max_score"] == 10.0
     assert tests[1]["score"] == 10.0
-    assert tests[1]["max_score"] == 10.0
+    assert tests[1]["max_score"] == 20.0

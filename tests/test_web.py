@@ -69,7 +69,11 @@ def test_generate_page_contains_new_fields(client):
     assert response.status_code == 200
     assert b"retrieve_student_id" in response.data
     assert b"wrong_file_location_deduction" in response.data
+    assert b'id="wrong_file_location_deduction"' in response.data
+    assert b"q-wrong-file-location-deduction-input" not in response.data
     assert b"manual_review" in response.data
+    assert b"strict_file_location" in response.data
+    assert b"remove_use_of_java_package" in response.data
 
 
 def test_web_validate_and_export_with_retrieve_student_id(client):
@@ -107,7 +111,7 @@ def test_web_validate_and_export_with_wrong_file_location_deduction(client):
     config = {
         "version": "1.0",
         "language": "python",
-        "wrong_file_location_deduction": 2.5,
+        "wrong_file_location_deduction": 0.5,
         "required_files": ["solution.py"],
         "questions": [
             {
@@ -174,7 +178,7 @@ def test_upload_config_with_new_fields(client):
     yaml_content = """version: '1.0'
 language: python
 retrieve_student_id: true
-wrong_file_location_deduction: 3.0
+wrong_file_location_deduction: 0.5
 required_files:
   - doc.pdf
 questions:
@@ -191,4 +195,154 @@ questions:
     res_json = resp.get_json()
     assert res_json["success"] is True
     assert res_json["config"]["retrieve_student_id"] is True
-    assert res_json["config"]["wrong_file_location_deduction"] == 3.0
+    assert res_json["config"]["wrong_file_location_deduction"] == 0.5
+
+
+def test_web_validate_and_export_with_strict_file_location(client):
+    config = {
+        "version": "1.0",
+        "language": "python",
+        "strict_file_location": True,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    assert val_resp.get_json()["valid"] is True
+
+    export_resp = client.post("/api/export/bundle", json=config)
+    assert export_resp.status_code == 200
+    assert export_resp.headers["Content-Type"] == "application/zip"
+    assert export_resp.data.startswith(b"PK\x03\x04")
+
+
+def test_web_validate_and_export_with_remove_use_of_java_package(client):
+    config = {
+        "version": "1.0",
+        "language": "java",
+        "remove_use_of_java_package": True,
+        "required_files": ["Solution.java"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "Solution.java",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    assert val_resp.get_json()["valid"] is True
+
+    export_resp = client.post("/api/export/bundle", json=config)
+    assert export_resp.status_code == 200
+    assert export_resp.headers["Content-Type"] == "application/zip"
+    assert export_resp.data.startswith(b"PK\x03\x04")
+
+
+def test_web_validate_rejects_strict_file_location_with_deduction(client):
+    config = {
+        "version": "1.0",
+        "language": "python",
+        "strict_file_location": True,
+        "wrong_file_location_deduction": 0.5,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    data = val_resp.get_json()
+    assert data["valid"] is False
+    assert any(
+        "wrong_file_location_deduction is only supported when strict_file_location is False" in err
+        for err in data["errors"]
+    )
+
+
+def test_upload_config_with_strict_file_location_and_java_package(client):
+    import io
+
+    yaml_content = """version: '1.0'
+language: java
+strict_file_location: true
+remove_use_of_java_package: true
+required_files:
+  - Solution.java
+questions:
+  - name: Q1
+    marking_items:
+      - name: Review
+        type: manual_review
+        target_file: Solution.java
+        total_mark: 15.0
+"""
+    data = {"config_file": (io.BytesIO(yaml_content.encode("utf-8")), "config.yaml")}
+    resp = client.post("/upload-config", data=data, content_type="multipart/form-data")
+    assert resp.status_code == 200
+    res_json = resp.get_json()
+    assert res_json["success"] is True
+    assert res_json["config"]["strict_file_location"] is True
+    assert res_json["config"]["remove_use_of_java_package"] is True
+
+
+def test_web_validate_rejects_out_of_bounds_deduction(client):
+    config = {
+        "version": "1.0",
+        "language": "python",
+        "wrong_file_location_deduction": 1.5,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    val_resp = client.post("/api/validate", json=config)
+    assert val_resp.status_code == 200
+    data = val_resp.get_json()
+    assert data["valid"] is False
+    assert any(
+        "wrong_file_location_deduction must be between 0.0 and 1.0" in err for err in data["errors"]
+    )
