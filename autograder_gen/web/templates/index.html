@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Generate - AutograderGen{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -14,15 +15,17 @@
             <i class="fas fa-upload me-1"></i> New from YAML
         </button>
         <input type="file" id="config-upload" class="d-none" accept=".yaml,.yml" onchange="handleConfigUpload(this)">
-        <button type="button" class="btn btn-primary" id="validate-btn" onclick="validateConfig(false)">
+        <button type="button" class="btn btn-primary" id="validate-btn" onclick="validateConfig()">
             <i class="fas fa-check-circle me-1"></i> Validate & Export
         </button>
-        <button type="button" class="btn btn-warning d-none" id="edit-btn" onclick="toggleFormLock(false)">
-            <i class="fas fa-edit me-1"></i> Edit Configuration
+        <button type="button" class="btn btn-outline-secondary" id="download-yaml-btn" onclick="downloadYamlConfig()">
+            <i class="fas fa-file-arrow-down me-1"></i> Download YAML
         </button>
     </div>
 </div>
+
 <div id="alert-container"></div>
+
 <div id="export-section" class="card border-primary mb-4 d-none">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Validate & Export</h5>
@@ -40,6 +43,7 @@
         </div>
     </div>
 </div>
+
 <div id="editor-mode-toggle-container" class="d-flex justify-content-between align-items-center mb-4">
     <div class="btn-group shadow-sm" role="group" aria-label="Editor Mode">
         <button type="button" class="btn btn-primary mode-toggle-btn px-4" id="mode-text-btn" onclick="setMode('text')">
@@ -51,8 +55,8 @@
         </button>
     </div>
 </div>
+
 <style>
-    /* Premium text mode styles */
     .editor-container {
         border-radius: 12px;
         box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -101,17 +105,68 @@
             opacity: 0;
             transform: translateY(6px);
         }
-
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
 
-    .manual-review-border {
-        border-left-color: #6f42c1 !important;
+    /* JSONEditor Bootstrap 5 refinements */
+    #json-editor-container .card {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    #json-editor-container .card-header {
+        background-color: #f8fafc;
+        font-weight: 600;
+    }
+
+    #json-editor-container label {
+        font-weight: 500;
+        color: #334155;
+    }
+
+    /* Left-align and auto-size button groups */
+    #json-editor-container .btn-group {
+        display: inline-flex !important;
+        width: auto !important;
+        justify-content: flex-start !important;
+        margin-top: 0.35rem;
+        margin-bottom: 0.5rem;
+    }
+
+    #json-editor-container .btn-group .btn {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        padding: 0.25rem 0.65rem !important;
+        font-size: 0.825rem !important;
+    }
+
+    #json-editor-container .btn-secondary {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+        color: #334155;
+    }
+
+    #json-editor-container .btn-secondary:hover {
+        background-color: #e2e8f0;
+        border-color: #94a3b8;
+        color: #0f172a;
+    }
+
+    #json-editor-container .json-editor-btn-delete {
+        color: #dc2626;
+    }
+
+    #json-editor-container .json-editor-btn-delete:hover {
+        background-color: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
     }
 </style>
+
 <div id="text-mode-container" class="fade-in mb-4">
     <div class="stats-bar py-3 px-4 mb-3 d-flex gap-4 align-items-center">
         <div><i class="fas fa-question-circle me-2 text-info"></i><strong>Questions:</strong> <span
@@ -125,1171 +180,354 @@
             placeholder="Write or paste your YAML configuration here..."></textarea>
     </div>
 </div>
+
 <div id="form-mode-container" class="d-none fade-in">
-    <form id="autograder-form">
-        <div class="row mb-4" id="global-config-section">
-            <div class="col-12">
-                <h3 class="border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center"
-                    data-bs-toggle="collapse" data-bs-target="#global-config-collapse" style="cursor: pointer;">
-                    Global Configuration
-                    <i class="fas fa-chevron-down small text-muted"></i>
-                </h3>
-            </div>
-            <div id="global-config-collapse" class="collapse show w-100">
-                <div class="row px-3">
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label for="language" class="form-label font-weight-bold">Language</label>
-                            <select class="form-select" id="language" name="language" onchange="updateLanguageUI()">
-                                <option value="python" selected>Python</option>
-                                <option value="java">Java</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label for="version" class="form-label font-weight-bold">Version</label>
-                            <input type="text" class="form-control" id="version" name="version" value="0.1">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label for="global_time_limit" class="form-label font-weight-bold">Global Time Limit
-                                (ms)</label>
-                            <input type="number" class="form-control" id="global_time_limit" name="global_time_limit"
-                                value="300" min="1">
-                        </div>
-                    </div>
-                    <div class="col-md-6 d-flex align-items-center mb-3">
-                        <div class="form-check mt-1">
-                            <input class="form-check-input" type="checkbox" id="strict_file_location" name="strict_file_location" onchange="handleStrictFileLocationChange()">
-                            <label class="form-check-label font-weight-bold" for="strict_file_location">
-                                Strict File Location
-                            </label>
-                            <div class="form-text">Require submitted files to be strictly at expected path.</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="wrong_file_location_deduction" class="form-label font-weight-bold">Wrong File Location Deduction</label>
-                            <input type="number" step="0.05" min="0" max="1" class="form-control" id="wrong_file_location_deduction" name="wrong_file_location_deduction" value="0" oninput="handleStrictFileLocationChange()">
-                            <div class="form-text">Penalty rate (0.0 to 1.0) deducted per item if file is submitted in wrong folder (e.g. 0.5 = 50% penalty).</div>
-                            <div id="strict_file_location_warning" class="text-warning small mt-1 d-none">
-                                <i class="fas fa-exclamation-triangle me-1"></i> Disabled because Strict File Location is enabled.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 d-flex align-items-center mb-3">
-                        <div class="form-check mt-1">
-                            <input class="form-check-input" type="checkbox" id="retrieve_student_id" name="retrieve_student_id">
-                            <label class="form-check-label font-weight-bold" for="retrieve_student_id">
-                                Retrieve Student ID
-                            </label>
-                            <div class="form-text">Extract student ID from submission path or metadata.</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 d-none align-items-center mb-3" id="remove_use_of_java_package_container">
-                        <div class="form-check mt-1">
-                            <input class="form-check-input" type="checkbox" id="remove_use_of_java_package" name="remove_use_of_java_package">
-                            <label class="form-check-label font-weight-bold" for="remove_use_of_java_package">
-                                Remove Java Package Declarations
-                            </label>
-                            <div class="form-text">Strip package declarations from Java submissions.</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="mb-3">
-                            <label for="setup_commands" class="form-label font-weight-bold">Setup Commands (one per
-                                line)</label>
-                            <textarea class="form-control" id="setup_commands" name="setup_commands"
-                                rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label font-weight-bold">Required Files</label>
-                        <div id="required-files-container">
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control" id="new-file-input"
-                                    placeholder="e.g., solution.py">
-                                <button type="button" class="btn btn-primary" onclick="addRequiredFile()">Add
-                                    File</button>
-                            </div>
-                            <div id="required-files-list" class="border rounded p-3 bg-white" style="min-height: 80px;">
-                                <span class="text-muted small">No specific file requirements defined.</span>
-                            </div>
-                        </div>
-                        <textarea id="required_files" name="required_files" class="d-none"></textarea>
-                        <div class="form-text">Files that students MUST submit.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="mt-4" id="questions-section">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4"
-                data-bs-toggle="collapse" data-bs-target="#questions-collapse" style="cursor: pointer;">
-                <h3 class="mb-0">Questions</h3>
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="btn btn-primary btn-sm"
-                        onclick="event.stopPropagation(); addQuestion()">
-                        <i class="fas fa-plus me-1"></i> Add Question
-                    </button>
-                    <i class="fas fa-chevron-down small text-muted"></i>
-                </div>
-            </div>
-            <div id="questions-collapse" class="collapse show">
-                <div id="questions-list"></div>
-            </div>
-        </div>
-    </form>
-</div>
-<!-- Blueprints for dynamic elements -->
-<div id="blueprints" class="d-none">
-    <!-- Question Blueprint -->
-    <div id="question-blueprint">
-        <div class="card mb-4 border-1 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <div class="d-flex align-items-center">
-                    <div class="drag-handle me-3" draggable="true" style="cursor: move;">⋮⋮</div>
-                    <h5 class="mb-0">Question <span class="q-num">__Q_IDX__</span></h5>
-                    <span class="badge bg-primary ms-3 q-total-points">0 pts</span>
-                </div>
-                <button type="button" class="btn-close" aria-label="Remove"
-                    onclick="removeQuestionWithConfirm(this)"></button>
-            </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label font-weight-bold">Question Name</label>
-                        <input type="text" class="form-control q-name-input" placeholder="e.g., Problem 1: Fibonacci"
-                            required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label font-weight-bold">Description (for DOCX)</label>
-                        <textarea class="form-control q-description-input" rows="1"
-                            placeholder="Describe the question for students..."></textarea>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="form-check">
-                            <input class="form-check-input q-strict-float-input" type="checkbox">
-                            <label class="form-check-label small text-muted">
-                                <strong>Strict Float Comparison</strong> (require exact match without tolerance)
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <label class="form-label font-weight-bold mb-0">Marking Items</label>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addMarkingItem(this)">
-                            Add Marking Item
-                        </button>
-                    </div>
-                    <div class="marking-items-list"></div>
-                </div>
-            </div>
-        </div>
+    <div class="d-none" id="schema-fields-manifest">
+        <input type="hidden" id="wrong_file_location_deduction" value="0.0">
     </div>
-    <!-- Marking Item Blueprint -->
-    <div id="marking-item-blueprint">
-        <div class="marking-item card card-body mb-3 border-start">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="col-md-4">
-                    <label class="form-label small font-weight-bold mb-1">Test Type</label>
-                    <select class="form-select mi-type-select" onchange="showTypeFields(this)">
-                        <option value="output_comparison">Compare Output</option>
-                        <option value="signature_check">Validate Signature</option>
-                        <option value="function_test">Unit Test Function</option>
-                        <option value="gitlab_submission_exists">Check GitLab Submission</option>
-                        <option value="github_submission_exists">Check GitHub Submission</option>
-                        <option value="manual_review">Manual Review</option>
-                    </select>
-                </div>
-                <button type="button" class="btn-close align-self-start" aria-label="Remove"
-                    onclick="removeMarkingItem(this)"></button>
-            </div>
-            <div class="type-fields"></div>
-        </div>
-    </div>
+    <div id="json-editor-container" class="mb-4"></div>
 </div>
 {% endblock %}
+
 {% block scripts %}
+<script id="schema-data" type="application/json">{{ schema_json|safe }}</script>
+<script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@2.15.1/dist/jsoneditor.min.js"></script>
 <script>
-    let questionCount = 0;
-    let validationTimeout;
+    const configSchema = JSON.parse(document.getElementById('schema-data').textContent);
+    let editor = null;
     let currentMode = 'text';
 
-    function initPage() {
-        if (document.querySelectorAll('#questions-list > .card').length === 0) {
-            addQuestion();
-        }
-        const urlParams = new URLSearchParams(window.location.search);
-        const action = urlParams.get('action');
-        const loadExample = urlParams.get('load_example');
-        if (action === 'upload') {
-            setTimeout(() => {
-                const uploadInput = document.getElementById('config-upload');
-                if (uploadInput) uploadInput.click();
-            }, 100);
-        } else if (loadExample) {
-            const yamlTextarea = document.getElementById('yaml-textarea');
-            if (yamlTextarea) {
-                yamlTextarea.value = `# Loading example '${loadExample}' configuration...`;
-            }
-            (async () => {
-                try {
-                    const response = await fetch(`/api/example/${loadExample}`);
-                    const data = await response.json();
-                    if (data.success) {
-                        toggleFormLock(false);
-                        populateFormFromConfig(data.config, data.yaml);
-                        switchEditorMode(currentMode);
-                        showAlert(`Example config '${loadExample}' successfully loaded.`, 'success');
-                    } else {
-                        showAlert('Error loading example: ' + data.error, 'danger');
+    const defaultConfig = {
+        version: "0.1",
+        language: "python",
+        global_time_limit: 300,
+        strict_file_location: false,
+        remove_use_of_java_package: false,
+        retrieve_student_id: false,
+        wrong_file_location_deduction: 0.0,
+        setup_commands: [],
+        required_files: ["solution.py"],
+        questions: [
+            {
+                name: "Question 1",
+                description: "",
+                strict_float: false,
+                marking_items: [
+                    {
+                        name: "Test 1",
+                        total_mark: 10,
+                        type: "output_comparison",
+                        time_limit: 30,
+                        visibility: "visible",
+                        target_file: "solution.py",
+                        expected_input: "",
+                        expected_output: "Hello World\n"
                     }
-                } catch (err) {
-                    showAlert('Network error loading example config.', 'danger');
-                }
-                window.history.replaceState({}, document.title, window.location.pathname);
-            })();
+                ]
+            }
+        ]
+    };
+
+    function initEditor(initialData) {
+        if (editor) {
+            editor.destroy();
         }
-        document.addEventListener('input', (e) => {
-            if (e.target.name && e.target.name.includes('total_mark')) {
-                updateQuestionNumbers();
-            }
-            if (e.target.tagName === 'TEXTAREA') {
-                autoResizeTextarea(e.target);
-            }
-            // Hide export section on any change until validated again
-            disableGenerateButton();
-            // Debounced validation
-            clearTimeout(validationTimeout);
-            validationTimeout = setTimeout(() => {
-                validateConfig(true); // silent validation
-            }, 1000);
+        const container = document.getElementById('json-editor-container');
+        editor = new JSONEditor(container, {
+            schema: configSchema,
+            startval: initialData || defaultConfig,
+            theme: 'bootstrap5',
+            iconlib: 'fontawesome5',
+            compact: true,
+            disable_edit_json: true,
+            disable_properties: true,
+            disable_collapse: false,
+            show_errors: 'change',
+            prompt_before_delete: false,
+            object_layout: 'grid',
+            array_controls_top: true
         });
-        // Initialize YAML editor from form state and set up text area event listeners
-        if (!loadExample && !action) {
-            updateYamlFromForm();
-        }
-        updateLanguageUI();
-        handleStrictFileLocationChange();
-        const yamlTextarea = document.getElementById('yaml-textarea');
-        if (yamlTextarea) {
-            yamlTextarea.addEventListener('input', () => {
-                updateYamlStats();
-            });
-        }
-    }
 
-    function updateLanguageUI() {
-        const langEl = document.getElementById('language');
-        const javaContainer = document.getElementById('remove_use_of_java_package_container');
-        if (!langEl || !javaContainer) return;
-        if (langEl.value === 'java') {
-            javaContainer.classList.remove('d-none');
-            javaContainer.classList.add('d-flex');
-        } else {
-            javaContainer.classList.add('d-none');
-            javaContainer.classList.remove('d-flex');
-            const chk = document.getElementById('remove_use_of_java_package');
-            if (chk) chk.checked = false;
-        }
-    }
-
-    function handleStrictFileLocationChange() {
-        const strictEl = document.getElementById('strict_file_location');
-        const dedEl = document.getElementById('wrong_file_location_deduction');
-        const warnEl = document.getElementById('strict_file_location_warning');
-        if (!strictEl || !dedEl) return;
-        if (strictEl.checked) {
-            const dedVal = parseFloat(dedEl.value) || 0;
-            if (dedVal > 0) {
-                if (warnEl) {
-                    warnEl.textContent = 'Conflict: Strict File Location cannot be combined with Wrong File Location Deduction (> 0).';
-                    warnEl.classList.remove('d-none');
-                }
-            } else {
-                dedEl.disabled = true;
-                if (warnEl) {
-                    warnEl.textContent = 'Disabled because Strict File Location is enabled.';
-                    warnEl.classList.remove('d-none');
-                }
+        editor.on('ready', () => {
+            if (!document.getElementById('yaml-textarea').value.trim()) {
+                updateYamlFromEditor();
             }
-        } else {
-            dedEl.disabled = false;
-            if (warnEl) warnEl.classList.add('d-none');
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPage);
-    } else {
-        initPage();
-    }
-    function createNewConfig() {
-        toggleFormLock(false);
-        document.getElementById('autograder-form').reset();
-        document.getElementById('questions-list').innerHTML = '';
-        document.getElementById('required-files-list').innerHTML = '';
-        document.getElementById('required_files').value = '';
-        document.getElementById('setup_commands').value = '';
-        const retrieveStudentIdEl = document.getElementById('retrieve_student_id');
-        if (retrieveStudentIdEl) retrieveStudentIdEl.checked = false;
-        const strictFileLocEl = document.getElementById('strict_file_location');
-        if (strictFileLocEl) strictFileLocEl.checked = false;
-        const removePkgEl = document.getElementById('remove_use_of_java_package');
-        if (removePkgEl) removePkgEl.checked = false;
-        const wrongFileLocEl = document.getElementById('wrong_file_location_deduction');
-        if (wrongFileLocEl) wrongFileLocEl.value = '0';
-        handleStrictFileLocationChange();
-        updateLanguageUI();
-        questionCount = 0;
-        addQuestion();
-        updateQuestionNumbers();
-        disableGenerateButton();
-        clearAlerts();
-        updateYamlFromForm();
-        switchEditorMode(currentMode);
-    }
-    function addQuestion() {
-        const blueprint = document.getElementById('question-blueprint').firstElementChild;
-        const qDiv = blueprint.cloneNode(true);
-        const qId = questionCount++;
-        qDiv.id = `question-${qId}`;
-        document.getElementById('questions-list').appendChild(qDiv);
-        addMarkingItem(qDiv.querySelector('button[onclick="addMarkingItem(this)"]'));
-        initializeDragAndDrop(qDiv);
-        updateQuestionNumbers();
-    }
-    function toggleFormLock(lock) {
-        const form = document.getElementById('autograder-form');
-        const elements = form.querySelectorAll('input, select, textarea, button:not(.btn-close)');
-        elements.forEach(el => {
-            if (el.id === 'config-upload') return;
-            el.disabled = lock;
         });
-        const yamlTextarea = document.getElementById('yaml-textarea');
-        if (yamlTextarea) yamlTextarea.disabled = lock;
-        const modeTextBtn = document.getElementById('mode-text-btn');
-        const modeFormBtn = document.getElementById('mode-form-btn');
-        if (modeTextBtn) modeTextBtn.disabled = lock;
-        if (modeFormBtn) modeFormBtn.disabled = lock;
 
-        const modeToggleContainer = document.getElementById('editor-mode-toggle-container');
-        const textModeContainer = document.getElementById('text-mode-container');
-        const formModeContainer = document.getElementById('form-mode-container');
-        const exportSection = document.getElementById('export-section');
+        editor.on('change', () => {
+            if (currentMode === 'form') {
+                updateYamlFromEditor();
+            }
+        });
+    }
 
-        if (lock) {
-            if (modeToggleContainer) modeToggleContainer.classList.add('d-none');
-            if (textModeContainer) textModeContainer.classList.add('d-none');
-            if (formModeContainer) formModeContainer.classList.add('d-none');
-            if (exportSection) exportSection.classList.remove('d-none');
+    function showAlert(message, type = 'info') {
+        const alertContainer = document.getElementById('alert-container');
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchEditorMode(mode) {
+        currentMode = mode;
+        const textContainer = document.getElementById('text-mode-container');
+        const formContainer = document.getElementById('form-mode-container');
+        const textBtn = document.getElementById('mode-text-btn');
+        const formBtn = document.getElementById('mode-form-btn');
+
+        if (mode === 'form') {
+            textContainer.classList.add('d-none');
+            formContainer.classList.remove('d-none');
+            textBtn.className = 'btn btn-outline-primary mode-toggle-btn px-4';
+            formBtn.className = 'btn btn-primary mode-toggle-btn px-4';
         } else {
-            if (exportSection) exportSection.classList.add('d-none');
-            if (modeToggleContainer) modeToggleContainer.classList.remove('d-none');
-            switchEditorMode(currentMode);
-            handleStrictFileLocationChange();
-            updateLanguageUI();
-        }
-
-        document.getElementById('validate-btn').classList.toggle('d-none', lock);
-        document.getElementById('edit-btn').classList.toggle('d-none', !lock);
-
-        const newBtn = document.getElementById('new-btn');
-        const uploadBtn = document.getElementById('upload-btn');
-        if (newBtn) newBtn.disabled = lock;
-        if (uploadBtn) uploadBtn.disabled = lock;
-    }
-    function removeQuestionWithConfirm(btn) {
-        if (confirm('Delete this question and all its tests?')) {
-            btn.closest('.card').remove();
-            updateQuestionNumbers();
+            formContainer.classList.add('d-none');
+            textContainer.classList.remove('d-none');
+            textBtn.className = 'btn btn-primary mode-toggle-btn px-4';
+            formBtn.className = 'btn btn-outline-primary mode-toggle-btn px-4';
         }
     }
-    function updateQuestionNumbers() {
-        const questions = document.querySelectorAll('#questions-list > .card');
-        questions.forEach((question, qIdx) => {
-            question.querySelector('.q-num').textContent = qIdx + 1;
-            const prefix = `questions-${qIdx}`;
-            const nameInput = question.querySelector('.q-name-input');
-            if (nameInput) {
-                nameInput.name = `${prefix}-name`;
-                nameInput.id = `${prefix}-name`;
-            }
-            const descInput = question.querySelector('.q-description-input');
-            if (descInput) {
-                descInput.name = `${prefix}-description`;
-                descInput.id = `${prefix}-description`;
-            }
-            const strictFloatInput = question.querySelector('.q-strict-float-input');
-            if (strictFloatInput) {
-                strictFloatInput.name = `${prefix}-strict_float`;
-                strictFloatInput.id = `${prefix}-strict_float`;
-            }
-            const qTotalPointsSpan = question.querySelector('.q-total-points');
-            let questionTotal = 0;
-            const markingItems = question.querySelectorAll('.marking-item');
-            markingItems.forEach((item, miIdx) => {
-                const miPrefix = `${prefix}-marking_items-${miIdx}`;
-                item.querySelectorAll('input, select, textarea').forEach(field => {
-                    let suffix = field.dataset.suffix;
-                    if (!suffix) {
-                        if (field.classList.contains('mi-type-select')) {
-                            suffix = 'type';
-                        } else if (field.id) {
-                            suffix = field.id.replace(/^.*questions-\d+-marking_items-\d+-/, '');
-                        } else if (field.name) {
-                            suffix = field.name.replace(/^.*questions-\d+-marking_items-\d+-/, '');
+
+    function setMode(mode) {
+        if (mode === currentMode) {
+            return;
+        }
+        if (mode === 'form') {
+            const yamlText = document.getElementById('yaml-textarea').value;
+            if (yamlText && yamlText.trim()) {
+                try {
+                    const parsed = jsyaml.load(yamlText);
+                    if (parsed && typeof parsed === 'object') {
+                        if (editor) {
+                            editor.setValue(parsed);
+                        } else {
+                            initEditor(parsed);
                         }
                     }
-                    if (suffix) {
-                        field.name = `${miPrefix}-${suffix}`;
-                        field.id = `${miPrefix}-${suffix}`;
-                        field.dataset.suffix = suffix;
-                    }
-                });
-                const pointsField = item.querySelector('input[name$="-total_mark"]');
-                if (pointsField) {
-                    questionTotal += Number(pointsField.value) || 0;
+                } catch (e) {
+                    showAlert('Cannot switch to Form Mode. Invalid YAML: ' + e.message, 'danger');
+                    return;
                 }
-            });
-            if (qTotalPointsSpan) qTotalPointsSpan.textContent = `${questionTotal} pts`;
-        });
-    }
-    function addMarkingItem(btn) {
-        const miList = btn.closest('.card-body').querySelector('.marking-items-list');
-        const blueprint = document.getElementById('marking-item-blueprint').firstElementChild;
-        const miDiv = blueprint.cloneNode(true);
-        miList.appendChild(miDiv);
-        showTypeFields(miDiv.querySelector('select'));
-        updateQuestionNumbers();
-        disableGenerateButton();
-    }
-    function removeMarkingItem(btn) {
-        btn.closest('.marking-item').remove();
-        updateQuestionNumbers();
-        disableGenerateButton();
-    }
-    function showTypeFields(select) {
-        const type = select.value;
-        const mi = select.closest('.marking-item');
-        const qCard = mi.closest('.card');
-        const qIdx = Array.from(document.querySelectorAll('#questions-list > .card')).indexOf(qCard);
-        const miIdx = Array.from(mi.parentElement.children).indexOf(mi);
-        const prefix = `questions-${qIdx}-marking_items-${miIdx}`;
-        mi.className = 'marking-item card card-body mb-3 border-start ' + type.replace(/_/g, '-') + '-border';
-        const hasTimeLimit = (type === 'output_comparison' || type === 'function_test');
-        const isTargetFileOptional = (type === 'gitlab_submission_exists' || type === 'github_submission_exists' || type === 'manual_review');
-        let html = `
-        <div class="row mb-2">
-            <div class="col-md-9">
-                <label class="form-label small mb-1">Display Name (optional)</label>
-                <input type="text" class="form-control form-control-sm" data-suffix="name" name="${prefix}-name" id="${prefix}-name">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small mb-1">Points *</label>
-                <input type="number" step="any" class="form-control form-control-sm" data-suffix="total_mark" id="${prefix}-total_mark" name="${prefix}-total_mark" required oninput="updateQuestionNumbers()">
-            </div>
-        </div>
-        <div class="row mb-2">
-            <div class="${hasTimeLimit ? 'col-md-6' : 'col-md-8'}">
-                <label class="form-label small mb-1">${isTargetFileOptional ? 'Target File (optional)' : 'Target File *'}</label>
-                <select class="form-select form-select-sm" data-suffix="target_file" id="${prefix}-target_file" name="${prefix}-target_file" ${isTargetFileOptional ? '' : 'required'}>
-                    <option value="">Select file...</option>
-                </select>
-            </div>
-            ${hasTimeLimit ? `
-            <div class="col-md-3">
-                <label class="form-label small mb-1">Time Limit (s)</label>
-                <input type="number" class="form-control form-control-sm" data-suffix="time_limit" id="${prefix}-time_limit" name="${prefix}-time_limit" value="30">
-            </div>` : ''}
-            <div class="${hasTimeLimit ? 'col-md-3' : 'col-md-4'}">
-                <label class="form-label small mb-1">Visibility</label>
-                <select class="form-select form-select-sm" data-suffix="visibility" id="${prefix}-visibility" name="${prefix}-visibility">
-                    <option value="visible">Visible</option>
-                    <option value="hidden">Hidden</option>
-                    <option value="after_due_date">After Due Date</option>
-                </select>
-            </div>
-        </div>
-    `;
-        if (type === 'output_comparison') {
-            html += `
-            <div class="mb-2">
-                <label class="form-label small mb-1">Standard Input</label>
-                <textarea class="form-control form-control-sm font-monospace" data-suffix="expected_input" id="${prefix}-expected_input" name="${prefix}-expected_input" rows="3"></textarea>
-            </div>
-            <div class="mb-2">
-                <label class="form-label small mb-1">Expected Output *</label>
-                <textarea class="form-control form-control-sm font-monospace" data-suffix="expected_output" id="${prefix}-expected_output" name="${prefix}-expected_output" rows="5" required></textarea>
-            </div>
-        `;
-        } else if (type === 'signature_check') {
-            html += `
-            <div class="mb-2">
-                <label class="form-label small mb-1">Function Name *</label>
-                <input type="text" class="form-control form-control-sm font-monospace" data-suffix="function_name" id="${prefix}-function_name" name="${prefix}-function_name" required>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="form-label small mb-1">Expected Params</label>
-                    <input type="text" class="form-control form-control-sm" data-suffix="expected_parameters" id="${prefix}-expected_parameters" name="${prefix}-expected_parameters">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small mb-1">Return Type</label>
-                    <input type="text" class="form-control form-control-sm" data-suffix="expected_return_type" id="${prefix}-expected_return_type" name="${prefix}-expected_return_type">
-                </div>
-            </div>
-        `;
-        } else if (type === 'function_test') {
-            html += `
-            <div class="mb-2">
-                <label class="form-label small mb-1">Function Name *</label>
-                <input type="text" class="form-control form-control-sm font-monospace" data-suffix="function_name" id="${prefix}-function_name" name="${prefix}-function_name" required>
-            </div>
-            <div class="mb-2">
-                <label class="form-label small mb-1">Test Cases (YAML) *</label>
-                <textarea class="form-control form-control-sm font-monospace" data-suffix="test_cases" id="${prefix}-test_cases" name="${prefix}-test_cases" rows="3" required></textarea>
-            </div>
-        `;
-        } else if (type === 'manual_review') {
-            html += `
-            <div class="alert alert-secondary py-2 small mb-0">
-                <i class="fas fa-info-circle me-1"></i> Graded manually by instructor. If a target file is specified, the autograder checks if the file was submitted.
-            </div>
-        `;
-        }
-        mi.querySelector('.type-fields').innerHTML = html;
-        populateTargetFileDropdown(mi.querySelector('select[id$="-target_file"]'));
-    }
-    function getRequiredFilesTextarea() {
-        return document.getElementById('required_files');
-    }
-    function setRequiredFilesValue(val) {
-        const rf = document.getElementById('required_files');
-        if (rf) rf.value = val;
-    }
-    function addRequiredFile() {
-        const input = document.getElementById('new-file-input');
-        const filename = input.value.trim();
-        if (!filename) return;
-        const filesTextarea = getRequiredFilesTextarea();
-        const files = filesTextarea && filesTextarea.value ? filesTextarea.value.split('\n') : [];
-        if (!files.includes(filename)) {
-            files.push(filename);
-            setRequiredFilesValue(files.join('\n'));
-            renderRequiredFilesList();
-            updateAllTargetFileDropdowns();
-        }
-        input.value = '';
-        disableGenerateButton();
-    }
-    function removeRequiredFile(filename) {
-        const filesTextarea = getRequiredFilesTextarea();
-        let files = filesTextarea && filesTextarea.value ? filesTextarea.value.split('\n') : [];
-        files = files.filter(f => f !== filename);
-        setRequiredFilesValue(files.join('\n'));
-        renderRequiredFilesList();
-        updateAllTargetFileDropdowns();
-        disableGenerateButton();
-    }
-    function renderRequiredFilesList() {
-        const list = document.getElementById('required-files-list');
-        const filesTextarea = getRequiredFilesTextarea();
-        const files = filesTextarea && filesTextarea.value ? filesTextarea.value.split('\n') : [];
-        if (files.length === 0) {
-            list.innerHTML = '<span class="text-muted small">No specific file requirements defined.</span>';
-            return;
-        }
-        list.innerHTML = '';
-        files.forEach(file => {
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-light text-dark border me-2 mb-2 p-2 d-inline-flex align-items-center';
-            badge.innerHTML = `
-            <span class="file-name me-2" onclick="editRequiredFile('${file}')" style="cursor:pointer">${file}</span>
-            <button type="button" class="btn-close ms-1" style="font-size: 0.5rem" onclick="removeRequiredFile('${file}')"></button>
-        `;
-            list.appendChild(badge);
-        });
-    }
-    function editRequiredFile(oldName) {
-        const newName = prompt('Rename file requirement:', oldName);
-        if (!newName || newName === oldName) return;
-        const filesTextarea = getRequiredFilesTextarea();
-        let files = filesTextarea && filesTextarea.value ? filesTextarea.value.split('\n') : [];
-        const idx = files.indexOf(oldName);
-        if (idx !== -1) {
-            files[idx] = newName;
-            setRequiredFilesValue(files.join('\n'));
-            renderRequiredFilesList();
-            updateAllTargetFileDropdowns();
-        }
-    }
-    function updateAllTargetFileDropdowns() {
-        document.querySelectorAll('select[id$="-target_file"]').forEach(populateTargetFileDropdown);
-    }
-    function populateTargetFileDropdown(select) {
-        const currentValue = select.value;
-        const filesTextarea = getRequiredFilesTextarea();
-        const files = filesTextarea && filesTextarea.value ? filesTextarea.value.split('\n') : [];
-        select.innerHTML = '<option value="">Select file...</option>';
-        files.forEach(file => {
-            const option = document.createElement('option');
-            option.value = file;
-            option.textContent = file;
-            if (file === currentValue) option.selected = true;
-            select.appendChild(option);
-        });
-    }
-    function initializeDragAndDrop(element) {
-        const handle = element.querySelector('.drag-handle');
-        element.addEventListener('dragstart', handleDragStart);
-        element.addEventListener('dragover', handleDragOver);
-        element.addEventListener('drop', handleDrop);
-        element.addEventListener('dragend', handleDragEnd);
-    }
-    function handleDragStart(e) {
-        this.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', this.id);
-    }
-    function handleDragOver(e) {
-        e.preventDefault();
-        const container = document.getElementById('questions-list');
-        const afterElement = getDragAfterElement(container, e.clientY);
-        const dragging = document.querySelector('.dragging');
-        if (!afterElement) {
-            container.appendChild(dragging);
+            }
         } else {
-            container.insertBefore(dragging, afterElement);
+            updateYamlFromEditor();
         }
+        switchEditorMode(mode);
     }
-    function handleDrop(e) { e.preventDefault(); }
-    function handleDragEnd() {
-        this.classList.remove('dragging');
-        updateQuestionNumbers();
-        disableGenerateButton();
-    }
-    function getDragAfterElement(container, y) {
-        const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
+
+    function updateYamlFromEditor() {
+        if (!editor) return;
+        const val = editor.getValue();
+        const yamlString = jsyaml.dump(val, {
+            schema: jsyaml.DEFAULT_SCHEMA,
+            noRefs: true,
+            lineWidth: -1,
+            styles: {
+                '!!null': 'empty'
             }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
-    function formToConfigObject() {
-        if (currentMode === 'text') {
-            const yamlText = document.getElementById('yaml-textarea').value;
-            try {
-                return jsyaml.load(yamlText) || {};
-            } catch (e) {
-                console.error(e);
-                return null;
-            }
-        }
-        return serializeFormToConfigObject();
-    }
-    function serializeFormToConfigObject() {
-        const formElement = document.getElementById('autograder-form');
-        const disabledElements = [];
-        formElement.querySelectorAll('input:disabled, select:disabled, textarea:disabled').forEach(el => {
-            disabledElements.push(el);
-            el.disabled = false;
         });
-        const formData = new FormData(formElement);
-        // Restore disabled state
-        disabledElements.forEach(el => {
-            el.disabled = true;
-        });
-        const config = {
-            version: formData.get('version'),
-            language: formData.get('language'),
-            global_time_limit: parseInt(formData.get('global_time_limit')),
-            setup_commands: (formData.get('setup_commands') || '').split('\n').filter(c => c.trim()),
-            required_files: (formData.get('required_files') || '').split('\n').filter(f => f.trim()),
-            questions: []
-        };
-        const retrieveStudentIdVal = formData.get('retrieve_student_id');
-        if (retrieveStudentIdVal === 'on' || retrieveStudentIdVal === 'true' || retrieveStudentIdVal === true) {
-            config.retrieve_student_id = true;
-        }
-        const strictFileLocVal = formData.get('strict_file_location');
-        if (strictFileLocVal === 'on' || strictFileLocVal === 'true' || strictFileLocVal === true) {
-            config.strict_file_location = true;
-        }
-        const removePkgVal = formData.get('remove_use_of_java_package');
-        if (removePkgVal === 'on' || removePkgVal === 'true' || removePkgVal === true) {
-            config.remove_use_of_java_package = true;
-        }
-        const wrongFileLocVal = parseFloat(formData.get('wrong_file_location_deduction'));
-        if (!isNaN(wrongFileLocVal) && wrongFileLocVal > 0) {
-            config.wrong_file_location_deduction = wrongFileLocVal;
-        }
-        const questions = document.querySelectorAll('#questions-list > .card');
-        questions.forEach((q, qIdx) => {
-            const prefix = `questions-${qIdx}`;
-            const question = {
-                name: formData.get(`${prefix}-name`),
-                description: formData.get(`${prefix}-description`),
-                strict_float: formData.get(`${prefix}-strict_float`) === 'on' || formData.get(`${prefix}-strict_float`) === 'true',
-                marking_items: []
-            };
-            const markingItems = q.querySelectorAll('.marking-item');
-            markingItems.forEach((mi, miIdx) => {
-                const miPrefix = `${prefix}-marking_items-${miIdx}`;
-                const type = formData.get(`${miPrefix}-type`);
-                const item = {
-                    type: type,
-                    name: formData.get(`${miPrefix}-name`),
-                    total_mark: parseFloat(formData.get(`${miPrefix}-total_mark`)),
-                    visibility: formData.get(`${miPrefix}-visibility`) || 'visible'
-                };
-                const targetFileVal = formData.get(`${miPrefix}-target_file`);
-                if (targetFileVal) {
-                    item.target_file = targetFileVal;
-                }
-                if (type === 'output_comparison' || type === 'function_test') {
-                    item.time_limit = parseInt(formData.get(`${miPrefix}-time_limit`)) || 30;
-                }
-                if (type === 'output_comparison') {
-                    item.expected_input = formData.get(`${miPrefix}-expected_input`);
-                    item.expected_output = formData.get(`${miPrefix}-expected_output`);
-                } else if (type === 'signature_check') {
-                    item.function_name = formData.get(`${miPrefix}-function_name`);
-                    item.expected_parameters = formData.get(`${miPrefix}-expected_parameters`);
-                    item.expected_return_type = formData.get(`${miPrefix}-expected_return_type`);
-                } else if (type === 'function_test') {
-                    item.function_name = formData.get(`${miPrefix}-function_name`);
-                    try {
-                        item.test_cases = jsyaml.load(formData.get(`${miPrefix}-test_cases`));
-                    } catch (e) { item.test_cases = []; }
-                }
-                question.marking_items.push(item);
-            });
-            config.questions.push(question);
-        });
-        return config;
+        document.getElementById('yaml-textarea').value = yamlString;
+        updateYamlStats();
     }
-    async function validateConfig(silent = false) {
-        if (!silent) clearAlerts();
-        const config = formToConfigObject();
-        if (config === null) {
-            if (!silent) {
-                showAlert('<strong>YAML Syntax Error:</strong> Please ensure the YAML is well-formatted before validation.', 'danger');
-            }
-            disableGenerateButton();
-            return false;
-        }
-        const wrongFileLoc = parseFloat(config.wrong_file_location_deduction) || 0;
-        if (wrongFileLoc < 0 || wrongFileLoc > 1) {
-            if (!silent) {
-                showAlert('<strong>Validation Error:</strong> <code>wrong_file_location_deduction</code> must be a float between 0.0 and 1.0.', 'danger');
-            }
-            disableGenerateButton();
-            return false;
-        }
-        if (config.strict_file_location && wrongFileLoc > 0) {
-            if (!silent) {
-                showAlert('<strong>Validation Error:</strong> <code>wrong_file_location_deduction</code> is only supported when <code>strict_file_location</code> is False.', 'danger');
-            }
-            disableGenerateButton();
-            return false;
-        }
-        const btn = document.getElementById('validate-btn');
-        const originalText = btn ? btn.innerHTML : '';
-        if (!silent && btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Validating...';
-        }
-        try {
-            const response = await fetch('/api/validate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(config)
-            });
-            const data = await response.json();
-            const genBtn = document.getElementById('generate-btn');
-            const exportSection = document.getElementById('export-section');
-            if (data.valid) {
-                if (!silent) {
-                    const logEl = document.getElementById('validation-log');
-                    if (logEl) {
-                        const now = new Date();
-                        const ts = now.toTimeString().split(' ')[0];
-                        const qCount = config.questions ? config.questions.length : 0;
-                        logEl.textContent = `[${ts}] [INFO] Starting configuration validation...\n` +
-                                            `[${ts}] [INFO] Target Language: ${config.language || 'python'} (Version: ${config.version || '1.0'})\n` +
-                                            `[${ts}] [INFO] Validating ${qCount} question(s) and marking items...\n` +
-                                            `[${ts}] [SUCCESS] Validation succeeded! 0 errors found.\n` +
-                                            `[${ts}] [INFO] Export bundle ready for download.`;
-                    }
-                    showAlert('Configuration validated successfully!', 'success');
-                    toggleFormLock(true);
-                }
-                if (genBtn) genBtn.disabled = false;
-            } else {
-                if (!silent) {
-                    let msg = '<strong>Validation Error:</strong><ul>' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
-                    showAlert(msg, 'danger');
-                }
-                if (genBtn) genBtn.disabled = true;
-                if (exportSection) exportSection.classList.add('d-none');
-            }
-            return data.valid;
-        } catch (e) {
-            if (!silent) showAlert('Network error during validation.', 'danger');
-            return false;
-        } finally {
-            if (!silent && btn) {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        }
-    }
-    async function downloadExport(type) {
-        const config = formToConfigObject();
-        if (config === null) {
-            showAlert('<strong>YAML Syntax Error:</strong> Cannot export. Please fix the YAML syntax first.', 'danger');
-            return;
-        }
-        const url = '/api/export/bundle';
-        const filename = 'all_assets.zip';
+
+    function updateYamlStats() {
+        const yamlText = document.getElementById('yaml-textarea').value;
+        const questionsCountSpan = document.getElementById('text-questions-count');
+        const totalScoreSpan = document.getElementById('text-total-score');
+        const statusBadge = document.getElementById('yaml-status-badge');
 
         try {
-            const response = await fetch(url, {
+            const config = jsyaml.load(yamlText);
+            if (config && typeof config === 'object') {
+                statusBadge.textContent = 'Valid YAML';
+                statusBadge.className = 'badge bg-success py-2 px-3';
+                const questions = config.questions || [];
+                questionsCountSpan.textContent = questions.length;
+                let totalScore = 0;
+                questions.forEach(q => {
+                    (q.marking_items || []).forEach(item => {
+                        const mark = Number(item.total_mark);
+                        if (!isNaN(mark)) totalScore += mark;
+                    });
+                });
+                totalScoreSpan.textContent = totalScore;
+            } else {
+                statusBadge.textContent = 'Empty / Invalid';
+                statusBadge.className = 'badge bg-warning text-dark py-2 px-3';
+            }
+        } catch (e) {
+            statusBadge.textContent = 'Invalid YAML';
+            statusBadge.className = 'badge bg-danger py-2 px-3';
+        }
+    }
+
+    function getCurrentConfig() {
+        if (currentMode === 'form' && editor) {
+            return editor.getValue();
+        }
+        const yamlText = document.getElementById('yaml-textarea').value;
+        try {
+            return jsyaml.load(yamlText);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function createNewConfig() {
+        if (confirm('Create new configuration? Any unsaved changes will be lost.')) {
+            if (editor) editor.setValue(defaultConfig);
+            const yamlString = jsyaml.dump(defaultConfig, {
+                schema: jsyaml.DEFAULT_SCHEMA,
+                noRefs: true,
+                lineWidth: -1
+            });
+            document.getElementById('yaml-textarea').value = yamlString;
+            updateYamlStats();
+            document.getElementById('export-section').classList.add('d-none');
+            showAlert('Created new configuration template.', 'info');
+        }
+    }
+
+    function handleConfigUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const raw = e.target.result;
+                let config;
+                if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
+                    config = jsyaml.load(raw);
+                } else {
+                    config = JSON.parse(raw);
+                }
+                if (config && typeof config === 'object') {
+                    if (editor) editor.setValue(config);
+                    document.getElementById('yaml-textarea').value = jsyaml.dump(config, {
+                        schema: jsyaml.DEFAULT_SCHEMA,
+                        noRefs: true,
+                        lineWidth: -1
+                    });
+                    updateYamlStats();
+                    document.getElementById('export-section').classList.add('d-none');
+                    showAlert('Configuration imported successfully.', 'success');
+                } else {
+                    showAlert('Import Error: File does not contain a valid configuration object.', 'danger');
+                }
+            } catch (err) {
+                showAlert('Import Error: ' + err.message, 'danger');
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
+    }
+
+    function downloadYamlConfig() {
+        const config = getCurrentConfig();
+        if (!config) {
+            showAlert('Cannot download: Invalid configuration.', 'danger');
+            return;
+        }
+        const yamlString = jsyaml.dump(config, {
+            schema: jsyaml.DEFAULT_SCHEMA,
+            noRefs: true,
+            lineWidth: -1,
+            styles: { '!!null': 'empty' }
+        });
+        const blob = new Blob([yamlString], { type: 'application/x-yaml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'autograder_gen.yaml';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function validateConfig() {
+        const config = getCurrentConfig();
+        if (!config) {
+            showAlert('Cannot validate: Invalid YAML or form data.', 'danger');
+            return;
+        }
+
+        const validateBtn = document.getElementById('validate-btn');
+        const exportSection = document.getElementById('export-section');
+        const logPre = document.getElementById('validation-log');
+
+        validateBtn.disabled = true;
+        validateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Validating...';
+
+        try {
+            const resp = await fetch('/api/validate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(config)
             });
-            if (!response.ok) throw new Error('Export failed');
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(downloadUrl);
-        } catch (e) {
-            showAlert(e.message, 'danger');
+            const data = await resp.json();
+
+            exportSection.classList.remove('d-none');
+
+            if (data.valid) {
+                logPre.textContent = 'Configuration is valid!\n' + (data.warnings && data.warnings.length > 0 ? '\nWarnings:\n- ' + data.warnings.join('\n- ') : 'No warnings.\nReady to export all assessment assets.');
+                showAlert('Configuration is valid!', 'success');
+            } else {
+                logPre.textContent = 'Configuration validation failed:\n- ' + (data.errors || []).join('\n- ');
+                showAlert('Validation failed. Please check the log below.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Error validating configuration: ' + err.message, 'danger');
+        } finally {
+            validateBtn.disabled = false;
+            validateBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Validate & Export';
         }
     }
-        function clearAlerts() { document.getElementById('alert-container').innerHTML = ''; }
-        function showAlert(message, type) {
-            const container = document.getElementById('alert-container');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} alert-dismissible fade show shadow-sm`;
-            alert.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-            container.appendChild(alert);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    async function downloadExport(type) {
+        const config = getCurrentConfig();
+        if (!config) {
+            showAlert('Cannot export: Invalid configuration.', 'danger');
+            return;
         }
-        function autoResizeTextarea(textarea) {
-            if (!textarea || textarea.classList.contains('d-none') || textarea.style.display === 'none' || textarea.id === 'yaml-textarea') return;
-            textarea.style.height = 'auto';
-            if (textarea.scrollHeight > 0) {
-                textarea.style.height = textarea.scrollHeight + 'px';
-            }
-        }
-        function disableGenerateButton() {
-            const btn = document.getElementById('generate-btn') || document.getElementById('validate-btn');
-            if (btn) btn.disabled = false;
-            const exportSection = document.getElementById('export-section');
-            if (exportSection) exportSection.classList.add('d-none');
-        }
-        function downloadYamlConfig() {
-            const config = formToConfigObject();
-            if (config === null) {
-                showAlert('<strong>YAML Syntax Error:</strong> Cannot download YAML. Please fix the YAML syntax first.', 'danger');
-                return;
-            }
-            const yamlString = jsyaml.dump(config, {
-                schema: jsyaml.DEFAULT_SCHEMA,
-                noRefs: true,
-                lineWidth: -1, // Disable line wrapping
-                styles: {
-                    '!!null': 'empty' // dump null as empty
-                }
+
+        try {
+            const resp = await fetch('/api/export/bundle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
             });
-            const blob = new Blob([yamlString], { type: 'application/x-yaml' });
+
+            if (!resp.ok) {
+                const errData = await resp.json();
+                throw new Error(errData.error || 'Export failed');
+            }
+
+            const blob = await resp.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'autograder_gen.yaml';
+            a.download = 'all_assets.zip';
             a.click();
             URL.revokeObjectURL(url);
+            showAlert('All assets exported successfully!', 'success');
+        } catch (err) {
+            showAlert('Export error: ' + err.message, 'danger');
         }
-        function switchEditorMode(mode) {
-            currentMode = mode;
-            if (mode === 'form') {
-                document.getElementById('text-mode-container').classList.add('d-none');
-                document.getElementById('form-mode-container').classList.remove('d-none');
-                document.getElementById('mode-text-btn').className = 'btn btn-outline-primary mode-toggle-btn px-4';
-                document.getElementById('mode-form-btn').className = 'btn btn-primary mode-toggle-btn px-4';
-            } else {
-                document.getElementById('form-mode-container').classList.add('d-none');
-                document.getElementById('text-mode-container').classList.remove('d-none');
-                document.getElementById('mode-text-btn').className = 'btn btn-primary mode-toggle-btn px-4';
-                document.getElementById('mode-form-btn').className = 'btn btn-outline-primary mode-toggle-btn px-4';
-            }
-        }
-        function setMode(mode) {
-            if (mode === currentMode) {
-                switchEditorMode(mode);
-                return;
-            }
-            if (mode === 'form') {
-                const yamlText = document.getElementById('yaml-textarea').value;
-                if (yamlText && yamlText.trim()) {
-                    try {
-                        const config = jsyaml.load(yamlText);
-                        if (config && typeof config === 'object') {
-                            populateFormFromConfig(config, yamlText);
-                        }
-                    } catch (e) {
-                        alert('Cannot switch to Form Mode. Invalid YAML: ' + e.message);
-                        return;
-                    }
-                }
-            } else {
-                updateYamlFromForm();
-            }
-            switchEditorMode(mode);
-        }
-        function updateYamlFromForm() {
-            const config = serializeFormToConfigObject();
-            const yamlString = jsyaml.dump(config, {
-                schema: jsyaml.DEFAULT_SCHEMA,
-                noRefs: true,
-                lineWidth: -1,
-                styles: {
-                    '!!null': 'empty'
-                }
-            });
-            document.getElementById('yaml-textarea').value = yamlString;
-            updateYamlStats();
-        }
-        function updateYamlStats() {
-            const yamlText = document.getElementById('yaml-textarea').value;
-            const questionsCountSpan = document.getElementById('text-questions-count');
-            const totalScoreSpan = document.getElementById('text-total-score');
-            const statusBadge = document.getElementById('yaml-status-badge');
-            try {
-                const config = jsyaml.load(yamlText);
-                if (config && typeof config === 'object') {
-                    statusBadge.textContent = 'Valid YAML';
-                    statusBadge.className = 'badge bg-success py-2 px-3';
-                    const questions = config.questions || [];
-                    questionsCountSpan.textContent = questions.length;
-                    let totalScore = 0;
-                    questions.forEach(q => {
-                        const markingItems = q.marking_items || [];
-                        markingItems.forEach(item => {
-                            const mark = Number(item.total_mark);
-                            if (!isNaN(mark)) {
-                                totalScore += mark;
-                            }
-                        });
-                    });
-                    totalScoreSpan.textContent = totalScore;
-                } else {
-                    statusBadge.textContent = 'Empty / Invalid';
-                    statusBadge.className = 'badge bg-warning text-dark py-2 px-3';
-                }
-            } catch (e) {
-                statusBadge.textContent = 'Invalid YAML';
-                statusBadge.className = 'badge bg-danger py-2 px-3';
-            }
-        }
-        function handleConfigUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    toggleFormLock(false);
-                    const rawYaml = e.target.result;
-                    let config;
-                    if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
-                        config = jsyaml.load(rawYaml);
-                    } else {
-                        config = JSON.parse(rawYaml);
-                    }
-                    populateFormFromConfig(config, rawYaml);
-                    switchEditorMode(currentMode);
-                    showAlert('Config successfully imported.', 'success');
-                } catch (err) {
-                    console.error(err);
-                    showAlert('Import Error: ' + err.message, 'danger');
-                }
-            };
-            reader.readAsText(file);
-        }
-        async function loadExampleConfig() {
-            try {
-                const response = await fetch('/api/example/py_simple');
-                const data = await response.json();
-                if (data.success) {
-                    toggleFormLock(false);
-                    populateFormFromConfig(data.config, data.yaml);
-                    switchEditorMode(currentMode);
-                    showAlert('Example config successfully loaded.', 'success');
-                } else {
-                    showAlert('Error loading example: ' + data.error, 'danger');
-                }
-            } catch (err) {
-                showAlert('Network error loading example config.', 'danger');
-            }
-        }
-        function populateFormFromConfig(config, rawYamlText) {
-            try {
-                if (!config || typeof config !== 'object') return;
-                const setElVal = (id, val) => {
-                    const el = document.getElementById(id);
-                    if (el && val !== undefined && val !== null) el.value = val;
-                };
+    }
 
-                if (config.language) setElVal('language', config.language);
-                if (config.version) setElVal('version', config.version);
-                if (config.global_time_limit) setElVal('global_time_limit', config.global_time_limit);
-                if (config.retrieve_student_id !== undefined) {
-                    const retIdEl = document.getElementById('retrieve_student_id');
-                    if (retIdEl) retIdEl.checked = Boolean(config.retrieve_student_id);
-                }
-                if (config.strict_file_location !== undefined) {
-                    const strictEl = document.getElementById('strict_file_location');
-                    if (strictEl) strictEl.checked = Boolean(config.strict_file_location);
-                }
-                if (config.remove_use_of_java_package !== undefined) {
-                    const removePkgEl = document.getElementById('remove_use_of_java_package');
-                    if (removePkgEl) removePkgEl.checked = Boolean(config.remove_use_of_java_package);
-                }
-                if (config.wrong_file_location_deduction !== undefined) {
-                    setElVal('wrong_file_location_deduction', config.wrong_file_location_deduction);
-                }
-                if (config.setup_commands) setElVal('setup_commands', (config.setup_commands || []).join('\n'));
-                if (config.required_files || config.src_files) {
-                    const filesStr = (config.required_files || config.src_files || []).join('\n');
-                    setElVal('required_files', filesStr);
-                }
-                renderRequiredFilesList();
-
-                const questionsList = document.getElementById('questions-list');
-                if (questionsList) questionsList.innerHTML = '';
-                questionCount = 0;
-
-                (config.questions || []).forEach((q, qIdx) => {
-                    addQuestion();
-                    const qCard = questionsList ? questionsList.lastElementChild : null;
-                    if (qCard) {
-                        const nameInput = qCard.querySelector('.q-name-input');
-                        if (nameInput) nameInput.value = q.name || '';
-                        const descInput = qCard.querySelector('.q-description-input');
-                        if (descInput && q.description) descInput.value = q.description;
-                        const strictFloatInput = qCard.querySelector('.q-strict-float-input');
-                        if (strictFloatInput) strictFloatInput.checked = Boolean(q.strict_float);
-
-                        const miList = qCard.querySelector('.marking-items-list');
-                        if (miList) miList.innerHTML = '';
-
-                        let markingItemsData = q.marking_items || [];
-                        if (markingItemsData.length === 0 && q.manual_review) {
-                            markingItemsData = [{
-                                name: q.name || 'Manual Review',
-                                total_mark: q.total_mark || 0,
-                                type: 'manual_review',
-                                target_file: q.target_file || ''
-                            }];
-                        }
-
-                        markingItemsData.forEach((mi, miIdx) => {
-                            const blueprint = document.getElementById('marking-item-blueprint').firstElementChild;
-                            if (blueprint && miList) {
-                                const miDiv = blueprint.cloneNode(true);
-                                miList.appendChild(miDiv);
-                                const typeSelect = miDiv.querySelector('select');
-                                if (typeSelect) {
-                                    typeSelect.value = mi.type || 'output_comparison';
-                                    showTypeFields(typeSelect);
-                                }
-                                updateQuestionNumbers();
-                                const miPrefix = `questions-${qIdx}-marking_items-${miIdx}`;
-                                if (mi.name) setElVal(`${miPrefix}-name`, mi.name);
-                                if (mi.total_mark !== undefined) setElVal(`${miPrefix}-total_mark`, mi.total_mark);
-                                if (mi.time_limit !== undefined) setElVal(`${miPrefix}-time_limit`, mi.time_limit);
-                                if (mi.visibility) setElVal(`${miPrefix}-visibility`, mi.visibility);
-
-                                if (mi.type === 'output_comparison') {
-                                    if (mi.expected_input !== undefined) setElVal(`${miPrefix}-expected_input`, mi.expected_input);
-                                    if (mi.expected_output !== undefined) setElVal(`${miPrefix}-expected_output`, mi.expected_output);
-                                } else if (mi.type === 'signature_check') {
-                                    if (mi.function_name) setElVal(`${miPrefix}-function_name`, mi.function_name);
-                                    if (mi.expected_parameters !== undefined) setElVal(`${miPrefix}-expected_parameters`, mi.expected_parameters);
-                                    if (mi.expected_return_type !== undefined) setElVal(`${miPrefix}-expected_return_type`, mi.expected_return_type);
-                                } else if (mi.type === 'function_test') {
-                                    if (mi.function_name) setElVal(`${miPrefix}-function_name`, mi.function_name);
-                                    if (mi.test_cases !== undefined) {
-                                        const testCasesVal = typeof mi.test_cases === 'string' ? mi.test_cases : jsyaml.dump(mi.test_cases);
-                                        setElVal(`${miPrefix}-test_cases`, testCasesVal);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
-
-                updateQuestionNumbers();
-                updateAllTargetFileDropdowns();
-
-                (config.questions || []).forEach((q, qIdx) => {
-                    (q.marking_items || []).forEach((mi, miIdx) => {
-                        const miPrefix = `questions-${qIdx}-marking_items-${miIdx}`;
-                        if (mi.target_file) {
-                            setElVal(`${miPrefix}-target_file`, mi.target_file);
-                        }
-                    });
-                });
-
-                disableGenerateButton();
-                updateLanguageUI();
-                handleStrictFileLocationChange();
-
-                // Update YAML textarea and stats
-                const yamlTextarea = document.getElementById('yaml-textarea');
-                if (yamlTextarea) {
-                    if (rawYamlText) {
-                        yamlTextarea.value = rawYamlText;
-                    } else {
-                        yamlTextarea.value = jsyaml.dump(config, {
-                            schema: jsyaml.DEFAULT_SCHEMA,
-                            noRefs: true,
-                            lineWidth: -1,
-                            styles: {
-                                '!!null': 'empty'
-                            }
-                        });
-                    }
-                }
-                updateYamlStats();
-                setTimeout(() => {
-                    document.querySelectorAll('#autograder-form textarea').forEach(textarea => {
-                        autoResizeTextarea(textarea);
-                    });
-                }, 50);
-            } catch (err) {
-                console.error("Error in populateFormFromConfig:", err);
-            }
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        initEditor(defaultConfig);
+        const yamlTextarea = document.getElementById('yaml-textarea');
+        yamlTextarea.value = jsyaml.dump(defaultConfig, {
+            schema: jsyaml.DEFAULT_SCHEMA,
+            noRefs: true,
+            lineWidth: -1
+        });
+        updateYamlStats();
+        yamlTextarea.addEventListener('input', updateYamlStats);
+    });
 </script>
 {% endblock %}

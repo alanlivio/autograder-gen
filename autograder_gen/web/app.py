@@ -26,14 +26,28 @@ def index():
     return render_template("home.html")
 
 
+def get_config_schema():
+    schema = ag.Config.model_json_schema()
+    if "$defs" in schema and "definitions" not in schema:
+        schema["definitions"] = schema["$defs"]
+    return schema
+
+
 @app.route("/generate", methods=["GET"])
 def generate():
-    return render_template("index.html")
+    schema_dict = get_config_schema()
+    schema_json = json.dumps(schema_dict)
+    return render_template("index.html", schema=schema_dict, schema_json=schema_json)
+
+
+@app.route("/api/schema", methods=["GET"])
+def api_schema():
+    return jsonify(get_config_schema())
 
 
 @app.route("/docs", methods=["GET"])
 def documentation():
-    schema_dict = ag.Config.model_json_schema()
+    schema_dict = get_config_schema()
     schema_str = json.dumps(schema_dict, indent=2)
     return render_template("docs.html", schema=schema_str)
 

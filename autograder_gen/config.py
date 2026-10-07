@@ -7,22 +7,46 @@ from pydantic import BaseModel, Field, field_validator, model_validator, Validat
 class MarkingItem(BaseModel):
     """Represents a single marking item within a question."""
 
-    target_file: str = ""
-    total_mark: float
-    type: str
-    time_limit: int = 30
-    visibility: str = "visible"
-    name: str = ""
-    expected_input: str = ""
-    expected_output: str = ""
+    target_file: str = Field(default="", title="Target File")
+    total_mark: float = Field(ge=0, title="Points", description="Score awarded for this marking item.")
+    type: str = Field(
+        default="output_comparison",
+        title="Test Type",
+        json_schema_extra={
+            "enum": [
+                "output_comparison",
+                "signature_check",
+                "function_test",
+                "gitlab_submission_exists",
+                "github_submission_exists",
+                "manual_review",
+            ]
+        },
+    )
+    time_limit: int = Field(default=30, ge=1, title="Time Limit (s)")
+    visibility: str = Field(
+        default="visible",
+        title="Visibility",
+        json_schema_extra={
+            "enum": [
+                "visible",
+                "hidden",
+                "after_due_date",
+                "after_published",
+            ]
+        },
+    )
+    name: str = Field(default="", title="Display Name")
+    expected_input: str = Field(default="", title="Standard Input")
+    expected_output: str = Field(default="", title="Expected Output")
 
     # Function testing fields
-    function_name: str = ""
-    test_cases: List[Dict[str, Any]] = Field(default_factory=list)
+    function_name: str = Field(default="", title="Function Name")
+    test_cases: List[Dict[str, Any]] = Field(default_factory=list, title="Test Cases")
 
     # Signature checking fields
-    expected_parameters: str = ""
-    expected_return_type: str = ""
+    expected_parameters: str = Field(default="", title="Expected Parameters")
+    expected_return_type: str = Field(default="", title="Expected Return Type")
 
     @field_validator("type")
     @classmethod
@@ -68,11 +92,11 @@ class MarkingItem(BaseModel):
 class Question(BaseModel):
     """Represents a question with multiple marking items."""
 
-    name: str
-    description: str = ""
-    strict_float: bool = False
-    manual_review: bool = False
-    marking_items: List[MarkingItem] = Field(min_length=1)
+    name: str = Field(title="Question Name")
+    description: str = Field(default="", title="Description (for documentation)")
+    strict_float: bool = Field(default=False, title="Strict Float Comparison")
+    manual_review: bool = Field(default=False, title="Manual Review Question")
+    marking_items: List[MarkingItem] = Field(min_length=1, title="Marking Items")
 
     @model_validator(mode="before")
     @classmethod
@@ -97,16 +121,24 @@ class Question(BaseModel):
 class Config(BaseModel):
     """Complete autograder configuration."""
 
-    version: str
-    language: str
-    global_time_limit: int = 300
-    strict_file_location: bool = False
-    remove_use_of_java_package: bool = False
-    retrieve_student_id: bool = False
-    wrong_file_location_deduction: float = 0.0
-    setup_commands: List[str] = Field(default_factory=list)
-    required_files: List[str] = Field(default_factory=list)
-    questions: List[Question] = Field(min_length=1)
+    version: str = Field(default="0.1", title="Version")
+    language: str = Field(
+        default="python",
+        title="Language",
+        json_schema_extra={"enum": ["python", "java"]},
+    )
+    global_time_limit: int = Field(default=300, ge=1, title="Global Time Limit (ms)")
+    strict_file_location: bool = Field(default=False, title="Strict File Location")
+    remove_use_of_java_package: bool = Field(default=False, title="Remove Java Package Declarations")
+    retrieve_student_id: bool = Field(default=False, title="Retrieve Student ID")
+    wrong_file_location_deduction: float = Field(
+        default=0.0,
+        title="Wrong File Location Deduction",
+        json_schema_extra={"minimum": 0.0, "maximum": 1.0},
+    )
+    setup_commands: List[str] = Field(default_factory=list, title="Setup Commands")
+    required_files: List[str] = Field(default_factory=list, title="Required Files")
+    questions: List[Question] = Field(min_length=1, title="Questions")
 
     @field_validator("wrong_file_location_deduction")
     @classmethod
