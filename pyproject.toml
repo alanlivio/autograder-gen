@@ -42,12 +42,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://pypi.org/project/autograder_gen/"
+Homepage = "https://pypi.org/project/autograder-gen/"
 Repository = "https://github.com/alanlivio/autograder-gen"
 
 [project.scripts]
 autograder-gen = "autograder_gen.cli:main"
-autograder-gen-batch = "autograder_gen.cli_batch:main"
 autograder-gen-web = "autograder_gen.web.app:main"
 
 [tool.setuptools.packages.find]

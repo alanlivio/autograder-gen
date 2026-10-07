@@ -49,7 +49,7 @@ test:
 	$(PYTHON) -m pytest tests
 
 run-examples:
-	PYTHONPATH=. $(PYTHON) -m autograder_gen.cli_batch tests/examples --run-stub-submissions
+	PYTHONPATH=. $(PYTHON) -m autograder_gen.cli --batch tests/examples --run-stub-submissions
 
 format:
 	$(PYTHON) -m black .

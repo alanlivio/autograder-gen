@@ -10,7 +10,7 @@
 Install the package via pip:
 
 ```bash
-pip install autograder_gen
+pip install autograder-gen
 ```
 
 ## CLI Usage
@@ -22,25 +22,28 @@ autograder-gen
 ```
 
 ```text
-usage: autograder-gen [-h] [--config CONFIG] [--description]
-                      [--run-submission RUN_SUBMISSIONS]
-                      [--run-stub-submissions [RUN_STUBS_SUBMISSIONS]]
-                      [--verbose]
+usage: autograder-gen [-h] [--config CONFIG |
+                      --batch DIR_OR_CONFIG [DIR_OR_CONFIG ...]]
+                      [--description] [--run-submission DIR_OR_ZIP]
+                      [--run-stub-submissions] [--verbose]
 
 Generate Gradescope autograder script from YAML configuration. Generated files
 will be at the same folder as the config (autograder.zip, stub submissions for
-testing, and optionally description.docx and description.md when
---description is specified).
+testing, and optionally description.docx and description.md when --description
+is specified).
 
 options:
   -h, --help            show this help message and exit
   --config, -c CONFIG   Path to YAML configuration file
-  --description         Generate description.docx and description.md
-                        assessment description
-  --run-submission, -r RUN_SUBMISSIONS
-                        Path or folder name of submission directory or zip
-                        file to run (can be specified multiple times)
-  --run-stub-submissions [RUN_STUBS_SUBMISSIONS]
+  --batch, -b DIR_OR_CONFIG [DIR_OR_CONFIG ...]
+                        One or more directories to search or config files to
+                        batch process
+  --description         Generate description.docx and description.md for the
+                        assessment
+  --run-submission, -r DIR_OR_ZIP
+                        Use submission directory or zip file relative to
+                        config to be run (can be specified multiple times)
+  --run-stub-submissions
                         Run autograder for generated stub submissions
                         (stub_correct_answer.zip, stub_wrong_answer.zip,
                         stub_compiler_error.zip,
@@ -77,14 +80,24 @@ autograder-gen --config config.yaml --run-stub-submissions
 
 ## Batch Processing
 
-Use `autograder-gen-batch` to process multiple configuration files or directories at once. When passing a directory, each subfolder should be a config folder containing a `config.yaml` (or `config.yml`):
+Use `autograder-gen --batch` to process multiple configuration files or directories at once. When passing a directory, each subfolder should be a config folder containing a `config.yaml` (or `config.yml`):
+
+Batch generate autograders:
 
 ```bash
-# Generate autograders for all configurations in a folder (each subfolder should contain a config.yaml)
-autograder-gen-batch path/to/assignments/
+autograder-gen --batch path/to/assignments/
+```
 
-# Run autograders for stub submissions across all configurations
-autograder-gen-batch path/to/assignments/ --run-stub-submissions
+Batch run stub submissions:
+
+```bash
+autograder-gen --batch path/to/assignments/ --run-stub-submissions
+```
+
+Batch run student submission:
+
+```bash
+autograder-gen --batch path/to/assignments/ --run-submission submission.zip
 ```
 
 ## Web Interface
@@ -101,8 +114,8 @@ For development instructions, building from source, and running Python source fi
 
 ## Authors
 
-- **Alan Guedes** – [@alanlivio](https://github.com/alanlivio)  
-- **Giorgio Werberich Scur** – [@giorgioscur](https://github.com/giorgioscur)
+- **Alan Guedes** – [@alanlivio](https://github.com/alanlivio): maintainer
+- **Giorgio Werberich Scur** – [@giorgioscur](https://github.com/giorgioscur): intial contributions
 
 ## License
 

@@ -21,8 +21,146 @@ from autograder_gen.logger import (
 )
 
 
+def find_configs(target: Path) -> list[Path]:
+    if target.is_file() and target.suffix.lower() in [".yaml", ".yml"]:
+        return [target]
+    if not target.is_dir():
+        return []
+
+    direct_configs = [target / f for f in ("config.yaml", "config.yml") if (target / f).is_file()]
+    if direct_configs:
+        return [direct_configs[0]]
+
+    sub_configs: list[Path] = []
+    for pattern in ("*/config.yaml", "*/config.yml"):
+        sub_configs.extend(target.glob(pattern))
+    return sorted(set(sub_configs))
+
+
+def run_batch(
+    targets: list[str | Path],
+    description: bool = False,
+    run_stub_submissions: bool = False,
+    run_submissions: list[str] = None,
+    verbose: bool = False,
+) -> int:
+    if run_submissions is None:
+        run_submissions = []
+
+    all_configs: list[Path] = []
+    for arg in targets:
+        target_path = Path(arg).resolve()
+        configs = find_configs(target_path)
+        all_configs.extend(configs)
+
+    all_configs = sorted(set(all_configs), key=lambda p: str(p))
+
+    for config_path in all_configs:
+        try:
+            display_path = str(config_path.resolve().relative_to(Path.cwd().resolve()))
+        except ValueError:
+            display_path = str(config_path)
+        print(f"Found config: {display_path}")
+
+    if run_stub_submissions or run_submissions:
+        for config_path in all_configs:
+            runner = ag.AutograderRun(config_path, verbose=verbose)
+            cfg_obj = runner.config_obj
+            if (
+                cfg_obj is not None
+                and getattr(cfg_obj, "language", "").lower() == "java"
+                and shutil.which("javac") is None
+            ):
+                print(f"[SKIPPED] {config_path}: javac is not installed")
+                continue
+
+            if run_stub_submissions:
+                try:
+                    display_path = str(config_path.resolve().relative_to(Path.cwd().resolve()))
+                except ValueError:
+                    display_path = str(config_path)
+                print(f"# log stubs for {display_path}")
+                runner.run_autograder_for_generated_submissions(verbose=verbose)
+
+            for sub_arg in run_submissions:
+                sub_path = config_path.parent / sub_arg
+                if not sub_path.exists():
+                    alt_path = Path(sub_arg).resolve()
+                    if alt_path.exists():
+                        sub_path = alt_path
+                    else:
+                        print(f"[NOT FOUND] {sub_path}", file=sys.stderr)
+                        continue
+
+                clean_sub = sub_path.name
+                if clean_sub.lower().endswith(".zip"):
+                    clean_sub = clean_sub[:-4]
+
+                if len(run_submissions) == 1 and not run_stub_submissions:
+                    log_file = config_path.parent / "submission.log"
+                else:
+                    log_file = config_path.parent / f"{clean_sub}.log"
+
+                res = runner.run_autograder_for_submission(
+                    sub_path,
+                    log_path=log_file,
+                    verbose=verbose,
+                )
+                if (
+                    len(run_submissions) == 1
+                    and not run_stub_submissions
+                    and clean_sub != "submission"
+                ):
+                    try:
+                        shutil.copy2(log_file, config_path.parent / f"{clean_sub}.log")
+                    except Exception:
+                        pass
+                if "log_path" in res:
+                    log_p = Path(res["log_path"])
+                    try:
+                        display_path = str(log_p.resolve().relative_to(Path.cwd().resolve()))
+                    except ValueError:
+                        display_path = str(log_p)
+                    print(display_path)
+    else:
+        for config_path in all_configs:
+            config = ag.Config.parse(config_path)
+            with open(config_path, "r", encoding="utf-8") as f:
+                if config_path.suffix.lower() in [".yaml", ".yml"]:
+                    original_config = yaml.safe_load(f)
+                else:
+                    original_config = json.load(f)
+
+            engine = ag.AutograderGen(config, original_config)
+            out_dir = config_path.parent
+            engine.generate(str(out_dir), description=description)
+            generated_assets = [
+                out_dir / "autograder.zip",
+                out_dir / "stub_correct_answer.zip",
+                out_dir / "stub_wrong_answer.zip",
+                out_dir / "stub_compiler_error.zip",
+                out_dir / "stub_correct_answer_wrong_location.zip",
+            ]
+            if description:
+                generated_assets.extend(
+                    [
+                        out_dir / "description.docx",
+                        out_dir / "description.md",
+                    ]
+                )
+            for asset in generated_assets:
+                if asset.exists():
+                    try:
+                        display_path = str(asset.resolve().relative_to(Path.cwd().resolve()))
+                    except ValueError:
+                        display_path = str(asset)
+                    print(display_path)
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
+        prog="autograder-gen",
         description=(
             "Generate Gradescope autograder script from YAML configuration. "
             "Generated files will be at the same folder as the config "
@@ -31,12 +169,20 @@ def main(argv=None):
         ),
         allow_abbrev=False,
     )
-    parser.add_argument("--config", "-c", help="Path to YAML configuration file")
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument("--config", "-c", help="Path to YAML configuration file")
+    mode_group.add_argument(
+        "--batch",
+        "-b",
+        nargs="+",
+        metavar="DIR_OR_CONFIG",
+        help="One or more directories to search or config files to batch process",
+    )
     parser.add_argument(
         "--description",
         action="store_true",
         default=False,
-        help="Generate description.docx and description.md assessment description",
+        help="Generate description.docx and description.md for the assessment",
     )
     parser.add_argument(
         "--run-submission",
@@ -44,13 +190,13 @@ def main(argv=None):
         dest="run_submissions",
         action="append",
         default=[],
-        help="Path or folder name of submission directory or zip file to run (can be specified multiple times)",
+        metavar="DIR_OR_ZIP",
+        help="Use submission directory or zip file relative to config to be run (can be specified multiple times)",
     )
     parser.add_argument(
         "--run-stub-submissions",
         dest="run_stubs_submissions",
-        nargs="?",
-        const=True,
+        action="store_true",
         default=False,
         help="Run autograder for generated stub submissions (stub_correct_answer.zip, stub_wrong_answer.zip, stub_compiler_error.zip, stub_correct_answer_wrong_location.zip)",
     )
@@ -69,6 +215,16 @@ def main(argv=None):
     args = parser.parse_args(argv)
     args.description = args.description
     setup_logging()
+
+    if args.batch:
+        return run_batch(
+            args.batch,
+            description=args.description,
+            run_stub_submissions=bool(args.run_stubs_submissions),
+            run_submissions=args.run_submissions,
+            verbose=args.verbose,
+        )
+
     try:
         config_arg = args.config
         if not config_arg:
@@ -99,7 +255,7 @@ def main(argv=None):
                         config_arg = str(candidate)
                         break
             if not config_arg:
-                print_error("Error: --config / -c is required")
+                print_error("Error: --config / -c or --batch / -b is required")
                 return 2
 
         path = Path(config_arg)
@@ -137,6 +293,11 @@ def main(argv=None):
         if args.run_stubs_submissions or args.run_submissions:
             runner = ag.AutograderRun(path, verbose=args.verbose)
             if args.run_stubs_submissions:
+                try:
+                    display_path = str(path.resolve().relative_to(Path.cwd().resolve()))
+                except ValueError:
+                    display_path = str(path)
+                print(f"# log stubs for {display_path}")
                 runner.run_autograder_for_generated_submissions(verbose=args.verbose)
 
             for sub_arg in args.run_submissions:

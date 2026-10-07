@@ -54,14 +54,10 @@ python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --run
 
 ### Batch Processor
 
-Run `autograder_gen/cli_batch.py` directly using Python to batch generate or test across directories:
+Run with `--batch` to generate autograders for all configurations in a directory:
 
 ```bash
-# Generate autograders for all configurations in a directory
-python autograder_gen/cli_batch.py tests/examples
-
-# Run stub submissions in batch
-python autograder_gen/cli_batch.py tests/examples --run-stub-submissions
+python autograder_gen/cli.py --batch tests/examples --run-stub-submissions
 ```
 
 ### Web Interface
