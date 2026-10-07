@@ -26,13 +26,13 @@ dev_env:
 ifeq ($(OS),Windows_NT)
 	$(PYTHON) -m venv ../../.venv
 	$(PIP) install --upgrade pip
-	$(PIP) install -r ../../requirements.txt -r ../../requirements-dev.txt
+	$(PIP) install -e "../..[dev]"
 	@echo "To activate the environment, run:"
-	@echo "  .venv\\Scripts\\activate"
+	@echo "  .venv\Scripts\activate"
 else
 	$(PYTHON) -m venv ../../.venv || python -m venv ../../.venv
 	$(PIP) install --upgrade pip
-	$(PIP) install -r ../../requirements.txt -r ../../requirements-dev.txt
+	$(PIP) install -e "../..[dev]"
 	@echo "To activate the environment, run:"
 	@echo "  source .venv/bin/activate"
 endif
@@ -41,14 +41,14 @@ apache_show_error:
 	cat /var/log/apache2/autograder-error.log
 
 apache_prep:
-	ln -snf $(CURDIR)/../../requirements.txt /var/www/autograder/requirements.txt
+	ln -snf $(CURDIR)/../../pyproject.toml /var/www/autograder/pyproject.toml
 	ln -snf $(CURDIR)/static /var/www/autograder/static
 	ln -snf $(CURDIR)/wsgi/autograder.wsgi /var/www/autograder/autograder.wsgi
 	ln -snf $(CURDIR)/../.. /var/www/autograder/autograder
 	@if [ ! -d /var/www/autograder/venv ]; then \
 		python3 -m venv /var/www/autograder/venv; \
 		/var/www/autograder/venv/bin/pip install --upgrade pip; \
-		/var/www/autograder/venv/bin/pip install -r /var/www/autograder/requirements.txt; \
+		/var/www/autograder/venv/bin/pip install -e /var/www/autograder/autograder; \
 	fi
 
 serve:

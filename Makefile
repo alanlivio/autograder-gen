@@ -25,8 +25,8 @@ help:
 		"  clean         Clean build and temporary files"
 
 deps:
-	pip install --upgrade pip
-	pip install -r requirements.txt -r requirements-dev.txt
+	$(PYTHON) -m pip install --upgrade pip
+	$(PYTHON) -m pip install -e ".[dev]"
 
 wheel:
 	rm -rf dist build ./*.egg-info
