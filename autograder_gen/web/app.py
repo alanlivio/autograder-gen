@@ -17,13 +17,45 @@ from dotenv import load_dotenv
 load_dotenv()
 app = Flask(__name__, static_url_path="/static", static_folder="static")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key-for-autograder")
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 bootstrap = Bootstrap5(app)
 CORS(app)
 
 
+EXAMPLES = [
+    {
+        "id": "py_simple",
+        "title": "Simple Calculator",
+        "description": "A lightweight setup that evaluates basic function creation and arithmetic operations with simple Python unit tests.",
+    },
+    {
+        "id": "py_function",
+        "title": "Python Functions",
+        "description": "Focuses on function definitions, arguments checking, and return types validation.",
+    },
+    {
+        "id": "py_complete",
+        "title": "Complete Python Suite",
+        "description": "Full assessment suite demonstrating multiple test types, standard input/output checks, and function unit tests.",
+    },
+    {
+        "id": "java_simple",
+        "title": "Java Assignment",
+        "description": "Java grading configuration with compilation checks and JUnit/standard output tests.",
+    },
+]
+
+
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("home.html")
+    examples_data = []
+    for ex in EXAMPLES:
+        try:
+            yaml_str = ag.Config.get_example_config_yaml(ex["id"])
+        except Exception:
+            yaml_str = ""
+        examples_data.append({**ex, "yaml": yaml_str})
+    return render_template("home.html", examples=examples_data)
 
 
 def get_config_schema():
@@ -49,7 +81,7 @@ def api_schema():
 def documentation():
     schema_dict = get_config_schema()
     schema_str = json.dumps(schema_dict, indent=2)
-    return render_template("docs.html", schema=schema_str)
+    return render_template("docs.html", schema=schema_str, schema_dict=schema_dict)
 
 
 @app.route("/upload-config", methods=["POST"])
@@ -184,7 +216,12 @@ def main():
     parser.add_argument(
         "--port", "-p", type=int, default=5000, help="Port to listen on (default: 5000)"
     )
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument(
+        "--debug",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable debug mode (default: True)",
+    )
     args = parser.parse_args()
 
     app.run(host=args.host, port=args.port, debug=args.debug)

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {{ bootstrap.load_css() }}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    {% block styles %}{% endblock %}
     <style>
         body { background-color: #ECECEC; color: rgb(65, 68, 77); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .main-content { background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 2rem; margin-top: 2rem; }
@@ -40,10 +41,10 @@
             <span class="navbar-brand">AutograderGen</span>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="/">
-                    <i class="fas fa-play me-1"></i> Start
+                    Intro
                 </a>
                 <a class="nav-link" href="/generate">
-                    <i class="fas fa-cog me-1"></i> Generate
+                    <i class="fas fa-cog me-1"></i> Edit YAML and Generate
                 </a>
                 <a class="nav-link" href="/docs">
                     <i class="fas fa-book me-1"></i> Documentation

@@ -55,7 +55,7 @@ format:
 	$(PYTHON) -m black .
 
 serve:
-	$(PYTHON) autograder_gen/web/app.py
+	$(PYTHON) autograder_gen/web/app.py --debug
 
 clean:
 	rm -rf dist build ./*.egg-info .pytest_cache tests/examples/*/*.zip tests/examples/*/description.* tests/examples/*/rubric.*
