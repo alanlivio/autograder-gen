@@ -43,7 +43,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://pypi.org/project/autograder_gen/"
-Repository = "https://github.com/alanlivio/autograder_gen"
+Repository = "https://github.com/alanlivio/autograder-gen"
 
 [project.scripts]
 autograder-gen = "autograder_gen.cli:main"
