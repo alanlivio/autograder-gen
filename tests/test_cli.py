@@ -6,6 +6,7 @@ import zipfile
 import pytest
 
 from autograder_gen.cli import find_configs, main
+from autograder_gen.version import __version__
 
 SAMPLE_CONFIG = {
     "version": "1.0",
@@ -102,8 +103,21 @@ def test_cli_no_args_shows_help():
     )
     assert result.returncode == 0
     assert "usage:" in result.stdout.lower()
+    assert "--version" in result.stdout
     assert "--config" in result.stdout
     assert "--description" in result.stdout
+    assert "stub_correct_answer.zip, stub_wrong_answer.zip" in result.stdout
+
+
+def test_cli_version_flag():
+    python_executable = sys.executable
+    result = subprocess.run(
+        [python_executable, "autograder_gen/cli.py", "--version"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert f"autograder-gen {__version__}" in result.stdout
 
 
 def test_cli_missing_config():

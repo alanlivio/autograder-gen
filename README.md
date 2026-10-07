@@ -22,18 +22,19 @@ autograder-gen
 ```
 
 ```text
-usage: autograder-gen [-h] [--config CONFIG |
+usage: autograder-gen [-h] [--version] [--config CONFIG |
                       --batch DIR_OR_CONFIG [DIR_OR_CONFIG ...]]
                       [--description] [--run-submission DIR_OR_ZIP]
                       [--run-stub-submissions] [--verbose]
 
 Generate Gradescope autograder script from YAML configuration. Generated files
 will be at the same folder as the config (autograder.zip, stub submissions for
-testing, and optionally description.docx and description.md when --description
-is specified).
+testing such as stub_correct_answer.zip, stub_wrong_answer.zip, and optionally
+description.docx and description.md when --description is specified).
 
 options:
   -h, --help            show this help message and exit
+  --version             show program's version number and exit
   --config, -c CONFIG   Path to YAML configuration file
   --batch, -b DIR_OR_CONFIG [DIR_OR_CONFIG ...]
                         One or more directories to search or config files to

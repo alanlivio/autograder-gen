@@ -164,10 +164,16 @@ def main(argv=None):
         description=(
             "Generate Gradescope autograder script from YAML configuration. "
             "Generated files will be at the same folder as the config "
-            "(autograder.zip, stub submissions for testing, "
+            "(autograder.zip, stub submissions for testing such as "
+            "stub_correct_answer.zip, stub_wrong_answer.zip, "
             "and optionally description.docx and description.md when --description is specified)."
         ),
         allow_abbrev=False,
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {ag.__version__}",
     )
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument("--config", "-c", help="Path to YAML configuration file")
