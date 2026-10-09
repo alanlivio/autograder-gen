@@ -47,6 +47,17 @@
         try:
             result = self.call_function_with_timeout(function, args, kwargs, {{ item.time_limit }})
             expected_out = normalize_output({{ test_case.expected | string | tojson }})
+            for placeholder in ("<STUDENT_ID>", "<student_id>"):
+                if placeholder in expected_out:
+                    student_id = getattr(self, "student_id", None) or os.environ.get("STUDENT_ID", "")
+                    if not student_id:
+                        try:
+                            from grader_utils import get_student_id
+                            student_id = get_student_id()
+                            self.student_id = student_id
+                        except Exception:
+                            student_id = "12345678"
+                    expected_out = expected_out.replace(placeholder, student_id)
             actual_out = normalize_output(str(result))
             if expected_output is None:
                 expected_output = expected_out

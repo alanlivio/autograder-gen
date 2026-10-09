@@ -11,6 +11,7 @@ from pathlib import Path
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt
+import html
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from autograder_gen.config import Config
 from autograder_gen.logger import print_error, print_success, print_warning
@@ -327,10 +328,10 @@ class AutograderGen:
                     )
                     if item.expected_input:
                         html_lines.append("      <p><strong>Example Input:</strong></p>")
-                        html_lines.append(f"      <pre>{item.expected_input}</pre>")
+                        html_lines.append(f"      <pre>{html.escape(item.expected_input)}</pre>")
                     if item.expected_output:
                         html_lines.append("      <p><strong>Expected Output:</strong></p>")
-                        html_lines.append(f"      <pre>{item.expected_output}</pre>")
+                        html_lines.append(f"      <pre>{html.escape(item.expected_output)}</pre>")
                 elif item.type == "signature_check":
                     html_lines.append(
                         f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must match signature.</p>"
@@ -661,19 +662,32 @@ class AutograderGen:
             if output_items:
                 lines.append('if __name__ == "__main__":')
                 if correct:
-                    lines.append("    import sys")
+                    lines.append("    import sys, os")
                     lines.append("    _raw_in = sys.stdin.read()")
                     lines.append("    _in = _raw_in.strip()")
+                    lines.append("    _sid = os.environ.get('STUDENT_ID', '12345678')")
                     for idx, item in enumerate(output_items):
                         cond = f"_in == {repr(item.expected_input.strip())}"
                         out_val = item.expected_output
                         branch = "if" if idx == 0 else "elif"
                         lines.append(f"    {branch} {cond}:")
-                        lines.append(f"        sys.stdout.write({repr(out_val)})")
+                        if "<STUDENT_ID>" in out_val or "<student_id>" in out_val:
+                            lines.append(
+                                f"        _out = {repr(out_val)}.replace('<STUDENT_ID>', _sid).replace('<student_id>', _sid)"
+                            )
+                            lines.append("        sys.stdout.write(_out)")
+                        else:
+                            lines.append(f"        sys.stdout.write({repr(out_val)})")
                         lines.append("        sys.exit(0)")
                     default_out = output_items[0].expected_output if output_items else ""
                     lines.append("    else:")
-                    lines.append(f"        sys.stdout.write({repr(default_out)})")
+                    if "<STUDENT_ID>" in default_out or "<student_id>" in default_out:
+                        lines.append(
+                            f"        _out = {repr(default_out)}.replace('<STUDENT_ID>', _sid).replace('<student_id>', _sid)"
+                        )
+                        lines.append("        sys.stdout.write(_out)")
+                    else:
+                        lines.append(f"        sys.stdout.write({repr(default_out)})")
                 else:
                     lines.append("    import sys")
                     lines.append('    sys.stdout.write("wrong_output\\n")')
@@ -1030,18 +1044,32 @@ class AutograderGen:
                     lines.append('            sb.append(sc.nextLine()).append("\\n");')
                     lines.append("        }")
                     lines.append("        String inStr = sb.toString().trim();")
+                    lines.append('        String _sid = System.getenv("STUDENT_ID");')
+                    lines.append('        if (_sid == null) { _sid = "12345678"; }')
                     for idx, item in enumerate(output_items):
                         cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
                         branch = "if" if idx == 0 else "else if"
                         lines.append(f"        {branch} ({cond}) {{")
-                        lines.append(
-                            f"            System.out.print({json.dumps(item.expected_output)});"
-                        )
+                        if "<STUDENT_ID>" in item.expected_output or "<student_id>" in item.expected_output:
+                            lines.append(
+                                f'            String _out = {json.dumps(item.expected_output)}.replace("<STUDENT_ID>", _sid).replace("<student_id>", _sid);'
+                            )
+                            lines.append("            System.out.print(_out);")
+                        else:
+                            lines.append(
+                                f"            System.out.print({json.dumps(item.expected_output)});"
+                            )
                         lines.append("            return;")
                         lines.append("        }")
                     default_out = output_items[0].expected_output if output_items else ""
                     lines.append("        else {")
-                    lines.append(f"            System.out.print({json.dumps(default_out)});")
+                    if "<STUDENT_ID>" in default_out or "<student_id>" in default_out:
+                        lines.append(
+                            f'            String _out = {json.dumps(default_out)}.replace("<STUDENT_ID>", _sid).replace("<student_id>", _sid);'
+                        )
+                        lines.append("            System.out.print(_out);")
+                    else:
+                        lines.append(f"            System.out.print({json.dumps(default_out)});")
                     lines.append("        }")
                 else:
                     lines.append('        System.out.print("wrong_output\\n");')

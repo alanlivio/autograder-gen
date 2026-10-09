@@ -2,6 +2,7 @@ import json
 import zipfile
 from pathlib import Path
 import pytest
+import yaml
 import autograder_gen as ag
 from autograder_gen.grader_utils import get_student_id
 
@@ -158,3 +159,158 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
 
         run_autograder = z.read("run_autograder").decode("utf-8")
         assert 'cp "classlist.csv"' in run_autograder
+
+
+def test_config_auto_enable_retrieve_student_id_from_placeholder():
+    data = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["CW1P1.py"],
+        "questions": [
+            {
+                "name": "Question 1 - Hello",
+                "description": "Program prints greeting including student number. Format: 'Hello, student <student_id>.'",
+                "marking_items": [
+                    {
+                        "name": "Hello Output Check",
+                        "target_file": "CW1P1.py",
+                        "total_mark": 15,
+                        "type": "output_comparison",
+                        "visibility": "visible",
+                        "expected_input": "",
+                        "expected_output": "Hello, student <STUDENT_ID>.",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(data)
+    assert cfg.retrieve_student_id is True
+    assert cfg.get_config_summary()["retrieve_student_id"] is True
+
+
+def test_question_hello_student_id_python(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["CW1P1.py"],
+        "questions": [
+            {
+                "name": "Question 1 - Hello",
+                "description": "Program prints greeting including student number. Format: 'Hello, student <student_id>.'",
+                "marking_items": [
+                    {
+                        "name": "Hello Output Check",
+                        "target_file": "CW1P1.py",
+                        "total_mark": 15,
+                        "type": "output_comparison",
+                        "visibility": "visible",
+                        "expected_input": "",
+                        "expected_output": "Hello, student <STUDENT_ID>.",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    meta = {
+        "users": [
+            {
+                "sid": "33931382",
+                "email": "student@reading.ac.uk",
+            }
+        ]
+    }
+
+    sub_dir = tmp_path / "sub_correct"
+    sub_dir.mkdir()
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "CW1P1.py").write_text(
+        'import os\nsid = os.environ.get("STUDENT_ID", "")\nprint(f"Hello, student {sid}.")\n',
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert "tests" in results
+    total_score = sum(t.get("score", 0) for t in results["tests"])
+    assert total_score == 15
+
+    sub_wrong = tmp_path / "sub_wrong"
+    sub_wrong.mkdir()
+    (sub_wrong / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_wrong / "CW1P1.py").write_text(
+        'print("Hello, student wrong_id.")\n',
+        encoding="utf-8",
+    )
+    runner_wrong = ag.AutograderRunner(cfg_file)
+    results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
+    total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
+    assert total_score_wrong == 0
+
+
+def test_question_hello_student_id_java(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "java",
+        "required_files": ["CW1P1.java"],
+        "questions": [
+            {
+                "name": "Question 1 - Hello",
+                "description": "Program prints greeting including student number. Format: 'Hello, student <student_id>.'",
+                "marking_items": [
+                    {
+                        "name": "Hello Output Check",
+                        "target_file": "CW1P1.java",
+                        "total_mark": 15,
+                        "type": "output_comparison",
+                        "visibility": "visible",
+                        "expected_input": "",
+                        "expected_output": "Hello, student <STUDENT_ID>.",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    meta = {
+        "users": [
+            {
+                "sid": "33931382",
+                "email": "student@reading.ac.uk",
+            }
+        ]
+    }
+
+    sub_dir = tmp_path / "sub_correct"
+    sub_dir.mkdir()
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "CW1P1.java").write_text(
+        'public class CW1P1 {\n    public static void main(String[] args) {\n        String sid = System.getenv("STUDENT_ID");\n        System.out.println("Hello, student " + sid + ".");\n    }\n}\n',
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert "tests" in results
+    total_score = sum(t.get("score", 0) for t in results["tests"])
+    assert total_score == 15
+
+    sub_wrong = tmp_path / "sub_wrong"
+    sub_wrong.mkdir()
+    (sub_wrong / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_wrong / "CW1P1.java").write_text(
+        'public class CW1P1 {\n    public static void main(String[] args) {\n        System.out.println("Hello, student 00000000.");\n    }\n}\n',
+        encoding="utf-8",
+    )
+    runner_wrong = ag.AutograderRunner(cfg_file)
+    results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
+    total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
+    assert total_score_wrong == 0
+

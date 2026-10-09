@@ -7,6 +7,20 @@
         target_file = "{{ item.target_file }}"
         expected_input = """{{ item.expected_input }}"""
         expected_output = """{{ item.expected_output }}"""
+        for placeholder in ("<STUDENT_ID>", "<student_id>"):
+            if placeholder in expected_input or placeholder in expected_output:
+                student_id = getattr(self, "student_id", None) or os.environ.get("STUDENT_ID", "")
+                if not student_id:
+                    try:
+                        from grader_utils import get_student_id
+                        student_id = get_student_id()
+                        self.student_id = student_id
+                    except Exception:
+                        student_id = "12345678"
+                if placeholder in expected_input:
+                    expected_input = expected_input.replace(placeholder, student_id)
+                if placeholder in expected_output:
+                    expected_output = expected_output.replace(placeholder, student_id)
         file_path = self.resolve_target(target_file)
         if not file_path.exists():
             self.fail(StudentMessage.WRONG_FILE.format(file_name=target_file))

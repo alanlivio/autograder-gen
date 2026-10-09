@@ -197,6 +197,20 @@ class Config(BaseModel):
             )
         return self
 
+    @model_validator(mode="after")
+    def auto_enable_retrieve_student_id(self) -> "Config":
+        if not self.retrieve_student_id:
+            for q in self.questions:
+                for item in q.marking_items:
+                    for ph in ("<STUDENT_ID>", "<student_id>"):
+                        if (item.expected_output and ph in item.expected_output) or (
+                            item.expected_input and ph in item.expected_input
+                        ):
+                            self.retrieve_student_id = True
+                            return self
+        return self
+
+
     @property
     def total_score(self) -> float:
         return sum(item.total_mark for q in self.questions for item in q.marking_items)
