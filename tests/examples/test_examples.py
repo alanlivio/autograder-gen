@@ -191,7 +191,7 @@ def test_autograder_integration_java_simple():
                 assert any(f.startswith(fname) for f in namelist)
             with z.open("setup.sh") as f:
                 setup_content = f.read().decode("utf-8")
-                assert "apt-get install -y default-jdk" in setup_content
+                assert "apt-get install -y openjdk-25-jdk" in setup_content
         correct_zip_bytes = generator.generate_correct_answer_zip()
         with zipfile.ZipFile(correct_zip_bytes, "r") as z:
             assert "Solution.java" in z.namelist()

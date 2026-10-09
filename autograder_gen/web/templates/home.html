@@ -79,6 +79,15 @@
         interactive web form or uploading a YAML configuration to edit and generate packaged ZIP files ready to be
         uploaded to Gradescope.
     </p>
+    <div class="alert alert-info border-start border-4 border-info shadow-sm my-3" role="alert">
+        <div class="d-flex align-items-center mb-1">
+            <i class="fas fa-server me-2 text-info"></i>
+            <strong class="text-dark">Default Execution Environments:</strong>
+        </div>
+        <div class="small text-secondary">
+            {{ default_runtime_summary }}
+        </div>
+    </div>
     <p class="text-muted">The diagram below illustrates how a lecturer uses AutograderGen to edit and generate assessment rules, package the autograder, deploy it to Gradescope, and how students' submissions are automatically evaluated in isolation.</p>
 
     <div class="diagram-container">

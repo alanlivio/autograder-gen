@@ -29,12 +29,20 @@ function initEditor(initialData) {
     editor = new JSONEditor(container, options);
 
     editor.on('ready', () => {
+        const val = editor.getValue();
+        if (val && val.language) {
+            updateRuntimeAlert(val.language);
+        }
         if (!document.getElementById('yaml-textarea').value.trim()) {
             updateYamlFromEditor();
         }
     });
 
     editor.on('change', () => {
+        const val = editor.getValue();
+        if (val && val.language) {
+            updateRuntimeAlert(val.language);
+        }
         if (currentMode === 'form') {
             updateYamlFromEditor();
         }
@@ -50,6 +58,58 @@ function showAlert(message, type = 'info') {
         </div>
     `;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function getRuntimesData() {
+    const el = document.getElementById('runtimes-data');
+    if (el) {
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+        }
+    }
+    return {};
+}
+
+function getRuntimeSummary() {
+    const el = document.getElementById('runtime-summary-data');
+    if (el) {
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+        }
+    }
+    return '';
+}
+
+function updateRuntimeAlert(lang) {
+    const alertEl = document.getElementById('default-runtime-alert');
+    const titleEl = document.getElementById('runtime-alert-title');
+    const textEl = document.getElementById('runtime-alert-text');
+    if (!alertEl || !titleEl || !textEl) return;
+
+    const runtimes = getRuntimesData();
+    const normalizedLang = (lang || '').toString().toLowerCase().trim();
+    const runtimeInfo = runtimes[normalizedLang];
+
+    if (runtimeInfo) {
+        titleEl.textContent = runtimeInfo.title || `Default Environment: ${runtimeInfo.name}`;
+        textEl.innerHTML = runtimeInfo.html_details || runtimeInfo.details;
+    } else {
+        titleEl.textContent = 'Default Execution Environment';
+        textEl.innerHTML = getRuntimeSummary();
+    }
+}
+
+function updateLanguageFromYaml() {
+    const yamlText = document.getElementById('yaml-textarea').value;
+    try {
+        const parsed = jsyaml.load(yamlText);
+        if (parsed && typeof parsed === 'object') {
+            updateRuntimeAlert(parsed.language);
+        }
+    } catch (e) {
+    }
 }
 
 function switchEditorMode(mode) {
@@ -183,6 +243,7 @@ function handleConfigUpload(input) {
             }
             if (config && typeof config === 'object') {
                 if (editor) editor.setValue(config);
+                updateRuntimeAlert(config.language);
                 document.getElementById('yaml-textarea').value = jsyaml.dump(config, {
                     schema: jsyaml.DEFAULT_SCHEMA,
                     noRefs: true,
@@ -297,7 +358,11 @@ async function downloadExport(type) {
 document.addEventListener('DOMContentLoaded', () => {
     initEditor();
     const yamlTextarea = document.getElementById('yaml-textarea');
-    yamlTextarea.addEventListener('input', updateYamlStats);
+    yamlTextarea.addEventListener('input', () => {
+        updateYamlStats();
+        updateLanguageFromYaml();
+    });
+    updateLanguageFromYaml();
 
     const urlParams = new URLSearchParams(window.location.search);
     const loadExample = urlParams.get('load_example');
@@ -309,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (editor) editor.setValue(data.config);
                     yamlTextarea.value = data.yaml || jsyaml.dump(data.config, { schema: jsyaml.DEFAULT_SCHEMA, noRefs: true, lineWidth: -1 });
                     updateYamlStats();
+                    updateRuntimeAlert(data.config.language);
                     showAlert(`Example '${loadExample}' loaded successfully.`, 'success');
                 }
             })

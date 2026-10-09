@@ -3,7 +3,14 @@ AutograderGen package.
 """
 
 from autograder_gen.version import __version__
-from autograder_gen.config import Config, Question, MarkingItem
+from autograder_gen.config import (
+    Config,
+    Question,
+    MarkingItem,
+    DEFAULT_LANGUAGE_RUNTIMES,
+    DEFAULT_RUNTIME_SUMMARY,
+    DEFAULT_RUNTIME_TIP,
+)
 from autograder_gen.autograder_gen import (
     AutograderGen,
     Engine,
@@ -35,6 +42,9 @@ __all__ = [
     "Config",
     "Question",
     "MarkingItem",
+    "DEFAULT_LANGUAGE_RUNTIMES",
+    "DEFAULT_RUNTIME_SUMMARY",
+    "DEFAULT_RUNTIME_TIP",
     "AutograderGen",
     "Engine",
     "Validator",

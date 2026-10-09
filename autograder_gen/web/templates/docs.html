@@ -48,6 +48,26 @@
 
 <p class="text-muted mb-4">AutograderGen validates your <code>autograder_gen.yaml</code> against a strict structure defined by <code>Config</code>. Use this explorer to understand all properties, nested components, and validation rules.</p>
 
+<div class="alert alert-info border-start border-4 border-info shadow-sm mb-4" role="alert">
+    <div class="d-flex align-items-center mb-2">
+        <i class="fas fa-server fa-lg me-2 text-info"></i>
+        <h5 class="alert-heading font-weight-bold mb-0">Default Language Runtimes on Gradescope</h5>
+    </div>
+    <p class="mb-2">
+        When generating an autograder package, the generated <code>setup.sh</code> script installs standard language runtime packages into Gradescope's Ubuntu container (Ubuntu 22.04 LTS by default):
+    </p>
+    <ul class="mb-2">
+        {% for lang, info in default_runtimes.items() %}
+        <li>
+            <strong>{{ info.name }} (<code>language: {{ lang }}</code>):</strong> {{ info.html_details|safe }}
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="small text-muted">
+        <i class="fas fa-lightbulb me-1"></i> {{ default_runtime_tip }}
+    </div>
+</div>
+
 {% macro render_model_card(title, model_id, model_def) %}
 <div class="schema-explorer-card" id="{{ model_id }}">
     <h4 class="text-primary font-weight-bold mb-3">

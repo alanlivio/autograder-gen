@@ -5,6 +5,19 @@
 
 `autograder_gen` is a tool for lecturers to automatically generate assessment scripts for [Grading a Programming Assignment](https://guides.gradescope.com/hc/en-us/articles/22066635961357-Grading-a-Programming-Assignment) on Gradescope. It supports filling out an interactive web form or providing a YAML configuration, which then generates a packaged ZIP file ready to be uploaded to Gradescope. The project validates your YAML configuration, renders test scripts using Jinja2 templates, and packages everything for immediate upload to Gradescope.
 
+## Supported Languages and Default Runtimes
+
+`autograder_gen` generates autograders configured for Gradescope's Ubuntu container environments (Ubuntu 22.04 LTS by default). The default execution runtimes for supported languages are:
+
+- **Python (`language: python`)**:
+  - System **Python 3** (Python 3.10 on Ubuntu 22.04 LTS) via `python3` and `python3-dev`.
+  - Includes `pip3` and `gradescope-utils`.
+- **Java (`language: java`)**:
+  - **OpenJDK 25** via `openjdk-25-jdk`.
+  - Standard `javac` compiler and `java` runtime.
+
+If your assessment requires a specific version (such as Python 3.11/3.12 or OpenJDK 17/21) or third-party packages, specify custom installation steps in the `setup_commands` configuration list.
+
 ## Installation
 
 Install the package via pip:

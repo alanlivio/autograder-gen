@@ -22,6 +22,15 @@ bootstrap = Bootstrap5(app)
 CORS(app)
 
 
+@app.context_processor
+def inject_runtime_info():
+    return {
+        "default_runtimes": ag.DEFAULT_LANGUAGE_RUNTIMES,
+        "default_runtime_summary": ag.DEFAULT_RUNTIME_SUMMARY,
+        "default_runtime_tip": ag.DEFAULT_RUNTIME_TIP,
+    }
+
+
 EXAMPLES = [
     {
         "id": "py_simple",

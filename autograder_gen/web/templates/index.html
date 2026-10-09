@@ -48,6 +48,18 @@
     </div>
 </div>
 
+<div id="default-runtime-alert" class="alert alert-info border-start border-4 border-info shadow-sm d-flex align-items-start mb-4" role="alert">
+    <i class="fas fa-info-circle fa-lg me-3 mt-1 text-info flex-shrink-0"></i>
+    <div class="flex-grow-1">
+        <div class="fw-bold mb-1" id="runtime-alert-title">{{ default_runtimes.python.title }}</div>
+        <div id="runtime-alert-body" class="small">
+            <span id="runtime-alert-text">
+                {{ default_runtimes.python.html_details|safe }} {{ default_runtimes.java.html_details|safe }} {{ default_runtime_tip }}
+            </span>
+        </div>
+    </div>
+</div>
+
 <div id="editor-mode-toggle-container" class="d-flex justify-content-between align-items-center mb-4">
     <div class="btn-group shadow-sm" role="group" aria-label="Editor Mode">
         <button type="button" class="btn btn-primary mode-toggle-btn px-4" id="mode-text-btn" onclick="setMode('text')">
@@ -77,6 +89,8 @@
 
 {% block scripts %}
 <script id="schema-data" type="application/json">{{ schema_json|safe }}</script>
+<script id="runtimes-data" type="application/json">{{ default_runtimes|tojson }}</script>
+<script id="runtime-summary-data" type="application/json">{{ default_runtime_summary|tojson }}</script>
 <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@2.15.1/dist/jsoneditor.min.js"></script>
 <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 {% endblock %}

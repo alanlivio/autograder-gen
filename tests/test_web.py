@@ -346,3 +346,39 @@ def test_web_validate_rejects_out_of_bounds_deduction(client):
     assert any(
         "wrong_file_location_deduction must be between 0.0 and 1.0" in err for err in data["errors"]
     )
+
+
+def test_default_runtime_alerts_in_pages(client):
+    gen_resp = client.get("/generate")
+    assert gen_resp.status_code == 200
+    assert b"default-runtime-alert" in gen_resp.data
+    assert b"runtimes-data" in gen_resp.data
+    assert b"runtime-summary-data" in gen_resp.data
+    assert b"Python 3.10" in gen_resp.data
+    assert b"OpenJDK 25" in gen_resp.data
+
+    docs_resp = client.get("/docs")
+    assert docs_resp.status_code == 200
+    assert b"Default Language Runtimes on Gradescope" in docs_resp.data
+    assert b"python3-dev" in docs_resp.data
+    assert b"openjdk-25-jdk" in docs_resp.data
+    assert b"OpenJDK 25" in docs_resp.data
+
+    home_resp = client.get("/")
+    assert home_resp.status_code == 200
+    assert b"Default Execution Environments" in home_resp.data
+    assert b"Python 3.10" in home_resp.data
+    assert b"OpenJDK 25" in home_resp.data
+
+    schema_resp = client.get("/api/schema")
+    assert schema_resp.status_code == 200
+    schema_json = schema_resp.get_json()
+    lang_desc = schema_json["properties"]["language"]["description"]
+    assert "Python 3" in lang_desc
+    assert "OpenJDK 25" in lang_desc
+    assert "openjdk-25-jdk" in lang_desc
+
+    assert "python" in ag.DEFAULT_LANGUAGE_RUNTIMES
+    assert "java" in ag.DEFAULT_LANGUAGE_RUNTIMES
+    assert isinstance(ag.DEFAULT_RUNTIME_SUMMARY, str)
+    assert isinstance(ag.DEFAULT_RUNTIME_TIP, str)

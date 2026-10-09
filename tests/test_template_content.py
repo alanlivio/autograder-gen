@@ -82,7 +82,7 @@ def test_per_question_test_file_content(temp_output_dir):
             assert "def test_basic_addition_test" in content
 
 
-def test_java_setup_sh_contains_default_jdk(temp_output_dir):
+def test_java_setup_sh_contains_openjdk_25(temp_output_dir):
     java_config = CONFIG_FOR_TEMPLATES.copy()
     java_config["language"] = "java"
     config = ag.Config.model_validate(java_config)
@@ -91,7 +91,7 @@ def test_java_setup_sh_contains_default_jdk(temp_output_dir):
     with zipfile.ZipFile(zip_path, "r") as z:
         with z.open("setup.sh") as f:
             content = f.read().decode()
-            assert "apt-get install -y default-jdk" in content
+            assert "apt-get install -y openjdk-25-jdk" in content
             assert "Setup completed successfully" in content
 
 

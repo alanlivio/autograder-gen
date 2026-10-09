@@ -118,6 +118,53 @@ class Question(BaseModel):
         return data
 
 
+DEFAULT_LANGUAGE_RUNTIMES: Dict[str, Dict[str, str]] = {
+    "python": {
+        "title": "Default Environment: Python 3",
+        "name": "Python",
+        "version": "Python 3.10",
+        "package": "python3 / python3-dev",
+        "details": (
+            "Gradescope's default Ubuntu environment (22.04 LTS) provisions system "
+            "Python 3.10 (via python3 / python3-dev) and gradescope-utils. "
+            "Specify custom Python versions or packages in setup_commands."
+        ),
+        "html_details": (
+            "Gradescope's default Ubuntu environment (22.04 LTS) provisions system "
+            "<strong>Python 3.10</strong> (via <code>python3</code> / <code>python3-dev</code>) "
+            "and <code>gradescope-utils</code>."
+        ),
+    },
+    "java": {
+        "title": "Default Environment: Java (OpenJDK 25)",
+        "name": "Java",
+        "version": "OpenJDK 25",
+        "package": "openjdk-25-jdk",
+        "details": (
+            "Gradescope's default Ubuntu environment provisions OpenJDK 25 via "
+            "openjdk-25-jdk. "
+            "Custom JDK versions or compilation flags can be specified in setup_commands."
+        ),
+        "html_details": (
+            "Gradescope's default Ubuntu environment provisions "
+            "<strong>OpenJDK 25</strong> via <code>openjdk-25-jdk</code>."
+        ),
+    },
+}
+
+DEFAULT_RUNTIME_SUMMARY = (
+    "Gradescope autograder containers run on Ubuntu (Ubuntu 22.04 LTS by default). "
+    "By default, Python assessments run on system Python 3 (Python 3.10) with python3-dev "
+    "and gradescope-utils, and Java assessments run on OpenJDK 25 via openjdk-25-jdk. "
+    "Custom versions can be configured via setup_commands."
+)
+
+DEFAULT_RUNTIME_TIP = (
+    "If you require a different Python or Java version (such as Python 3.11/3.12 or OpenJDK 17/21), "
+    "add custom installation steps in the setup_commands list."
+)
+
+
 class Config(BaseModel):
     """Complete autograder configuration."""
 
@@ -125,6 +172,7 @@ class Config(BaseModel):
     language: str = Field(
         default="python",
         title="Language",
+        description=DEFAULT_RUNTIME_SUMMARY,
         json_schema_extra={"enum": ["python", "java"]},
     )
     global_time_limit: int = Field(default=300, ge=1, title="Global Time Limit (ms)")
