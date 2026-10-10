@@ -138,6 +138,10 @@ class AutograderGen:
                 n.startswith("source/") or n.startswith("autograder/") or "/" in n for n in names
             ):
                 checks.append("Archive contains valid folder structures")
+            if getattr(self.config, "retrieve_student_id", False):
+                warnings.append(
+                    "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas). Or download the XXX_roster.csv and put at the same folder as the config.yaml."
+                )
             valid = len(errors) == 0
         except Exception as e:
             valid = False
