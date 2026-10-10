@@ -137,6 +137,7 @@ class StudentMessageStr(str):
 
 
 class StudentMessage:
+    ENVIRONMENT = StudentMessageStr("Environment: {version}")
     COMPILING = "## Compiling"
     RUNNING = "## Running"
     COMPARING_OUTPUT = "## Comparing output"

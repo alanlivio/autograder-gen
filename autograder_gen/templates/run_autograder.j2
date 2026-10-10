@@ -17,6 +17,20 @@ FILE_CHECK_LOG="$RESULTS_DIR/file_check.log"
 true > "$FILE_CHECK_LOG"
 
 echo "Starting autograder..."
+{% if config.language == 'python' %}
+PYTHON_VERSION=$("$PYTHON" --version 2>&1 || echo "Python 3.10")
+echo "Environment: $PYTHON_VERSION" | tee -a "$FILE_CHECK_LOG"
+{% elif config.language == 'java' %}
+if command -v java >/dev/null 2>&1; then
+    JAVA_VERSION=$(java -version 2>&1 | head -n 1)
+    echo "Environment: $JAVA_VERSION" | tee -a "$FILE_CHECK_LOG"
+elif command -v javac >/dev/null 2>&1; then
+    JAVA_VERSION=$(javac -version 2>&1 | head -n 1)
+    echo "Environment: $JAVA_VERSION" | tee -a "$FILE_CHECK_LOG"
+else
+    echo "Environment: OpenJDK 25" | tee -a "$FILE_CHECK_LOG"
+fi
+{% endif %}
 echo "Copying required submission files to source directory..."
 
 if [ -d "$SUBMISSION_DIR" ]; then

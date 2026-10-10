@@ -187,7 +187,8 @@ class AutograderRun:
             for line in results["output"].splitlines():
                 stripped = line.strip()
                 if (
-                    stripped.startswith("Checking required file:")
+                    stripped.startswith("Environment:")
+                    or stripped.startswith("Checking required file:")
                     or (stripped.startswith("File '") and stripped.endswith("' exists."))
                     or stripped.startswith("Warning: Required file")
                     or (stripped.startswith("Found file '") and " at " in stripped)
@@ -197,7 +198,8 @@ class AutograderRun:
             for line in results["_stdout"].splitlines():
                 stripped = line.strip()
                 if (
-                    stripped.startswith("Checking required file:")
+                    stripped.startswith("Environment:")
+                    or stripped.startswith("Checking required file:")
                     or (stripped.startswith("File '") and stripped.endswith("' exists."))
                     or stripped.startswith("Warning: Required file")
                     or (stripped.startswith("Found file '") and " at " in stripped)
@@ -665,6 +667,11 @@ class AutograderRun:
                 sub_files = [Path(x).name for x in actual_submission if Path(x).is_file()]
 
         lines: list[str] = []
+        lang = getattr(self.config_obj, "language", "").lower()
+        if lang == "python":
+            lines.append("Environment: Python 3.10")
+        elif lang == "java":
+            lines.append("Environment: OpenJDK 25")
         for req_file in self.config_obj.required_files:
             lines.append(f"Checking required file: {req_file}...")
             norm_req = req_file.lstrip("./")

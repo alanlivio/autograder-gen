@@ -13,7 +13,7 @@ from docx import Document
 from docx.shared import Pt
 import html
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from autograder_gen.config import Config
+from autograder_gen.config import Config, DEFAULT_LANGUAGE_RUNTIMES
 from autograder_gen.logger import print_error, print_success, print_warning
 
 
@@ -155,6 +155,9 @@ class AutograderGen:
         """Generate a Word document containing the assessment description."""
         doc = Document()
         doc.add_heading("Assessment Description", 0)
+        runtime_info = DEFAULT_LANGUAGE_RUNTIMES.get(self.config.language.lower(), {})
+        env_ver = runtime_info.get("version", self.config.language)
+        doc.add_paragraph(f"Environment: {env_ver}")
         for i, question in enumerate(self.config.questions, 1):
             doc.add_heading(f"Question {i}: {question.name}", level=1)
             if hasattr(question, "description") and question.description:
@@ -211,7 +214,9 @@ class AutograderGen:
         return buffer
 
     def generate_description_md(self) -> BytesIO:
-        lines = ["# Assessment Description", ""]
+        runtime_info = DEFAULT_LANGUAGE_RUNTIMES.get(self.config.language.lower(), {})
+        env_ver = runtime_info.get("version", self.config.language)
+        lines = ["# Assessment Description", "", f"**Environment:** {env_ver}", ""]
         for i, question in enumerate(self.config.questions, 1):
             lines.append(f"## Question {i}: {question.name}")
             lines.append("")

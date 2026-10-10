@@ -216,6 +216,7 @@ def test_run_autograder_logs_checking_required_files(tmp_path):
 
     with zipfile.ZipFile(zip_path, "r") as z:
         run_autograder = z.read("run_autograder").decode("utf-8")
+        assert "Environment: $PYTHON_VERSION" in run_autograder
         assert "Checking required file: solution.py..." in run_autograder
         assert "File 'solution.py' exists." in run_autograder
 
@@ -401,3 +402,17 @@ def test_shell_scripts_bash_syntax_validation(temp_output_dir):
                 assert (
                     res.returncode == 0
                 ), f"{script_name} for {lang} failed bash -n: {res.stderr.decode()}"
+
+
+def test_environment_in_description_md_and_docx(temp_output_dir):
+    cfg_python = CONFIG_FOR_TEMPLATES.copy()
+    cfg_python["language"] = "python"
+    gen_python = ag.Engine(ag.Config.model_validate(cfg_python), cfg_python)
+    md_py = gen_python.generate_description_md().getvalue()
+    assert b"**Environment:** Python 3.10" in md_py
+
+    cfg_java = CONFIG_FOR_TEMPLATES.copy()
+    cfg_java["language"] = "java"
+    gen_java = ag.Engine(ag.Config.model_validate(cfg_java), cfg_java)
+    md_java = gen_java.generate_description_md().getvalue()
+    assert b"**Environment:** OpenJDK 25" in md_java
