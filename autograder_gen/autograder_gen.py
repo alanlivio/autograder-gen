@@ -1050,7 +1050,10 @@ class AutograderGen:
                         cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
                         branch = "if" if idx == 0 else "else if"
                         lines.append(f"        {branch} ({cond}) {{")
-                        if "<STUDENT_ID>" in item.expected_output or "<student_id>" in item.expected_output:
+                        if (
+                            "<STUDENT_ID>" in item.expected_output
+                            or "<student_id>" in item.expected_output
+                        ):
                             lines.append(
                                 f'            String _out = {json.dumps(item.expected_output)}.replace("<STUDENT_ID>", _sid).replace("<student_id>", _sid);'
                             )

@@ -313,4 +313,3 @@ def test_question_hello_student_id_java(tmp_path: Path):
     results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
     total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
     assert total_score_wrong == 0
-

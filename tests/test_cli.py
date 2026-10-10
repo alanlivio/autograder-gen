@@ -425,7 +425,10 @@ def test_cli_mutually_exclusive_config_and_batch(tmp_path):
         text=True,
     )
     assert result.returncode == 2
-    assert "not allowed with argument --config" in result.stderr.lower() or "mutually exclusive" in result.stderr.lower()
+    assert (
+        "not allowed with argument --config" in result.stderr.lower()
+        or "mutually exclusive" in result.stderr.lower()
+    )
 
 
 def test_cli_batch_generation(tmp_path):
@@ -508,7 +511,10 @@ def test_batch_cli_subprocess_no_args():
     assert "One or more directories to search or config files to batch process" in normalized
     assert "Generate description.docx and description.md for the assessment" in normalized
     assert "--run-submission, -r DIR_OR_ZIP" in normalized
-    assert "Use submission directory or zip file relative to config to be run (can be specified multiple times)" in normalized
+    assert (
+        "Use submission directory or zip file relative to config to be run (can be specified multiple times)"
+        in normalized
+    )
 
 
 def test_batch_gen_execution(tmp_path: Path, monkeypatch, capsys):
@@ -560,9 +566,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    monkeypatch.setattr(
-        sys, "argv", ["autograder-gen", "--batch", str(tmp_path), "--description"]
-    )
+    monkeypatch.setattr(sys, "argv", ["autograder-gen", "--batch", str(tmp_path), "--description"])
     main()
 
     captured = capsys.readouterr()
@@ -889,4 +893,3 @@ def test_cli_batch_logs_found_configs_first(tmp_path):
     assert len(config_lines) == 2
     assert any("sub1" in line for line in config_lines)
     assert any("sub2" in line for line in config_lines)
-

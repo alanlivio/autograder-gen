@@ -8,7 +8,9 @@ class MarkingItem(BaseModel):
     """Represents a single marking item within a question."""
 
     target_file: str = Field(default="", title="Target File")
-    total_mark: float = Field(ge=0, title="Points", description="Score awarded for this marking item.")
+    total_mark: float = Field(
+        ge=0, title="Points", description="Score awarded for this marking item."
+    )
     type: str = Field(
         default="output_comparison",
         title="Test Type",
@@ -177,7 +179,9 @@ class Config(BaseModel):
     )
     global_time_limit: int = Field(default=300, ge=1, title="Global Time Limit (ms)")
     strict_file_location: bool = Field(default=False, title="Strict File Location")
-    remove_use_of_java_package: bool = Field(default=False, title="Remove Java Package Declarations")
+    remove_use_of_java_package: bool = Field(
+        default=False, title="Remove Java Package Declarations"
+    )
     retrieve_student_id: bool = Field(default=False, title="Retrieve Student ID")
     wrong_file_location_deduction: float = Field(
         default=0.0,
@@ -257,7 +261,6 @@ class Config(BaseModel):
                             self.retrieve_student_id = True
                             return self
         return self
-
 
     @property
     def total_score(self) -> float:
