@@ -359,3 +359,70 @@ def test_question_strict_float_configuration():
     cfg = ag.Config.model_validate(data)
     assert cfg.questions[0].strict_float is False
     assert cfg.questions[1].strict_float is True
+
+
+def test_marking_item_expected_input_single_line_appends_newline():
+    item = ag.config.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="output_comparison",
+        expected_input="5",
+    )
+    assert item.expected_input == "5\n"
+
+
+def test_marking_item_expected_input_single_line_already_has_newline():
+    item = ag.config.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="output_comparison",
+        expected_input="5\n",
+    )
+    assert item.expected_input == "5\n"
+
+
+def test_marking_item_expected_input_empty():
+    item = ag.config.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="output_comparison",
+        expected_input="",
+    )
+    assert item.expected_input == ""
+
+
+def test_marking_item_expected_input_multiline_unchanged():
+    item1 = ag.config.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="output_comparison",
+        expected_input="line1\nline2",
+    )
+    assert item1.expected_input == "line1\nline2"
+
+    item2 = ag.config.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="output_comparison",
+        expected_input="line1\nline2\n",
+    )
+    assert item2.expected_input == "line1\nline2\n"
+
+
+def test_config_from_yaml_single_line_expected_input(tmp_path: Path):
+    yaml_content = """version: '1.0'
+language: python
+required_files:
+  - solution.py
+questions:
+  - name: Output Question
+    marking_items:
+      - target_file: solution.py
+        total_mark: 10
+        type: output_comparison
+        expected_input: '42'
+"""
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(yaml_content, encoding="utf-8")
+    cfg = ag.Config.parse(cfg_file)
+    assert cfg.questions[0].marking_items[0].expected_input == "42\n"

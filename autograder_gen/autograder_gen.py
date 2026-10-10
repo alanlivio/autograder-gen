@@ -173,7 +173,7 @@ class AutograderGen:
                 doc.add_paragraph(f"Points: {item.total_mark}")
                 if item.type == "output_comparison":
                     doc.add_paragraph(
-                        f"Requirement: Program must produce specific output for given input in '{item.target_file}'."
+                        f"Requirement: Program must produce specific output for given input in '{item.target_file}' (output and expected output are trimmed before comparison)."
                     )
                     if item.expected_input:
                         doc.add_heading("Example Input:", level=4)
@@ -235,7 +235,7 @@ class AutograderGen:
                 lines.append(f"- **Points:** {item.total_mark}")
                 if item.type == "output_comparison":
                     lines.append(
-                        f"- **Requirement:** Program must produce specific output for given input in `{item.target_file}`."
+                        f"- **Requirement:** Program must produce specific output for given input in `{item.target_file}` (output and expected output are trimmed before comparison)."
                     )
                     if item.expected_input:
                         lines.append("")
@@ -329,7 +329,7 @@ class AutograderGen:
                 )
                 if item.type == "output_comparison":
                     html_lines.append(
-                        f"      <p><strong>Requirement:</strong> Program must produce specific output for target file <code>{item.target_file}</code>.</p>"
+                        f"      <p><strong>Requirement:</strong> Program must produce specific output for target file <code>{item.target_file}</code> (output and expected output are trimmed before comparison).</p>"
                     )
                     if item.expected_input:
                         html_lines.append("      <p><strong>Example Input:</strong></p>")
@@ -1249,7 +1249,7 @@ autograder.zip
 
 ## Test Types Supported
 
-- **output_comparison**: Compares program output with expected results
+- **output_comparison**: Compares program output with expected results (both actual and expected output are trimmed before comparison; single-line inputs terminate with a newline)
 - **signature_check**: Validates function signatures and parameters
 - **function_test**: Tests function behavior with specific inputs and expected outputs
 - **manual_review**: Qualitative manual review by instructor (e.g. written report, PDF)
@@ -1296,11 +1296,12 @@ autograder.zip
                         )
 
                 elif item.type == "output_comparison":
+                    readme_content += "- **Output Matching**: Output and expected output are trimmed before comparison\n"
                     if hasattr(item, "expected_input") and item.expected_input:
-                        input_lines = item.expected_input.count("\n") + 1
+                        input_lines = len(item.expected_input.splitlines())
                         readme_content += f"- **Input Lines**: {input_lines}\n"
                     if hasattr(item, "expected_output") and item.expected_output:
-                        output_lines = item.expected_output.count("\n") + 1
+                        output_lines = len(item.expected_output.splitlines())
                         readme_content += f"- **Expected Output Lines**: {output_lines}\n"
 
                 elif item.type == "gitlab_submission_exists":

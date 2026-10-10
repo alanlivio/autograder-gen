@@ -39,8 +39,16 @@ class MarkingItem(BaseModel):
         },
     )
     name: str = Field(default="", title="Display Name")
-    expected_input: str = Field(default="", title="Standard Input")
-    expected_output: str = Field(default="", title="Expected Output")
+    expected_input: str = Field(
+        default="",
+        title="Standard Input",
+        description="Standard input provided to the program. Single-line input automatically terminates with a newline.",
+    )
+    expected_output: str = Field(
+        default="",
+        title="Expected Output",
+        description="Expected standard output. Program output and expected output are trimmed before comparison.",
+    )
 
     # Function testing fields
     function_name: str = Field(default="", title="Function Name")
@@ -49,6 +57,13 @@ class MarkingItem(BaseModel):
     # Signature checking fields
     expected_parameters: str = Field(default="", title="Expected Parameters")
     expected_return_type: str = Field(default="", title="Expected Return Type")
+
+    @field_validator("expected_input", mode="after")
+    @classmethod
+    def validate_expected_input(cls, v: str) -> str:
+        if len(v.splitlines()) == 1 and not v.endswith("\n"):
+            return v + "\n"
+        return v
 
     @field_validator("type")
     @classmethod
