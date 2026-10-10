@@ -29,7 +29,7 @@ wheel:
 
 GLOBAL_PYTHON ?= $(if $(wildcard /usr/bin/python3),/usr/bin/python3,python3)
 install-global: wheel
-	$(GLOBAL_PYTHON) -m pip install --force-reinstall --break-system-packages --find-links dist autograder-gen
+	$(GLOBAL_PYTHON) -m pip install --force-reinstall --no-cache-dir --break-system-packages $$(ls dist/*.whl)
 
 publish-pypi: wheel
 	python -m twine upload dist/*
