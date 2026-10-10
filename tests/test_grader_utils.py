@@ -103,3 +103,32 @@ def test_compare_outputs_float_requires_exact_when_strict():
 def test_compare_outputs_non_numeric_fallback():
     assert compare_outputs("abc", "abd", strict_float=False) is False
     assert compare_outputs("result: 42.0", "result: 42.00", strict_float=False) is False
+
+
+def test_java_runner_code_defined():
+    from autograder_gen.grader_utils import JAVA_RUNNER_CODE
+
+    assert "public class JavaRunner" in JAVA_RUNNER_CODE
+    assert "convertArg" in JAVA_RUNNER_CODE
+
+
+def test_call_java_function_execution(tmp_path):
+    from autograder_gen.grader_utils import call_java_function
+
+    java_file = tmp_path / "Calculator.java"
+    java_file.write_text(
+        "public class Calculator {\n"
+        "    public static int add(int a, int b) {\n"
+        "        return a + b;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    result = call_java_function(
+        file_path=java_file,
+        function_name="add",
+        args=[2, 3],
+        timeout_seconds=10,
+        source_dir=tmp_path,
+    )
+    assert result.strip() == "5"

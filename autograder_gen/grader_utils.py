@@ -4,6 +4,7 @@ from typing import Union, Optional
 import json
 import os
 import math
+import subprocess
 
 
 def normalize_output(s: str) -> str:
@@ -174,3 +175,240 @@ class StudentMessage:
     )
     CORRECT_GITLAB_SUBMISSION = "[CORRECT_ANSWER] GitLab repository was found."
     WRONG_GITLAB_NOT_USED = "[WRONG_ANSWER] GitLab repository was not found."
+
+
+JAVA_RUNNER_CODE = r"""import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+
+public class JavaRunner {
+    public static void main(String[] args) throws Exception {
+        if (args.length < 2) {
+            System.err.println("Usage: JavaRunner <ClassName> <MethodName> [args...]");
+            System.exit(1);
+        }
+        String className = args[0];
+        String methodName = args[1];
+        Class<?> clazz = Class.forName(className);
+        Method targetMethod = null;
+        Object[] methodArgs = new Object[args.length - 2];
+        for (int i = 2; i < args.length; i++) {
+            methodArgs[i - 2] = args[i];
+        }
+        for (Method m : clazz.getDeclaredMethods()) {
+            if (m.getName().equals(methodName)) {
+                if (m.getParameterCount() == methodArgs.length) {
+                    targetMethod = m;
+                    break;
+                }
+                if (targetMethod == null) {
+                    targetMethod = m;
+                }
+            }
+        }
+        if (targetMethod == null) {
+            System.err.println("Method " + methodName + " not found in " + className);
+            System.exit(1);
+        }
+        targetMethod.setAccessible(true);
+        Object instance = null;
+        if (!java.lang.reflect.Modifier.isStatic(targetMethod.getModifiers())) {
+            instance = clazz.getDeclaredConstructor().newInstance();
+        }
+        Object result = null;
+        if (targetMethod.getParameterCount() == methodArgs.length) {
+            Class<?>[] paramTypes = targetMethod.getParameterTypes();
+            Object[] convertedArgs = new Object[methodArgs.length];
+            for (int i = 0; i < methodArgs.length; i++) {
+                convertedArgs[i] = convertArg(methodArgs[i].toString(), paramTypes[i]);
+            }
+            result = targetMethod.invoke(instance, convertedArgs);
+        } else if (targetMethod.getParameterCount() == 1 && targetMethod.getParameterTypes()[0].isArray()) {
+            Class<?> compType = targetMethod.getParameterTypes()[0].getComponentType();
+            Object arr = java.lang.reflect.Array.newInstance(compType, methodArgs.length);
+            for (int i = 0; i < methodArgs.length; i++) {
+                java.lang.reflect.Array.set(arr, i, convertArg(methodArgs[i].toString(), compType));
+            }
+            result = targetMethod.invoke(instance, new Object[]{arr});
+        } else {
+            result = targetMethod.invoke(instance, methodArgs);
+        }
+        if (result != null) {
+            if (result.getClass().isArray()) {
+                if (result instanceof Object[]) {
+                    System.out.print(Arrays.deepToString((Object[]) result));
+                } else if (result instanceof int[]) {
+                    System.out.print(Arrays.toString((int[]) result));
+                } else if (result instanceof double[]) {
+                    System.out.print(Arrays.toString((double[]) result));
+                } else if (result instanceof long[]) {
+                    System.out.print(Arrays.toString((long[]) result));
+                } else if (result instanceof boolean[]) {
+                    System.out.print(Arrays.toString((boolean[]) result));
+                } else if (result instanceof byte[]) {
+                    System.out.print(Arrays.toString((byte[]) result));
+                } else if (result instanceof char[]) {
+                    System.out.print(Arrays.toString((char[]) result));
+                } else if (result instanceof float[]) {
+                    System.out.print(Arrays.toString((float[]) result));
+                } else if (result instanceof short[]) {
+                    System.out.print(Arrays.toString((short[]) result));
+                }
+            } else {
+                System.out.print(result.toString());
+            }
+        }
+    }
+
+    private static Object convertArg(String val, Class<?> targetType) {
+        if (targetType.isArray()) {
+            Class<?> componentType = targetType.getComponentType();
+            String s = val.trim();
+            if ((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) {
+                s = s.substring(1, s.length() - 1).trim();
+            }
+            if (s.isEmpty()) {
+                return java.lang.reflect.Array.newInstance(componentType, 0);
+            }
+            List<String> items = new ArrayList<>();
+            int depth = 0;
+            StringBuilder cur = new StringBuilder();
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (c == '{' || c == '[') depth++;
+                else if (c == '}' || c == ']') depth--;
+                if (c == ',' && depth == 0) {
+                    items.add(cur.toString().trim());
+                    cur.setLength(0);
+                } else {
+                    cur.append(c);
+                }
+            }
+            if (cur.length() > 0) items.add(cur.toString().trim());
+            Object arr = java.lang.reflect.Array.newInstance(componentType, items.size());
+            for (int i = 0; i < items.size(); i++) {
+                java.lang.reflect.Array.set(arr, i, convertArg(items.get(i), componentType));
+            }
+            return arr;
+        }
+        if (targetType == List.class || targetType == ArrayList.class) {
+            String s = val.trim();
+            if ((s.startsWith("[") && s.endsWith("]")) || (s.startsWith("{") && s.endsWith("}"))) {
+                s = s.substring(1, s.length() - 1).trim();
+            }
+            ArrayList<String> list = new ArrayList<>();
+            if (s.isEmpty()) return list;
+            int depth = 0;
+            StringBuilder cur = new StringBuilder();
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (c == '{' || c == '[') depth++;
+                else if (c == '}' || c == ']') depth--;
+                if (c == ',' && depth == 0) {
+                    String it = cur.toString().trim();
+                    if ((it.startsWith("\"") && it.endsWith("\"")) || (it.startsWith("'") && it.endsWith("'"))) {
+                        it = it.substring(1, it.length() - 1);
+                    }
+                    list.add(it);
+                    cur.setLength(0);
+                } else {
+                    cur.append(c);
+                }
+            }
+            if (cur.length() > 0) {
+                String it = cur.toString().trim();
+                if ((it.startsWith("\"") && it.endsWith("\"")) || (it.startsWith("'") && it.endsWith("'"))) {
+                    it = it.substring(1, it.length() - 1);
+                }
+                list.add(it);
+            }
+            return list;
+        }
+        if (targetType == int.class || targetType == Integer.class) {
+            try { return Integer.parseInt(val.trim()); }
+            catch (NumberFormatException e) { return (int) Double.parseDouble(val.trim()); }
+        }
+        if (targetType == double.class || targetType == Double.class) return Double.parseDouble(val.trim());
+        if (targetType == boolean.class || targetType == Boolean.class) return Boolean.parseBoolean(val.trim());
+        if (targetType == long.class || targetType == Long.class) {
+            try { return Long.parseLong(val.trim()); }
+            catch (NumberFormatException e) { return (long) Double.parseDouble(val.trim()); }
+        }
+        if (targetType == float.class || targetType == Float.class) return Float.parseFloat(val.trim());
+        if (targetType == char.class || targetType == Character.class) return val.trim().isEmpty() ? ' ' : val.trim().charAt(0);
+        if (targetType == String.class) {
+            String s = val.trim();
+            if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) {
+                s = s.substring(1, s.length() - 1);
+            }
+            return s;
+        }
+        return val;
+    }
+}
+"""
+
+
+def ensure_java_runner(source_dir: Union[str, Path], classpath: Optional[str] = None) -> Path:
+    s_dir = Path(source_dir)
+    runner_path = s_dir / "JavaRunner.java"
+    if not runner_path.exists():
+        runner_path.write_text(JAVA_RUNNER_CODE, encoding="utf-8")
+        cp = classpath if classpath else f"{s_dir}{os.pathsep}."
+        subprocess.run(
+            ["javac", "-cp", cp, "JavaRunner.java"],
+            capture_output=True,
+            text=True,
+            cwd=s_dir,
+            check=True,
+        )
+    return runner_path
+
+
+def call_java_function(
+    file_path: Union[str, Path],
+    function_name: str,
+    args: list,
+    timeout_seconds: int,
+    source_dir: Union[str, Path],
+    remove_package: bool = False,
+) -> str:
+    path = Path(file_path)
+    s_dir = Path(source_dir)
+    if not path.exists():
+        raise AssertionError(StudentMessage.WRONG_FILE.format(file_name=path.name))
+    if remove_package:
+        remove_package_line(path)
+
+    target_dir = path.parent
+    classpath = f"{target_dir}{os.pathsep}{s_dir}{os.pathsep}."
+    compile_res = subprocess.run(
+        ["javac", "-cp", classpath, str(path)],
+        capture_output=True,
+        text=True,
+        cwd=s_dir,
+    )
+    if compile_res.returncode != 0:
+        err = compile_res.stderr or compile_res.stdout
+        if err:
+            print(StudentMessage.COMPILING)
+            print(err.strip())
+        raise AssertionError(StudentMessage.COMPILATION_ERROR)
+
+    ensure_java_runner(s_dir, classpath)
+
+    class_name = path.stem
+    cmd = ["java", "-cp", classpath, "JavaRunner", class_name, function_name] + [
+        str(a) for a in args
+    ]
+    res = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout_seconds,
+        cwd=s_dir,
+    )
+    if res.returncode != 0:
+        raise RuntimeError(f"Error executing {function_name}: {res.stderr}")
+    return res.stdout

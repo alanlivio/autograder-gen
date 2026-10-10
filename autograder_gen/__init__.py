@@ -35,6 +35,9 @@ from autograder_gen.grader_utils import (
     StudentMessage,
     normalize_output,
     remove_package_line,
+    JAVA_RUNNER_CODE,
+    ensure_java_runner,
+    call_java_function,
 )
 
 __all__ = [
@@ -53,6 +56,9 @@ __all__ = [
     "StudentMessage",
     "normalize_output",
     "remove_package_line",
+    "JAVA_RUNNER_CODE",
+    "ensure_java_runner",
+    "call_java_function",
     "validate_file_path",
     "validate_directory_path",
     "create_directory",
