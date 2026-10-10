@@ -360,3 +360,94 @@ def test_student_id_log_messages(tmp_path: Path, capsys):
     )
     assert "[INFO] Student not found in classlist.csv; using default ID." in captured_def
     assert "[INFO] Using student ID: 12345678" in captured_def
+
+
+def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "retrieve_student_id": True,
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Check File",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    engine.generate(str(tmp_path))
+    captured = capsys.readouterr().out
+    expected_warn = (
+        "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> "
+        "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas). "
+        "Or download the XXX_roster.csv and put at the same folder as the config.yaml."
+    )
+    assert expected_warn in captured
+
+
+def test_generate_bundles_roster_as_classlist(tmp_path: Path):
+    roster_content = (
+        "First Name,Last Name,SID,Email,Role\n"
+        "Alan,Vasconcelos Guedes,33811500,a.vasconcelosguedes@student.reading.ac.uk,Student\n"
+    )
+    (tmp_path / "CS101_roster.csv").write_text(roster_content, encoding="utf-8")
+
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "retrieve_student_id": True,
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Check File",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    zip_path = engine.generate(str(tmp_path))
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        assert "classlist.csv" in z.namelist()
+        bundled_content = z.read("classlist.csv").decode("utf-8")
+        assert "33811500" in bundled_content
+        assert "a.vasconcelosguedes@student.reading.ac.uk" in bundled_content
+
+
+def test_get_student_id_from_gradescope_roster_format(tmp_path: Path):
+    meta = {
+        "users": [
+            {
+                "sid": "",
+                "email": "s.khan10@student.reading.ac.uk",
+            }
+        ]
+    }
+    meta_path = tmp_path / "submission_metadata.json"
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+
+    roster_file = tmp_path / "Course_roster.csv"
+    roster_file.write_text(
+        "First Name,Last Name,SID,Email,Role\n"
+        "Alan,Vasconcelos Guedes,33811500,a.vasconcelosguedes@student.reading.ac.uk,Student\n"
+        "Saif,Khan,34021657,s.khan10@student.reading.ac.uk,Student\n",
+        encoding="utf-8",
+    )
+
+    result = get_student_id(autograder_root=tmp_path)
+    assert result == "34021657"

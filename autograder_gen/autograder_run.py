@@ -729,21 +729,78 @@ class AutograderRun:
                 )
                 cl_found = False
                 if sub_p and sub_p.is_dir():
-                    for cl_candidate in (
-                        sub_p / "classlist.csv",
-                        sub_p / "source" / "classlist.csv",
-                    ):
+                    candidates = []
+                    source_dir = sub_p / "source"
+                    if source_dir.is_dir():
+                        for r in source_dir.glob("*_roster.csv"):
+                            candidates.append(r)
+                        candidates.append(source_dir / "classlist.csv")
+                    cfg_dir = (
+                        Path(self.config).parent if isinstance(self.config, (str, Path)) else None
+                    )
+                    if cfg_dir and (cfg_dir / "source").is_dir():
+                        for r in (cfg_dir / "source").glob("*_roster.csv"):
+                            candidates.append(r)
+                        candidates.append(cfg_dir / "source" / "classlist.csv")
+                    candidates = list(dict.fromkeys(candidates))
+                    for cl_candidate in candidates:
                         if cl_candidate.exists():
+
                             try:
+                                import csv
+
                                 with cl_candidate.open(encoding="utf-8", errors="ignore") as f:
-                                    for row in f:
-                                        m = re.search(r"(\d+)", row)
-                                        if m:
-                                            sid = m.group(1)
-                                            cl_found = True
-                                            break
+                                    reader = csv.DictReader(f)
+                                    if reader.fieldnames:
+                                        field_map = {
+                                            name.strip().lower(): name
+                                            for name in reader.fieldnames
+                                            if name
+                                        }
+                                        email_col = field_map.get("email") or field_map.get(
+                                            "email address"
+                                        )
+                                        sid_col = (
+                                            field_map.get("sid")
+                                            or field_map.get("spr code")
+                                            or field_map.get("student id")
+                                        )
+                                        user_email = (
+                                            users[0].get("email", "").strip().lower()
+                                            if users
+                                            else ""
+                                        )
+                                        for row in reader:
+                                            if (
+                                                user_email
+                                                and email_col
+                                                and row.get(email_col, "").strip().lower()
+                                                == user_email
+                                            ):
+                                                val = re.sub(r"\D+", "", row.get(sid_col, ""))
+                                                if val:
+                                                    sid = val
+                                                    cl_found = True
+                                                    break
+                                            elif not user_email and sid_col and row.get(sid_col):
+                                                val = re.sub(r"\D+", "", row.get(sid_col, ""))
+                                                if val:
+                                                    sid = val
+                                                    cl_found = True
+                                                    break
                             except Exception:
                                 pass
+                            if not cl_found:
+                                try:
+                                    with cl_candidate.open(encoding="utf-8", errors="ignore") as f:
+                                        for row in f:
+                                            m = re.search(r"(\d+)", row)
+                                            if m:
+                                                sid = m.group(1)
+                                                cl_found = True
+                                                break
+                                except Exception:
+                                    pass
                         if cl_found:
                             break
                 if not cl_found:

@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 from typing import Union, Optional
 import json
+import csv
 import os
 import math
 import subprocess
@@ -114,17 +115,54 @@ def get_student_id(
                 chosen_classlist = cp
                 break
 
-        if email and chosen_classlist:
-            with chosen_classlist.open(encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if email in line:
-                        class_entry = line
+        if chosen_classlist is None:
+            for folder in (root / "source", root, Path("source"), Path(".")):
+                if folder.exists() and folder.is_dir():
+                    rosters = list(folder.glob("*_roster.csv")) + [
+                        p for p in folder.glob("*roster*.csv") if p.name != "classlist.csv"
+                    ]
+                    if rosters:
+                        chosen_classlist = rosters[0]
                         break
 
-        match = re.search(r"(\d+)", class_entry) if class_entry else None
-        if match:
-            student_id = match.group(1)
-        else:
+        if email and chosen_classlist:
+            email_lower = email.strip().lower()
+            try:
+                with chosen_classlist.open(encoding="utf-8", errors="ignore") as f:
+                    reader = csv.DictReader(f)
+                    if reader.fieldnames:
+                        field_map = {
+                            name.strip().lower(): name for name in reader.fieldnames if name
+                        }
+                        email_col = field_map.get("email") or field_map.get("email address")
+                        sid_col = (
+                            field_map.get("sid")
+                            or field_map.get("spr code")
+                            or field_map.get("student id")
+                            or field_map.get("id")
+                        )
+                        if email_col and sid_col:
+                            for row in reader:
+                                if row.get(email_col, "").strip().lower() == email_lower:
+                                    val = row.get(sid_col, "").strip()
+                                    val = re.sub(r"\D+", "", val)
+                                    if val:
+                                        student_id = val
+                                        break
+            except Exception:
+                pass
+
+            if not student_id.strip():
+                with chosen_classlist.open(encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        if email_lower in line.lower():
+                            class_entry = line
+                            break
+                match = re.search(r"(\d+)", class_entry) if class_entry else None
+                if match:
+                    student_id = match.group(1)
+
+        if not student_id.strip():
             print("[INFO] Student not found in classlist.csv; using default ID.")
             student_id = default_id
 

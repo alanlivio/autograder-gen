@@ -65,13 +65,23 @@ class AutograderGen:
             self._generate_run_autograder()
             self._generate_run_tests()
             self._generate_metadata_files()
+            if self.config.retrieve_student_id:
+                roster_files = list(output_path.glob("*_roster.csv")) + [
+                    p for p in output_path.glob("*roster*.csv") if p.name != "classlist.csv"
+                ]
+                if roster_files:
+                    roster_file = roster_files[0]
+                    target_classlist = self.temp_dir / "classlist.csv"
+                    shutil.copy2(roster_file, target_classlist)
+                elif (output_path / "classlist.csv").exists():
+                    shutil.copy2(output_path / "classlist.csv", self.temp_dir / "classlist.csv")
             zip_path = output_path / "autograder.zip"
             self._create_zip(zip_path)
             verification = self.verify_autograder_zip(zip_path)
             for err in verification.get("errors", []):
-                print_error(f"  [ERROR] {err}")
+                print_error(err)
             for warn in verification.get("warnings", []):
-                print_warning(f"  [WARNING] {warn}")
+                print_warning(warn)
             if description:
                 docx_buffer = self.generate_description_docx()
                 with open(output_path / "description.docx", "wb") as f:
