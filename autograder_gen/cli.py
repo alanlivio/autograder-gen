@@ -213,12 +213,21 @@ def main(argv=None):
         default=False,
         help="Print full autograder execution logs instead of only paths to log files",
     )
+    parser.add_argument(
+        "--schema",
+        action="store_true",
+        default=False,
+        help="Print JSON schema for the YAML configuration file and exit",
+    )
     if argv is None:
         argv = sys.argv[1:]
     if not argv:
         parser.print_help()
         return 0
     args = parser.parse_args(argv)
+    if args.schema:
+        print(json.dumps(ag.Config.model_json_schema(), indent=2))
+        return 0
     args.description = args.description
     setup_logging()
 

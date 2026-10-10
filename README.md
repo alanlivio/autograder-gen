@@ -38,7 +38,7 @@ autograder-gen
 usage: autograder-gen [-h] [--version] [--config CONFIG |
                       --batch DIR_OR_CONFIG [DIR_OR_CONFIG ...]]
                       [--description] [--run-submission DIR_OR_ZIP]
-                      [--run-stub-submissions] [--verbose]
+                      [--run-stub-submissions] [--verbose] [--schema]
 
 Generate Gradescope autograder script from YAML configuration. Generated files
 will be at the same folder as the config (autograder.zip, stub submissions for
@@ -64,9 +64,16 @@ options:
                         stub_correct_answer_wrong_location.zip)
   --verbose, -v         Print full autograder execution logs instead of only
                         paths to log files
+  --schema              Print JSON schema for the YAML configuration file and exit
 ```
 
 ### Examples
+
+Show configuration JSON schema:
+
+```bash
+autograder-gen --schema
+```
 
 Generate an autograder package:
 
