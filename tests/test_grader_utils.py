@@ -132,3 +132,140 @@ def test_call_java_function_execution(tmp_path):
         source_dir=tmp_path,
     )
     assert result.strip() == "5"
+
+
+def test_call_java_function_arrays_and_objects(tmp_path):
+    from autograder_gen.grader_utils import call_java_function
+
+    java_file = tmp_path / "Solution.java"
+    java_file.write_text(
+        "public class Solution {\n"
+        "    public int[] doubleElements(int[] arr) {\n"
+        "        int[] res = new int[arr.length];\n"
+        "        for (int i = 0; i < arr.length; i++) res[i] = arr[i] * 2;\n"
+        "        return res;\n"
+        "    }\n"
+        "    public static String greet(String name) {\n"
+        "        return \"Hello, \" + name + \"!\";\n"
+        "    }\n"
+        "    public static int[][] getMatrix() {\n"
+        "        return new int[][]{{1, 2}, {3, 4}};\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    res_arr = call_java_function(
+        file_path=java_file,
+        function_name="doubleElements",
+        args=["{1, 2, 3}"],
+        timeout_seconds=10,
+        source_dir=tmp_path,
+    )
+    assert res_arr.strip() == "[2, 4, 6]"
+
+    res_str = call_java_function(
+        file_path=java_file,
+        function_name="greet",
+        args=['"Alice"'],
+        timeout_seconds=10,
+        source_dir=tmp_path,
+    )
+    assert res_str.strip() == "Hello, Alice!"
+
+    res_matrix = call_java_function(
+        file_path=java_file,
+        function_name="getMatrix",
+        args=[],
+        timeout_seconds=10,
+        source_dir=tmp_path,
+    )
+    assert res_matrix.strip() == "[[1, 2], [3, 4]]"
+
+
+def test_javarunner_compilation_failure_logged_and_hidden_from_student(
+    tmp_path, capsys, caplog
+):
+    import logging
+    import pytest
+    from autograder_gen.grader_utils import call_java_function
+
+    java_file = tmp_path / "Solution.java"
+    java_file.write_text(
+        "public class Solution {\n"
+        "    public static int add(int a, int b) {\n"
+        "        return a + b;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    broken_runner = tmp_path / "JavaRunner.java"
+    broken_runner.write_text("invalid syntax error in JavaRunner", encoding="utf-8")
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(RuntimeError) as exc_info:
+            call_java_function(
+                file_path=java_file,
+                function_name="add",
+                args=[1, 2],
+                timeout_seconds=10,
+                source_dir=tmp_path,
+            )
+
+    captured = capsys.readouterr()
+    assert "syntax error" not in captured.out
+    assert "JavaRunner.java" not in captured.out
+    assert "syntax error" not in str(exc_info.value)
+    assert "JavaRunner.java" not in str(exc_info.value)
+
+    error_logs = [record for record in caplog.records if record.levelno == logging.ERROR]
+    assert len(error_logs) > 0
+    assert any("JavaRunner" in record.message for record in error_logs)
+
+
+def test_javarunner_execution_failure_logged_and_hidden_from_student(
+    tmp_path, capsys, caplog
+):
+    import logging
+    import pytest
+    import subprocess
+    from autograder_gen.grader_utils import call_java_function
+
+    java_file = tmp_path / "Solution.java"
+    java_file.write_text(
+        "public class Solution {\n"
+        "    public static int add(int a, int b) {\n"
+        "        return a + b;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    runner_file = tmp_path / "JavaRunner.java"
+    runner_file.write_text(
+        "public class JavaRunner {\n"
+        "    public static void main(String[] args) {\n"
+        "        System.err.println(\"[JAVARUNNER_ERROR] Internal fatal crash\");\n"
+        "        System.exit(2);\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["javac", str(runner_file)], cwd=tmp_path, check=True)
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(RuntimeError) as exc_info:
+            call_java_function(
+                file_path=java_file,
+                function_name="add",
+                args=[1, 2],
+                timeout_seconds=10,
+                source_dir=tmp_path,
+            )
+
+    captured = capsys.readouterr()
+    assert "Internal fatal crash" not in captured.out
+    assert "Internal fatal crash" not in str(exc_info.value)
+
+    error_logs = [record for record in caplog.records if record.levelno == logging.ERROR]
+    assert len(error_logs) > 0
+    assert any("JavaRunner" in record.message for record in error_logs)
+
