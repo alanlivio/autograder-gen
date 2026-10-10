@@ -153,8 +153,8 @@ def test_run_autograder_for_generated_submissions(tmp_path):
     assert "Status =" not in compiler_text
     assert "[AutograderRunner Summary]" not in wrong_loc_text
     assert "Status =" not in wrong_loc_text
-    assert "Checking required file: solution.py..." in correct_text
-    assert "File 'solution.py' exists." in correct_text
-    assert "Checking required file: solution.py..." in wrong_loc_text
-    assert "Warning: Required file solution.py not found in submission" in wrong_loc_text
-    assert "Found file 'solution.py' at" in wrong_loc_text
+    assert "[INFO] Checking required file: solution.py..." in correct_text
+    assert "[INFO] File 'solution.py' exists." in correct_text
+    assert "[INFO] Checking required file: solution.py..." in wrong_loc_text
+    assert "[WARNING] Required file solution.py not found in submission" in wrong_loc_text
+    assert "[INFO] Found file 'solution.py' at" in wrong_loc_text

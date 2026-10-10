@@ -187,22 +187,54 @@ class AutograderRun:
             for line in results["output"].splitlines():
                 stripped = line.strip()
                 if (
-                    stripped.startswith("Environment:")
+                    stripped.startswith("[INFO] Checking student ID")
+                    or stripped.startswith("[INFO] Student ID not found")
+                    or stripped.startswith("[INFO] Student not found")
+                    or stripped.startswith("[INFO] Using student ID:")
+                    or stripped.startswith("[INFO] Environment:")
+                    or stripped.startswith("Environment:")
+                    or stripped.startswith("[INFO] Checking required file:")
                     or stripped.startswith("Checking required file:")
-                    or (stripped.startswith("File '") and stripped.endswith("' exists."))
+                    or (
+                        (stripped.startswith("[INFO] File '") or stripped.startswith("File '"))
+                        and stripped.endswith("' exists.")
+                    )
+                    or stripped.startswith("[WARNING] Required file")
                     or stripped.startswith("Warning: Required file")
-                    or (stripped.startswith("Found file '") and " at " in stripped)
+                    or (
+                        (
+                            stripped.startswith("[INFO] Found file '")
+                            or stripped.startswith("Found file '")
+                        )
+                        and " at " in stripped
+                    )
                 ):
                     file_check_lines.append(stripped)
         elif results.get("_stdout"):
             for line in results["_stdout"].splitlines():
                 stripped = line.strip()
                 if (
-                    stripped.startswith("Environment:")
+                    stripped.startswith("[INFO] Checking student ID")
+                    or stripped.startswith("[INFO] Student ID not found")
+                    or stripped.startswith("[INFO] Student not found")
+                    or stripped.startswith("[INFO] Using student ID:")
+                    or stripped.startswith("[INFO] Environment:")
+                    or stripped.startswith("Environment:")
+                    or stripped.startswith("[INFO] Checking required file:")
                     or stripped.startswith("Checking required file:")
-                    or (stripped.startswith("File '") and stripped.endswith("' exists."))
+                    or (
+                        (stripped.startswith("[INFO] File '") or stripped.startswith("File '"))
+                        and stripped.endswith("' exists.")
+                    )
+                    or stripped.startswith("[WARNING] Required file")
                     or stripped.startswith("Warning: Required file")
-                    or (stripped.startswith("Found file '") and " at " in stripped)
+                    or (
+                        (
+                            stripped.startswith("[INFO] Found file '")
+                            or stripped.startswith("Found file '")
+                        )
+                        and " at " in stripped
+                    )
                 ):
                     file_check_lines.append(stripped)
 
@@ -667,23 +699,75 @@ class AutograderRun:
                 sub_files = [Path(x).name for x in actual_submission if Path(x).is_file()]
 
         lines: list[str] = []
+        if getattr(self.config_obj, "retrieve_student_id", False):
+            lines.append("[INFO] Checking student ID...")
+            sid = ""
+            meta_found = False
+            sub_p = None
+            if isinstance(actual_submission, (str, Path)):
+                sub_p = Path(actual_submission)
+            if sub_p and sub_p.is_dir():
+                for meta_candidate in (
+                    sub_p / "submission_metadata.json",
+                    sub_p / "source" / "submission_metadata.json",
+                    sub_p / "submission" / "submission_metadata.json",
+                ):
+                    if meta_candidate.exists():
+                        try:
+                            meta = json.loads(meta_candidate.read_text(encoding="utf-8"))
+                            users = meta.get("users") or []
+                            if users and users[0].get("sid"):
+                                sid = re.sub(r"\D+", "", str(users[0]["sid"]))
+                                if sid:
+                                    meta_found = True
+                                    break
+                        except Exception:
+                            pass
+            if not meta_found:
+                lines.append(
+                    "[INFO] Student ID not found in submission metadata; checking classlist.csv..."
+                )
+                cl_found = False
+                if sub_p and sub_p.is_dir():
+                    for cl_candidate in (
+                        sub_p / "classlist.csv",
+                        sub_p / "source" / "classlist.csv",
+                    ):
+                        if cl_candidate.exists():
+                            try:
+                                with cl_candidate.open(encoding="utf-8", errors="ignore") as f:
+                                    for row in f:
+                                        m = re.search(r"(\d+)", row)
+                                        if m:
+                                            sid = m.group(1)
+                                            cl_found = True
+                                            break
+                            except Exception:
+                                pass
+                        if cl_found:
+                            break
+                if not cl_found:
+                    lines.append("[INFO] Student not found in classlist.csv; using default ID.")
+                    sid = "12345678"
+            lines.append(f"[INFO] Using student ID: {sid}")
+
         lang = getattr(self.config_obj, "language", "").lower()
         if lang == "python":
-            lines.append("Environment: Python 3.10")
+            lines.append("[INFO] Environment: Python 3.10")
         elif lang == "java":
-            lines.append("Environment: OpenJDK 25")
+            lines.append("[INFO] Environment: OpenJDK 25")
         for req_file in self.config_obj.required_files:
-            lines.append(f"Checking required file: {req_file}...")
+            lines.append(f"[INFO] Checking required file: {req_file}...")
             norm_req = req_file.lstrip("./")
             if any(f.lstrip("./") == norm_req for f in sub_files):
-                lines.append(f"File '{req_file}' exists.")
+                lines.append(f"[INFO] File '{req_file}' exists.")
             else:
-                lines.append(f"Warning: Required file {req_file} not found in submission")
+                lines.append(f"[WARNING] Required file {req_file} not found in submission")
                 if not getattr(self.config_obj, "strict_file_location", False):
                     req_base = Path(req_file).name
                     found_matches = [f for f in sub_files if Path(f).name == req_base]
                     if found_matches:
-                        lines.append(f"Found file '{req_file}' at {found_matches[0]}")
+                        lines.append(f"[INFO] Found file '{req_file}' at {found_matches[0]}")
         return lines
 
 

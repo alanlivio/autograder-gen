@@ -66,6 +66,10 @@ def get_student_id(
     classlist_path: Union[str, Path, None] = None,
     default_id: str = "12345678",
 ) -> str:
+    if autograder_root is None and classlist_path is None and os.environ.get("STUDENT_ID"):
+        return os.environ["STUDENT_ID"]
+
+    print("[INFO] Checking student ID...")
     root = (
         Path(autograder_root)
         if autograder_root
@@ -95,7 +99,7 @@ def get_student_id(
     email = first_user.get("email")
 
     if not student_id.strip():
-        print("[INFO] Couldn't find student ID in GradeScope metadata; using classlist.")
+        print("[INFO] Student ID not found in submission metadata; checking classlist.csv...")
         class_entry = ""
         classlist_candidates = [
             Path(classlist_path) if classlist_path else None,
@@ -121,13 +125,13 @@ def get_student_id(
         if match:
             student_id = match.group(1)
         else:
-            print(f"[INFO] Couldn't find e-mail in classlist, so using {default_id}.")
+            print("[INFO] Student not found in classlist.csv; using default ID.")
             student_id = default_id
 
     if not student_id.strip():
         student_id = default_id
 
-    print(f"[INFO] Your student ID: {student_id}\n")
+    print(f"[INFO] Using student ID: {student_id}")
     return student_id
 
 

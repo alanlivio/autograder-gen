@@ -17,18 +17,42 @@ FILE_CHECK_LOG="$RESULTS_DIR/file_check.log"
 true > "$FILE_CHECK_LOG"
 
 echo "Starting autograder..."
+if [ -d "$SUBMISSION_DIR" ]; then
+    if [ -f "$SUBMISSION_DIR/submission_metadata.json" ]; then
+        cp "$SUBMISSION_DIR/submission_metadata.json" "$SOURCE_DIR/"
+    fi
+    if [ -f "$SUBMISSION_DIR/classlist.csv" ]; then
+        cp "$SUBMISSION_DIR/classlist.csv" "$SOURCE_DIR/"
+    fi
+fi
+
+{% if config.retrieve_student_id %}
+if [ -f "$SOURCE_DIR/grader_utils.py" ]; then
+    STUDENT_ID_OUTPUT=$("$PYTHON" -c "
+import sys
+sys.path.insert(0, '$SOURCE_DIR')
+from grader_utils import get_student_id
+get_student_id('$AUTOGRADER_ROOT')
+" 2>&1)
+    echo "$STUDENT_ID_OUTPUT" | tee -a "$FILE_CHECK_LOG"
+    RETRIEVED_SID=$(echo "$STUDENT_ID_OUTPUT" | grep '\[INFO\] Using student ID:' | sed 's/.*\[INFO\] Using student ID:[[:space:]]*//')
+    if [ -n "$RETRIEVED_SID" ]; then
+        export STUDENT_ID="$RETRIEVED_SID"
+    fi
+fi
+{% endif %}
 {% if config.language == 'python' %}
 PYTHON_VERSION=$("$PYTHON" --version 2>&1 || echo "Python 3.10")
-echo "Environment: $PYTHON_VERSION" | tee -a "$FILE_CHECK_LOG"
+echo "[INFO] Environment: $PYTHON_VERSION" | tee -a "$FILE_CHECK_LOG"
 {% elif config.language == 'java' %}
 if command -v java >/dev/null 2>&1; then
     JAVA_VERSION=$(java -version 2>&1 | head -n 1)
-    echo "Environment: $JAVA_VERSION" | tee -a "$FILE_CHECK_LOG"
+    echo "[INFO] Environment: $JAVA_VERSION" | tee -a "$FILE_CHECK_LOG"
 elif command -v javac >/dev/null 2>&1; then
     JAVA_VERSION=$(javac -version 2>&1 | head -n 1)
-    echo "Environment: $JAVA_VERSION" | tee -a "$FILE_CHECK_LOG"
+    echo "[INFO] Environment: $JAVA_VERSION" | tee -a "$FILE_CHECK_LOG"
 else
-    echo "Environment: OpenJDK 25" | tee -a "$FILE_CHECK_LOG"
+    echo "[INFO] Environment: OpenJDK 25" | tee -a "$FILE_CHECK_LOG"
 fi
 {% endif %}
 echo "Copying required submission files to source directory..."
@@ -36,17 +60,17 @@ echo "Copying required submission files to source directory..."
 if [ -d "$SUBMISSION_DIR" ]; then
     cd "$SUBMISSION_DIR"
     {% for file in config.required_files %}
-    echo "Checking required file: {{ file }}..." | tee -a "$FILE_CHECK_LOG"
+    echo "[INFO] Checking required file: {{ file }}..." | tee -a "$FILE_CHECK_LOG"
     if [ -f "{{ file }}" ]; then
-        echo "File '{{ file }}' exists." | tee -a "$FILE_CHECK_LOG"
+        echo "[INFO] File '{{ file }}' exists." | tee -a "$FILE_CHECK_LOG"
         mkdir -p "$SOURCE_DIR/$(dirname "{{ file }}")"
         cp "{{ file }}" "$SOURCE_DIR/{{ file }}"
     else
-        echo "Warning: Required file {{ file }} not found in submission" | tee -a "$FILE_CHECK_LOG"
+        echo "[WARNING] Required file {{ file }} not found in submission" | tee -a "$FILE_CHECK_LOG"
         {% if not config.strict_file_location %}
         FOUND_FILE=$(find . -name "$(basename "{{ file }}")" -type f | head -n 1)
         if [ -n "$FOUND_FILE" ]; then
-            echo "Found file '{{ file }}' at $FOUND_FILE" | tee -a "$FILE_CHECK_LOG"
+            echo "[INFO] Found file '{{ file }}' at $FOUND_FILE" | tee -a "$FILE_CHECK_LOG"
             TARGET_SUBDIR=$(dirname "$FOUND_FILE" | sed 's|^\./||')
             mkdir -p "$SOURCE_DIR/$TARGET_SUBDIR"
             cp "$FOUND_FILE" "$SOURCE_DIR/$TARGET_SUBDIR/"
@@ -61,7 +85,7 @@ if [ -d "$SUBMISSION_DIR" ]; then
         cp "classlist.csv" "$SOURCE_DIR/"
     fi
 else
-    echo "Warning: Submission directory not found" | tee -a "$FILE_CHECK_LOG"
+    echo "[WARNING] Submission directory not found" | tee -a "$FILE_CHECK_LOG"
     exit 1
 fi
 

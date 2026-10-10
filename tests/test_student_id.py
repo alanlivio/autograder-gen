@@ -302,6 +302,14 @@ def test_question_hello_student_id_java(tmp_path: Path):
     total_score = sum(t.get("score", 0) for t in results["tests"])
     assert total_score == 15
 
+    assert "_file_check_log" in results
+    log_content = results["_file_check_log"]
+    assert "[INFO] Checking student ID..." in log_content
+    assert "[INFO] Using student ID: 33931382" in log_content
+    assert "[INFO] Environment: " in log_content
+    assert "[INFO] Checking required file: CW1P1.java..." in log_content
+    assert "[INFO] File 'CW1P1.java' exists." in log_content
+
     sub_wrong = tmp_path / "sub_wrong"
     sub_wrong.mkdir()
     (sub_wrong / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
@@ -313,3 +321,42 @@ def test_question_hello_student_id_java(tmp_path: Path):
     results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
     total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
     assert total_score_wrong == 0
+
+
+def test_student_id_log_messages(tmp_path: Path, capsys):
+    meta = {"users": [{"sid": "98765432", "email": "test@example.com"}]}
+    meta_path = tmp_path / "submission_metadata.json"
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+
+    sid = get_student_id(autograder_root=tmp_path)
+    captured = capsys.readouterr().out
+    assert sid == "98765432"
+    assert "[INFO] Checking student ID..." in captured
+    assert "[INFO] Using student ID: 98765432" in captured
+
+    meta_empty = {"users": [{"sid": "", "email": "test@example.com"}]}
+    meta_path.write_text(json.dumps(meta_empty), encoding="utf-8")
+    cl_path = tmp_path / "classlist.csv"
+    cl_path.write_text("11223344,test@example.com\n", encoding="utf-8")
+
+    sid_cl = get_student_id(autograder_root=tmp_path, classlist_path=cl_path)
+    captured_cl = capsys.readouterr().out
+    assert sid_cl == "11223344"
+    assert "[INFO] Checking student ID..." in captured_cl
+    assert (
+        "[INFO] Student ID not found in submission metadata; checking classlist.csv..."
+        in captured_cl
+    )
+    assert "[INFO] Using student ID: 11223344" in captured_cl
+
+    cl_path.write_text("55667788,other@example.com\n", encoding="utf-8")
+    sid_def = get_student_id(autograder_root=tmp_path, classlist_path=cl_path)
+    captured_def = capsys.readouterr().out
+    assert sid_def == "12345678"
+    assert "[INFO] Checking student ID..." in captured_def
+    assert (
+        "[INFO] Student ID not found in submission metadata; checking classlist.csv..."
+        in captured_def
+    )
+    assert "[INFO] Student not found in classlist.csv; using default ID." in captured_def
+    assert "[INFO] Using student ID: 12345678" in captured_def
