@@ -29,7 +29,7 @@ make deps
 Run `autograder_gen/cli.py` directly using Python:
 
 ```bash
-python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml
+python autograder_gen/cli.py tests/examples/py_simple/config.yaml
 ```
 
 Options:
@@ -37,27 +37,27 @@ Options:
 - Generate assessment description (`description.docx` and `description.md`):
 
 ```bash
-python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --description
+python autograder_gen/cli.py tests/examples/py_simple/config.yaml --description
 ```
 
-- Run a submission directory or zip against an autograder configuration:
+- Run solution against an autograder configuration:
 
 ```bash
-python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --run-submission tests/examples/py_simple/correct_answer
+python autograder_gen/cli.py tests/examples/py_simple/config.yaml --run-solution
 ```
 
 - Run autograder against generated stub submissions:
 
 ```bash
-python autograder_gen/cli.py --config tests/examples/py_simple/config.yaml --run-stub-submissions
+python autograder_gen/cli.py tests/examples/py_simple/config.yaml --run-stubs
 ```
 
-### Batch Processor
+### Batch Processing
 
-Run with `--batch` to generate autograders for all configurations in a directory:
+Generate autograders for all configurations in a directory:
 
 ```bash
-python autograder_gen/cli.py --batch tests/examples --run-stub-submissions
+python autograder_gen/cli.py tests/examples --run-stubs
 ```
 
 ### Web Interface

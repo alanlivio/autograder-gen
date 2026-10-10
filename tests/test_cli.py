@@ -32,7 +32,6 @@ def test_cli_generates_autograder(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(config_path),
         ],
         capture_output=True,
@@ -54,7 +53,6 @@ def test_cli_generates_all_assets(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(config_path),
         ],
         capture_output=True,
@@ -81,7 +79,6 @@ def test_cli_generates_description(tmp_path, flag):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(config_path),
             flag,
         ],
@@ -102,11 +99,14 @@ def test_cli_no_args_shows_help():
         text=True,
     )
     assert result.returncode == 0
-    assert "usage:" in result.stdout.lower()
+    assert "usage: autograder-gen [TARGET ...]" in result.stdout
     assert "--version" in result.stdout
-    assert "--config" in result.stdout
+    assert "TARGET" in result.stdout
+    assert "--config" not in result.stdout
+    assert "--batch" not in result.stdout
     assert "--description" in result.stdout
-    assert "stub_correct_answer.zip, stub_wrong_answer.zip" in result.stdout
+    normalized = " ".join(result.stdout.split())
+    assert "stub_correct_answer.zip, stub_wrong_answer.zip" in normalized
 
 
 def test_cli_version_flag():
@@ -130,54 +130,54 @@ def test_cli_missing_config():
     assert result.returncode != 0
 
 
-def test_cli_config_shortcut_only_receives_one_file(capsys):
+def test_cli_config_flag_unrecognized(capsys):
     with pytest.raises(SystemExit) as exc_info:
-        main(["-c", "config1.yaml", "config2.yaml"])
+        main(["--config", "config.yaml"])
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "unrecognized arguments: config2.yaml" in captured.err
+    assert "unrecognized arguments: --config" in captured.err
 
 
-def test_cli_config_long_flag_only_receives_one_file(capsys):
+def test_cli_config_shortcut_unrecognized(capsys):
     with pytest.raises(SystemExit) as exc_info:
-        main(["--config", "config1.yaml", "config2.yaml"])
+        main(["-c", "config.yaml"])
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "unrecognized arguments: config2.yaml" in captured.err
+    assert "unrecognized arguments: -c" in captured.err
 
 
-def test_cli_config_shortcut_subprocess_only_receives_one_file():
+def test_cli_config_shortcut_subprocess_unrecognized():
     result = subprocess.run(
-        [sys.executable, "autograder_gen/cli.py", "-c", "config1.yaml", "config2.yaml"],
+        [sys.executable, "autograder_gen/cli.py", "-c", "config.yaml"],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 2
-    assert "unrecognized arguments: config2.yaml" in result.stderr
+    assert "unrecognized arguments: -c" in result.stderr
 
 
-def test_cli_run_submission_folder():
+def test_cli_run_solution_folder():
     python_executable = sys.executable
     result = subprocess.run(
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             "tests/examples/py_simple/config.yaml",
-            "--run-submission",
-            "tests/examples/py_simple/correct_answer",
+            "--run-solution",
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
-    assert "submission.log" in result.stdout
+    assert "solution.log" in result.stdout
     assert "[AutograderRunner: Student View]" not in result.stdout
-    assert (Path("tests/examples/py_simple") / "submission.log").exists()
+    assert (Path("tests/examples/py_simple") / "solution.log").exists()
 
 
-def test_cli_run_submission_zip(tmp_path):
-    sub_zip = tmp_path / "submission.zip"
+def test_cli_run_solution_zip(tmp_path):
+    cfg_src = Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8")
+    (tmp_path / "config.yaml").write_text(cfg_src, encoding="utf-8")
+    sub_zip = tmp_path / "solution.zip"
     with zipfile.ZipFile(sub_zip, "w") as z:
         for f in Path("tests/examples/py_simple/correct_answer").iterdir():
             z.write(f, f.name)
@@ -186,46 +186,41 @@ def test_cli_run_submission_zip(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
-            "tests/examples/py_simple/config.yaml",
-            "--run-submission",
-            str(sub_zip),
+            str(tmp_path / "config.yaml"),
+            "--run-solution",
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
-    assert "submission.log" in result.stdout
+    assert "solution.log" in result.stdout
     assert "[AutograderRunner: Student View]" not in result.stdout
 
 
-def test_cli_run_submission_auto_config():
-    python_executable = sys.executable
+def test_cli_run_solution_auto_config(monkeypatch):
+    monkeypatch.chdir("tests/examples/py_simple")
     result = subprocess.run(
         [
-            python_executable,
-            "autograder_gen/cli.py",
-            "--run-submission",
-            "tests/examples/py_simple/correct_answer",
+            sys.executable,
+            str(Path("../../../autograder_gen/cli.py").resolve()),
+            "--run-solution",
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
-    assert "submission.log" in result.stdout
+    assert "solution.log" in result.stdout
     assert "[AutograderRunner: Student View]" not in result.stdout
 
 
-def test_cli_run_submission_verbose():
+def test_cli_run_solution_verbose():
     python_executable = sys.executable
     result = subprocess.run(
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             "tests/examples/py_simple/config.yaml",
-            "--run-submission",
-            "tests/examples/py_simple/correct_answer",
+            "--run-solution",
             "--verbose",
         ],
         capture_output=True,
@@ -233,35 +228,34 @@ def test_cli_run_submission_verbose():
     )
     assert result.returncode == 0
     assert "[AutograderRunner: Student View]" in result.stdout
-    assert "submission.log" in result.stdout
+    assert "solution.log" in result.stdout
 
 
-def test_cli_run_submission_not_found():
-    python_executable = sys.executable
+def test_cli_run_solution_not_found(tmp_path):
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
     result = subprocess.run(
         [
-            python_executable,
+            sys.executable,
             "autograder_gen/cli.py",
-            "--config",
-            "tests/examples/py_simple/config.yaml",
-            "--run-submission",
-            "nonexistent_submission_dir",
+            str(cfg),
+            "--run-solution",
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode != 0
+    assert "Solution not found" in result.stderr
 
 
-def test_cli_run_stubs_submissions_with_config():
+def test_cli_run_stubs_with_config():
     python_executable = sys.executable
     result = subprocess.run(
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             "tests/examples/py_simple/config.yaml",
-            "--run-stub-submissions",
+            "--run-stubs",
         ],
         capture_output=True,
         text=True,
@@ -275,7 +269,7 @@ def test_cli_run_stubs_submissions_with_config():
     assert "[AutograderRunner: Student View]" not in result.stdout
 
 
-def test_cli_run_stubs_submissions_with_zip(tmp_path):
+def test_cli_run_stubs_with_zip(tmp_path):
     cfg_src = Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8")
     cfg_file = tmp_path / "config.yaml"
     cfg_file.write_text(cfg_src, encoding="utf-8")
@@ -284,7 +278,6 @@ def test_cli_run_stubs_submissions_with_zip(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(cfg_file),
         ],
         capture_output=True,
@@ -301,9 +294,8 @@ def test_cli_run_stubs_submissions_with_zip(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(autograder_zip),
-            "--run-stub-submissions",
+            "--run-stubs",
         ],
         capture_output=True,
         text=True,
@@ -313,7 +305,7 @@ def test_cli_run_stubs_submissions_with_zip(tmp_path):
     assert "[AutograderRunner: Student View]" not in result.stdout
 
 
-def test_cli_run_stubs_submissions_with_generated_zip_missing_config(tmp_path):
+def test_cli_run_stubs_with_generated_zip_missing_config(tmp_path):
     cfg_src = Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8")
     cfg_file = tmp_path / "config.yaml"
     cfg_file.write_text(cfg_src, encoding="utf-8")
@@ -322,7 +314,6 @@ def test_cli_run_stubs_submissions_with_generated_zip_missing_config(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(cfg_file),
         ],
         capture_output=True,
@@ -336,9 +327,8 @@ def test_cli_run_stubs_submissions_with_generated_zip_missing_config(tmp_path):
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             str(autograder_zip),
-            "--run-stub-submissions",
+            "--run-stubs",
         ],
         capture_output=True,
         text=True,
@@ -347,77 +337,61 @@ def test_cli_run_stubs_submissions_with_generated_zip_missing_config(tmp_path):
     assert "autograder_gen.yaml not found in zip archive" in result.stderr
 
 
-def test_cli_run_stubs_submissions_does_not_accept_arg():
+def test_cli_run_stubs_does_not_accept_arg():
     python_executable = sys.executable
     result = subprocess.run(
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--run-stub-submissions",
-            "tests/examples/py_simple/config.yaml",
+            "--run-stubs=tests/examples/py_simple/config.yaml",
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 2
-    assert "unrecognized arguments: tests/examples/py_simple/config.yaml" in result.stderr
+    assert "ignored explicit argument" in result.stderr
 
 
-def test_cli_run_multiple_submissions():
+def test_cli_run_submission_flag_unrecognized(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--run-submission", "answer"])
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "unrecognized arguments: --run-submission" in captured.err
+
+
+def test_cli_run_stub_submissions_flag_unrecognized(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--run-stub-submissions"])
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "unrecognized arguments: --run-stub-submissions" in captured.err
+
+
+def test_cli_run_stubs_and_solution_together():
     python_executable = sys.executable
     result = subprocess.run(
         [
             python_executable,
             "autograder_gen/cli.py",
-            "--config",
             "tests/examples/py_simple/config.yaml",
-            "--run-submission",
-            "correct_answer",
-            "--run-submission",
-            "wrong_answer",
-        ],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0
-    assert "correct_answer.log" in result.stdout
-    assert "wrong_answer.log" in result.stdout
-    assert (Path("tests/examples/py_simple") / "correct_answer.log").exists()
-    assert (Path("tests/examples/py_simple") / "wrong_answer.log").exists()
-
-
-def test_cli_run_stubs_and_submissions_together():
-    python_executable = sys.executable
-    result = subprocess.run(
-        [
-            python_executable,
-            "autograder_gen/cli.py",
-            "--config",
-            "tests/examples/py_simple/config.yaml",
-            "--run-stub-submissions",
-            "--run-submission",
-            "correct_answer",
+            "--run-stubs",
+            "--run-solution",
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
     assert "stub_correct_answer.log" in result.stdout
-    assert "stub_wrong_answer.log" in result.stdout
-    assert "correct_answer.log" in result.stdout
-    assert (Path("tests/examples/py_simple") / "correct_answer.log").exists()
+    assert "solution.log" in result.stdout
+    assert (Path("tests/examples/py_simple") / "solution.log").exists()
 
 
-def test_cli_mutually_exclusive_config_and_batch(tmp_path):
-    config_path = tmp_path / "config.yaml"
-    with open(config_path, "w") as f:
-        json.dump(SAMPLE_CONFIG, f)
+def test_cli_batch_flag_unrecognized(tmp_path):
     result = subprocess.run(
         [
             sys.executable,
             "autograder_gen/cli.py",
-            "--config",
-            str(config_path),
             "--batch",
             str(tmp_path),
         ],
@@ -425,10 +399,7 @@ def test_cli_mutually_exclusive_config_and_batch(tmp_path):
         text=True,
     )
     assert result.returncode == 2
-    assert (
-        "not allowed with argument --config" in result.stderr.lower()
-        or "mutually exclusive" in result.stderr.lower()
-    )
+    assert "unrecognized arguments: --batch" in result.stderr
 
 
 def test_cli_batch_generation(tmp_path):
@@ -439,7 +410,6 @@ def test_cli_batch_generation(tmp_path):
         [
             sys.executable,
             "autograder_gen/cli.py",
-            "--batch",
             str(tmp_path),
         ],
         capture_output=True,
@@ -485,7 +455,7 @@ def test_batch_missing_targets(capsys):
         main()
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "usage:" in captured.err.lower()
+    assert "unrecognized arguments: --batch" in captured.err
 
 
 def test_batch_with_description_missing_targets(capsys):
@@ -494,7 +464,7 @@ def test_batch_with_description_missing_targets(capsys):
         main()
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "usage:" in captured.err.lower()
+    assert "unrecognized arguments: --batch" in captured.err
 
 
 def test_batch_cli_subprocess_no_args():
@@ -505,16 +475,19 @@ def test_batch_cli_subprocess_no_args():
     )
     assert result.returncode == 0
     assert "usage:" in result.stdout.lower()
-    assert "--batch" in result.stdout
-    assert "DIR_OR_CONFIG [DIR_OR_CONFIG ...]" in result.stdout
+    assert "TARGET" in result.stdout
+    assert "--batch" not in result.stdout
+    assert "--config" not in result.stdout
     normalized = " ".join(result.stdout.split())
-    assert "One or more directories to search or config files to batch process" in normalized
-    assert "Generate description.docx and description.md for the assessment" in normalized
-    assert "--run-submission, -r DIR_OR_ZIP" in normalized
     assert (
-        "Use submission directory or zip file relative to config to be run (can be specified multiple times)"
+        "Configuration YAML file(s) or directories with config.yaml inside (default: ./config.yaml)"
         in normalized
     )
+    assert "Generate description.docx and description.md for the assessment" in normalized
+    assert "--run-solution" in normalized
+    assert "--run-stubs" in normalized
+    assert "--run-submission" not in normalized
+    assert "--run-stub-submissions" not in normalized
 
 
 def test_batch_gen_execution(tmp_path: Path, monkeypatch, capsys):
@@ -533,7 +506,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    monkeypatch.setattr(sys, "argv", ["autograder-gen", "--batch", str(tmp_path)])
+    monkeypatch.setattr(sys, "argv", ["autograder-gen", str(tmp_path)])
     main()
 
     captured = capsys.readouterr()
@@ -566,7 +539,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    monkeypatch.setattr(sys, "argv", ["autograder-gen", "--batch", str(tmp_path), "--description"])
+    monkeypatch.setattr(sys, "argv", ["autograder-gen", str(tmp_path), "--description"])
     main()
 
     captured = capsys.readouterr()
@@ -604,7 +577,7 @@ questions:
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
     monkeypatch.setattr(
-        sys, "argv", ["autograder-gen", "--batch", str(tmp_path), "--run-stub-submissions"]
+        sys, "argv", ["autograder-gen", str(tmp_path), "--run-stubs"]
     )
     main()
 
@@ -620,7 +593,7 @@ questions:
         assert (tmp_path / log_name).exists()
 
 
-def test_batch_run_submission_folder(tmp_path: Path, monkeypatch, capsys):
+def test_batch_run_solution_folder(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = """version: '1.0'
 language: python
@@ -640,25 +613,25 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    sub_dir = tmp_path / "my_submission"
+    sub_dir = tmp_path / "solution"
     sub_dir.mkdir()
     (sub_dir / "solution.py").write_text("def add(a, b): return a + b\n", encoding="utf-8")
 
     monkeypatch.setattr(
         sys,
         "argv",
-        ["autograder-gen", "--batch", str(tmp_path), "--run-submission", "my_submission"],
+        ["autograder-gen", str(tmp_path), "--run-solution"],
     )
     main()
 
     captured = capsys.readouterr()
-    assert "submission.log" in captured.out
-    assert (tmp_path / "submission.log").exists()
-    log_content = (tmp_path / "submission.log").read_text(encoding="utf-8")
+    assert "solution.log" in captured.out
+    assert (tmp_path / "solution.log").exists()
+    log_content = (tmp_path / "solution.log").read_text(encoding="utf-8")
     assert "Total Score = 10" in log_content
 
 
-def test_batch_run_submission_multiple_folders(tmp_path: Path, monkeypatch, capsys):
+def test_batch_run_solution_multiple_folders(tmp_path: Path, monkeypatch, capsys):
     for i in (1, 2):
         sub_project = tmp_path / f"project_{i}"
         sub_project.mkdir()
@@ -681,23 +654,23 @@ questions:
 """,
             encoding="utf-8",
         )
-        ans_dir = sub_project / "correct_answer"
+        ans_dir = sub_project / "solution"
         ans_dir.mkdir()
         (ans_dir / "solution.py").write_text("def add(a, b): return a + b\n", encoding="utf-8")
 
     monkeypatch.setattr(
         sys,
         "argv",
-        ["autograder-gen", "--batch", str(tmp_path), "--run-submission", "correct_answer"],
+        ["autograder-gen", str(tmp_path), "--run-solution"],
     )
     main()
 
     captured = capsys.readouterr()
-    assert (tmp_path / "project_1" / "submission.log").exists()
-    assert (tmp_path / "project_2" / "submission.log").exists()
+    assert (tmp_path / "project_1" / "solution.log").exists()
+    assert (tmp_path / "project_2" / "solution.log").exists()
 
 
-def test_batch_run_submission_not_found(tmp_path: Path, monkeypatch, capsys):
+def test_batch_run_solution_not_found(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = """version: '1.0'
 language: python
@@ -720,7 +693,7 @@ questions:
     monkeypatch.setattr(
         sys,
         "argv",
-        ["autograder-gen", "--batch", str(tmp_path), "--run-submission", "nonexistent_dir"],
+        ["autograder-gen", str(tmp_path), "--run-solution"],
     )
     main()
 
@@ -728,7 +701,7 @@ questions:
     assert "[NOT FOUND]" in captured.err
 
 
-def test_batch_run_submission_verbose(tmp_path: Path, monkeypatch, capsys):
+def test_batch_run_solution_verbose(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = """version: '1.0'
 language: python
@@ -748,7 +721,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    sub_dir = tmp_path / "answer"
+    sub_dir = tmp_path / "solution"
     sub_dir.mkdir()
     (sub_dir / "solution.py").write_text("def add(a, b): return a + b\n", encoding="utf-8")
 
@@ -757,10 +730,8 @@ questions:
         "argv",
         [
             "autograder-gen",
-            "--batch",
             str(tmp_path),
-            "--run-submission",
-            "answer",
+            "--run-solution",
             "--verbose",
         ],
     )
@@ -768,10 +739,10 @@ questions:
 
     captured = capsys.readouterr()
     assert "[AutograderRunner: Student View]" in captured.out
-    assert "submission.log" in captured.out
+    assert "solution.log" in captured.out
 
 
-def test_batch_run_multiple_submissions(tmp_path: Path, monkeypatch, capsys):
+def test_batch_run_stubs_and_solution_together(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = """version: '1.0'
 language: python
@@ -791,57 +762,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    sub_dir1 = tmp_path / "correct_answer"
-    sub_dir1.mkdir()
-    (sub_dir1 / "solution.py").write_text("def add(a, b): return a + b\n", encoding="utf-8")
-
-    sub_dir2 = tmp_path / "wrong_answer"
-    sub_dir2.mkdir()
-    (sub_dir2 / "solution.py").write_text("def add(a, b): return a - b\n", encoding="utf-8")
-
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "autograder-gen",
-            "--batch",
-            str(tmp_path),
-            "--run-submission",
-            "correct_answer",
-            "--run-submission",
-            "wrong_answer",
-        ],
-    )
-    main()
-
-    captured = capsys.readouterr()
-    assert "correct_answer.log" in captured.out
-    assert "wrong_answer.log" in captured.out
-    assert (tmp_path / "correct_answer.log").exists()
-    assert (tmp_path / "wrong_answer.log").exists()
-
-
-def test_batch_run_stubs_and_submissions_together(tmp_path: Path, monkeypatch, capsys):
-    cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
-language: python
-required_files:
-  - solution.py
-questions:
-  - name: Q1
-    marking_items:
-      - name: Item 1
-        total_mark: 10
-        type: function_test
-        target_file: solution.py
-        function_name: add
-        test_cases:
-          - args: [1, 2]
-            expected: "3"
-"""
-    cfg_path.write_text(cfg_content, encoding="utf-8")
-
-    sub_dir = tmp_path / "custom_answer"
+    sub_dir = tmp_path / "solution"
     sub_dir.mkdir()
     (sub_dir / "solution.py").write_text("def add(a, b): return a + b\n", encoding="utf-8")
 
@@ -850,20 +771,17 @@ questions:
         "argv",
         [
             "autograder-gen",
-            "--batch",
             str(tmp_path),
-            "--run-stub-submissions",
-            "--run-submission",
-            "custom_answer",
+            "--run-stubs",
+            "--run-solution",
         ],
     )
     main()
 
     captured = capsys.readouterr()
     assert "stub_correct_answer.log" in captured.out
-    assert "stub_wrong_answer.log" in captured.out
-    assert "custom_answer.log" in captured.out
-    assert (tmp_path / "custom_answer.log").exists()
+    assert "solution.log" in captured.out
+    assert (tmp_path / "solution.log").exists()
 
 
 def test_cli_batch_logs_found_configs_first(tmp_path):
@@ -881,7 +799,6 @@ def test_cli_batch_logs_found_configs_first(tmp_path):
         [
             sys.executable,
             "autograder_gen/cli.py",
-            "--batch",
             str(tmp_path),
         ],
         capture_output=True,
@@ -919,3 +836,76 @@ def test_cli_schema_subprocess():
     data = json.loads(result.stdout)
     assert data["title"] == "Config"
     assert "properties" in data
+
+
+def test_cli_positional_single_config(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, "w") as f:
+        json.dump(SAMPLE_CONFIG, f)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "autograder_gen/cli.py",
+            str(config_path),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert (tmp_path / "autograder.zip").exists()
+
+
+def test_cli_positional_directory(tmp_path):
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    with open(sub / "config.yaml", "w") as f:
+        json.dump(SAMPLE_CONFIG, f)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "autograder_gen/cli.py",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert (sub / "autograder.zip").exists()
+
+
+def test_cli_positional_multiple_configs(tmp_path):
+    sub1 = tmp_path / "sub1"
+    sub1.mkdir()
+    cfg1 = sub1 / "config.yaml"
+    with open(cfg1, "w") as f:
+        json.dump(SAMPLE_CONFIG, f)
+
+    sub2 = tmp_path / "sub2"
+    sub2.mkdir()
+    cfg2 = sub2 / "config.yaml"
+    with open(cfg2, "w") as f:
+        json.dump(SAMPLE_CONFIG, f)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "autograder_gen/cli.py",
+            str(cfg1),
+            str(cfg2),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert (sub1 / "autograder.zip").exists()
+    assert (sub2 / "autograder.zip").exists()
+
+
+def test_cli_zero_args_defaults_to_config(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, "w") as f:
+        json.dump(SAMPLE_CONFIG, f)
+    monkeypatch.chdir(tmp_path)
+    ret = main([])
+    assert ret == 0
+    assert (tmp_path / "autograder.zip").exists()

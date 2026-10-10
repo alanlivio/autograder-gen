@@ -38,7 +38,7 @@ test:
 	python -m pytest
 
 run-examples:
-	PYTHONPATH=. python -m autograder_gen.cli --batch tests/examples --run-stub-submissions
+	PYTHONPATH=. python -m autograder_gen.cli tests/examples --run-stubs
 
 format:
 	python -m black .

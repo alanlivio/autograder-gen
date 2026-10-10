@@ -40,13 +40,10 @@ def find_configs(target: Path) -> list[Path]:
 def run_batch(
     targets: list[str | Path],
     description: bool = False,
-    run_stub_submissions: bool = False,
-    run_submissions: list[str] = None,
+    run_stubs: bool = False,
+    run_solution: bool = False,
     verbose: bool = False,
 ) -> int:
-    if run_submissions is None:
-        run_submissions = []
-
     all_configs: list[Path] = []
     for arg in targets:
         target_path = Path(arg).resolve()
@@ -62,7 +59,7 @@ def run_batch(
             display_path = str(config_path)
         print(f"Found config: {display_path}")
 
-    if run_stub_submissions or run_submissions:
+    if run_stubs or run_solution:
         for config_path in all_configs:
             runner = ag.AutograderRun(config_path, verbose=verbose)
             cfg_obj = runner.config_obj
@@ -74,7 +71,7 @@ def run_batch(
                 print(f"[SKIPPED] {config_path}: javac is not installed")
                 continue
 
-            if run_stub_submissions:
+            if run_stubs:
                 try:
                     display_path = str(config_path.resolve().relative_to(Path.cwd().resolve()))
                 except ValueError:
@@ -82,39 +79,23 @@ def run_batch(
                 print(f"# log stubs for {display_path}")
                 runner.run_autograder_for_generated_submissions(verbose=verbose)
 
-            for sub_arg in run_submissions:
-                sub_path = config_path.parent / sub_arg
-                if not sub_path.exists():
-                    alt_path = Path(sub_arg).resolve()
-                    if alt_path.exists():
-                        sub_path = alt_path
-                    else:
-                        print(f"[NOT FOUND] {sub_path}", file=sys.stderr)
-                        continue
+            if run_solution:
+                candidate_solution = None
+                for candidate_name in ("solution", "solution.zip", "correct_answer", "correct_answer.zip"):
+                    cand = config_path.parent / candidate_name
+                    if cand.exists():
+                        candidate_solution = cand
+                        break
+                if candidate_solution is None:
+                    print(f"[NOT FOUND] {config_path.parent / 'solution'} or {config_path.parent / 'solution.zip'}", file=sys.stderr)
+                    continue
 
-                clean_sub = sub_path.name
-                if clean_sub.lower().endswith(".zip"):
-                    clean_sub = clean_sub[:-4]
-
-                if len(run_submissions) == 1 and not run_stub_submissions:
-                    log_file = config_path.parent / "submission.log"
-                else:
-                    log_file = config_path.parent / f"{clean_sub}.log"
-
+                log_file = config_path.parent / "solution.log"
                 res = runner.run_autograder_for_submission(
-                    sub_path,
+                    candidate_solution,
                     log_path=log_file,
                     verbose=verbose,
                 )
-                if (
-                    len(run_submissions) == 1
-                    and not run_stub_submissions
-                    and clean_sub != "submission"
-                ):
-                    try:
-                        shutil.copy2(log_file, config_path.parent / f"{clean_sub}.log")
-                    except Exception:
-                        pass
                 if "log_path" in res:
                     log_p = Path(res["log_path"])
                     try:
@@ -161,13 +142,12 @@ def run_batch(
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="autograder-gen",
-        description=(
-            "Generate Gradescope autograder script from YAML configuration. "
-            "Generated files will be at the same folder as the config "
-            "(autograder.zip, stub submissions for testing such as "
-            "stub_correct_answer.zip, stub_wrong_answer.zip, "
-            "and optionally description.docx and description.md when --description is specified)."
+        usage=(
+            "%(prog)s [TARGET ...] [-h] [--version] [--description]\n"
+            "                      [--run-solution] [--run-stubs] [--verbose]\n"
+            "                      [--schema]"
         ),
+        description="Generate Gradescope autograder script from YAML configuration.",
         allow_abbrev=False,
     )
     parser.add_argument(
@@ -175,14 +155,11 @@ def main(argv=None):
         action="version",
         version=f"%(prog)s {ag.__version__}",
     )
-    mode_group = parser.add_mutually_exclusive_group()
-    mode_group.add_argument("--config", "-c", help="Path to YAML configuration file")
-    mode_group.add_argument(
-        "--batch",
-        "-b",
-        nargs="+",
-        metavar="DIR_OR_CONFIG",
-        help="One or more directories to search or config files to batch process",
+    parser.add_argument(
+        "targets",
+        nargs="*",
+        metavar="TARGET",
+        help="Configuration YAML file(s) or directories with config.yaml inside (default: ./config.yaml)",
     )
     parser.add_argument(
         "--description",
@@ -191,20 +168,18 @@ def main(argv=None):
         help="Generate description.docx and description.md for the assessment",
     )
     parser.add_argument(
-        "--run-submission",
-        "-r",
-        dest="run_submissions",
-        action="append",
-        default=[],
-        metavar="DIR_OR_ZIP",
-        help="Use submission directory or zip file relative to config to be run (can be specified multiple times)",
-    )
-    parser.add_argument(
-        "--run-stub-submissions",
-        dest="run_stubs_submissions",
+        "--run-solution",
+        dest="run_solution",
         action="store_true",
         default=False,
-        help="Run autograder for generated stub submissions (stub_correct_answer.zip, stub_wrong_answer.zip, stub_compiler_error.zip, stub_correct_answer_wrong_location.zip)",
+        help="Run autograder for a solution submission (solution/ or solution.zip) in the same directory as config.yaml",
+    )
+    parser.add_argument(
+        "--run-stubs",
+        dest="run_stubs",
+        action="store_true",
+        default=False,
+        help="Generate and run stub submissions (stub_correct_answer.zip, stub_wrong_answer.zip, stub_compiler_error.zip, stub_correct_answer_wrong_location.zip)",
     )
     parser.add_argument(
         "--verbose",
@@ -222,8 +197,15 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     if not argv:
-        parser.print_help()
-        return 0
+        if Path("config.yaml").is_file():
+            argv = ["config.yaml"]
+        elif Path("config.yml").is_file():
+            argv = ["config.yml"]
+        elif find_configs(Path(".")):
+            argv = ["."]
+        else:
+            parser.print_help()
+            return 0
     args = parser.parse_args(argv)
     if args.schema:
         print(json.dumps(ag.Config.model_json_schema(), indent=2))
@@ -231,48 +213,40 @@ def main(argv=None):
     args.description = args.description
     setup_logging()
 
-    if args.batch:
+    targets = list(args.targets)
+    if not targets:
+        if Path("config.yaml").is_file():
+            targets = ["config.yaml"]
+        elif Path("config.yml").is_file():
+            targets = ["config.yml"]
+        elif find_configs(Path(".")):
+            targets = ["."]
+        elif args.run_stubs or args.run_solution:
+            for candidate in (
+                Path("config.yaml"),
+                Path("config.yml"),
+                Path("output/autograder.zip"),
+                Path("autograder.zip"),
+            ):
+                if candidate.is_file():
+                    targets = [str(candidate)]
+                    break
+
+    if not targets:
+        print_error("Error: target configuration file or directory is required")
+        return 2
+
+    if len(targets) > 1 or Path(targets[0]).is_dir():
         return run_batch(
-            args.batch,
+            targets,
             description=args.description,
-            run_stub_submissions=bool(args.run_stubs_submissions),
-            run_submissions=args.run_submissions,
+            run_stubs=bool(args.run_stubs),
+            run_solution=bool(args.run_solution),
             verbose=args.verbose,
         )
 
     try:
-        config_arg = args.config
-        if not config_arg:
-            if isinstance(args.run_stubs_submissions, str):
-                config_arg = args.run_stubs_submissions
-            elif args.run_submissions:
-                for sub_arg_candidate in args.run_submissions:
-                    sub_p = Path(sub_arg_candidate)
-                    for candidate in (
-                        sub_p / "config.yaml",
-                        sub_p / "config.yml",
-                        sub_p.parent / "config.yaml",
-                        sub_p.parent / "config.yml",
-                    ):
-                        if candidate.is_file():
-                            config_arg = str(candidate)
-                            break
-                    if config_arg:
-                        break
-            elif args.run_stubs_submissions:
-                for candidate in (
-                    Path("config.yaml"),
-                    Path("config.yml"),
-                    Path("output/autograder.zip"),
-                    Path("autograder.zip"),
-                ):
-                    if candidate.is_file():
-                        config_arg = str(candidate)
-                        break
-            if not config_arg:
-                print_error("Error: --config / -c or --batch / -b is required")
-                return 2
-
+        config_arg = targets[0]
         path = Path(config_arg)
         if not path.exists():
             print_error(f"Configuration file not found: {path}")
@@ -293,7 +267,7 @@ def main(argv=None):
         is_valid = validator.validate_json(raw_config_data)
         errors = validator.get_errors()
         warnings = validator.get_warnings()
-        if not (args.run_submissions or args.run_stubs_submissions):
+        if not (args.run_solution or args.run_stubs):
             for warning in warnings:
                 print_warning(warning)
         if not is_valid:
@@ -301,13 +275,13 @@ def main(argv=None):
             for error in errors:
                 print_error(f"  - {error}")
             return 1
-        if not (args.run_submissions or args.run_stubs_submissions):
+        if not (args.run_solution or args.run_stubs):
             print_success("Configuration validation passed")
 
         output_dir = path.parent if str(path.parent) != "" else Path(".")
-        if args.run_stubs_submissions or args.run_submissions:
+        if args.run_stubs or args.run_solution:
             runner = ag.AutograderRun(path, verbose=args.verbose)
-            if args.run_stubs_submissions:
+            if args.run_stubs:
                 try:
                     display_path = str(path.resolve().relative_to(Path.cwd().resolve()))
                 except ValueError:
@@ -315,37 +289,21 @@ def main(argv=None):
                 print(f"# log stubs for {display_path}")
                 runner.run_autograder_for_generated_submissions(verbose=args.verbose)
 
-            for sub_arg in args.run_submissions:
-                sub_path = Path(sub_arg)
-                if not sub_path.exists():
-                    candidate_sub = path.parent / sub_arg
-                    if candidate_sub.exists():
-                        sub_path = candidate_sub
-                    else:
-                        print_error(f"Submission path not found: {sub_arg}")
-                        return 1
+            if args.run_solution:
+                candidate_solution = None
+                for candidate_name in ("solution", "solution.zip", "correct_answer", "correct_answer.zip"):
+                    cand = path.parent / candidate_name
+                    if cand.exists():
+                        candidate_solution = cand
+                        break
+                if candidate_solution is None:
+                    print_error(f"Solution not found: {path.parent / 'solution'} or {path.parent / 'solution.zip'}")
+                    return 1
 
-                clean_sub = sub_path.name
-                if clean_sub.lower().endswith(".zip"):
-                    clean_sub = clean_sub[:-4]
-
-                if len(args.run_submissions) == 1 and not args.run_stubs_submissions:
-                    log_file = output_dir / "submission.log"
-                else:
-                    log_file = output_dir / f"{clean_sub}.log"
-
+                log_file = output_dir / "solution.log"
                 res = runner.run_autograder_for_submission(
-                    sub_path, log_path=log_file, verbose=args.verbose
+                    candidate_solution, log_path=log_file, verbose=args.verbose
                 )
-                if (
-                    len(args.run_submissions) == 1
-                    and not args.run_stubs_submissions
-                    and clean_sub != "submission"
-                ):
-                    try:
-                        shutil.copy2(log_file, output_dir / f"{clean_sub}.log")
-                    except Exception:
-                        pass
                 if "log_path" in res:
                     log_p = Path(res["log_path"])
                     try:
@@ -365,7 +323,7 @@ def main(argv=None):
             pass  # If we can't load original config, proceed without it
         # Print assessment summary before generation process
         summary = config.get_config_summary()
-        print_success(f"Assessment Summary (Config: {args.config}):")
+        print_success(f"Assessment Summary (Config: {config_arg}):")
         print(f"  Language: {summary['language']}")
         print(f"  Global Time Limit: {summary['global_time_limit']}s")
         print(f"  Total Questions: {summary['total_questions']}")

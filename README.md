@@ -35,39 +35,52 @@ autograder-gen
 ```
 
 ```text
-usage: autograder-gen [-h] [--version] [--config CONFIG |
-                      --batch DIR_OR_CONFIG [DIR_OR_CONFIG ...]]
-                      [--description] [--run-submission DIR_OR_ZIP]
-                      [--run-stub-submissions] [--verbose] [--schema]
+usage: autograder-gen [TARGET ...] [-h] [--version] [--description]
+                      [--run-solution] [--run-stubs] [--verbose]
+                      [--schema]
 
-Generate Gradescope autograder script from YAML configuration. Generated files
-will be at the same folder as the config (autograder.zip, stub submissions for
-testing such as stub_correct_answer.zip, stub_wrong_answer.zip, and optionally
-description.docx and description.md when --description is specified).
+Generate Gradescope autograder script from YAML configuration.
+
+positional arguments:
+  TARGET          Configuration YAML file(s) or directories with
+                  config.yaml inside (default: ./config.yaml)
 
 options:
-  -h, --help            show this help message and exit
-  --version             show program's version number and exit
-  --config, -c CONFIG   Path to YAML configuration file
-  --batch, -b DIR_OR_CONFIG [DIR_OR_CONFIG ...]
-                        One or more directories to search or config files to
-                        batch process
-  --description         Generate description.docx and description.md for the
-                        assessment
-  --run-submission, -r DIR_OR_ZIP
-                        Use submission directory or zip file relative to
-                        config to be run (can be specified multiple times)
-  --run-stub-submissions
-                        Run autograder for generated stub submissions
-                        (stub_correct_answer.zip, stub_wrong_answer.zip,
-                        stub_compiler_error.zip,
-                        stub_correct_answer_wrong_location.zip)
-  --verbose, -v         Print full autograder execution logs instead of only
-                        paths to log files
-  --schema              Print JSON schema for the YAML configuration file and exit
+  -h, --help      show this help message and exit
+  --version       show program's version number and exit
+  --description   Generate description.docx and description.md for the
+                  assessment
+  --run-solution  Run autograder for a solution submission (solution/ or
+                  solution.zip) in the same directory as config.yaml
+  --run-stubs     Generate and run stub submissions (stub_correct_answer.zip,
+                  stub_wrong_answer.zip, stub_compiler_error.zip,
+                  stub_correct_answer_wrong_location.zip)
+  --verbose, -v   Print full autograder execution logs instead of only paths to
+                  log files
+  --schema        Print JSON schema for the YAML configuration file and exit
 ```
 
 ### Examples
+
+Single config:
+
+```bash
+autograder-gen lab/config.yaml
+# OR (directory with a config.yaml)
+autograder-gen lab
+# OR (zero arguments defaults to ./config.yaml)
+autograder-gen
+```
+
+Multiple configs:
+
+```bash
+autograder-gen lab1/config.yaml lab2/config.yaml
+# OR
+autograder-gen lab1/ lab2/config.yaml
+# OR
+autograder-gen lab1/ lab2/
+```
 
 Show configuration JSON schema:
 
@@ -75,50 +88,44 @@ Show configuration JSON schema:
 autograder-gen --schema
 ```
 
-Generate an autograder package:
-
-```bash
-autograder-gen --config config.yaml
-```
-
 Generate assessment description (`description.docx` and `description.md`):
 
 ```bash
-autograder-gen --config config.yaml --description
+autograder-gen config.yaml --description
 ```
 
-Run student submission against an autograder configuration:
+Run solution against an autograder configuration:
 
 ```bash
-autograder-gen --config config.yaml --run-submission submission.zip
+autograder-gen config.yaml --run-solution
 ```
 
 Run autograder against generated stub submissions:
 
 ```bash
-autograder-gen --config config.yaml --run-stub-submissions
+autograder-gen config.yaml --run-stubs
 ```
 
 ## Batch Processing
 
-Use `autograder-gen --batch` to process multiple configuration files or directories at once. When passing a directory, each subfolder should be a config folder containing a `config.yaml` (or `config.yml`):
+Pass a directory or multiple configuration files as targets to process them together. When passing a directory, each subfolder containing a `config.yaml` (or `config.yml`) will be processed:
 
 Batch generate autograders:
 
 ```bash
-autograder-gen --batch path/to/assignments/
+autograder-gen path/to/assignments/
 ```
 
 Batch run stub submissions:
 
 ```bash
-autograder-gen --batch path/to/assignments/ --run-stub-submissions
+autograder-gen path/to/assignments/ --run-stubs
 ```
 
-Batch run student submission:
+Batch run solution:
 
 ```bash
-autograder-gen --batch path/to/assignments/ --run-submission submission.zip
+autograder-gen path/to/assignments/ --run-solution
 ```
 
 ## Web Interface
