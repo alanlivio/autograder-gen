@@ -61,9 +61,11 @@ def remove_package_line(path: Union[str, Path]) -> None:
         pass
 
 
+STUDENT_ID_FALLBACK = 12345678
+
+
 def get_student_id(
     autograder_root: Union[str, Path, None] = None,
-    default_id: str = "12345678",
 ) -> str:
     if autograder_root is None and os.environ.get("STUDENT_ID"):
         return os.environ["STUDENT_ID"]
@@ -100,7 +102,7 @@ def get_student_id(
 
     if not student_id.strip():
         print("[ERROR] Student ID not found in submission metadata. Please notify the module instructor.")
-        student_id = default_id
+        student_id = str(STUDENT_ID_FALLBACK)
 
     print(f"[INFO] Using student ID: {student_id}")
     return student_id

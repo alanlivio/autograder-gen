@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 import autograder_gen as ag
-from autograder_gen.grader_utils import get_student_id
+from autograder_gen.grader_utils import get_student_id, STUDENT_ID_FALLBACK
 
 
 def test_config_retrieve_student_id_default():
@@ -54,22 +54,6 @@ def test_config_retrieve_student_id_enabled():
     assert cfg.get_config_summary()["retrieve_student_id"] is True
 
 
-def test_get_student_id_from_metadata(tmp_path: Path):
-    meta = {
-        "users": [
-            {
-                "sid": "33931382",
-                "email": "a.guedes@reading.ac.uk",
-            }
-        ]
-    }
-    meta_path = tmp_path / "submission_metadata.json"
-    meta_path.write_text(json.dumps(meta), encoding="utf-8")
-
-    result = get_student_id(autograder_root=tmp_path)
-    assert result == "33931382"
-
-
 def test_get_student_id_strip_non_digits(tmp_path: Path):
     meta = {
         "users": [
@@ -108,7 +92,7 @@ def test_get_student_id_from_submission_source_when_server_root_missing(tmp_path
     assert result == "33333333"
 
 
-def test_stubs_include_submission_metadata_when_retrieve_student_id():
+def test_stubs_submission_metadata_only_when_gitlab_or_github():
     config_dict = {
         "version": "1.0",
         "language": "python",
@@ -131,9 +115,20 @@ def test_stubs_include_submission_metadata_when_retrieve_student_id():
     engine = ag.Engine(cfg, config_dict)
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
+        assert "submission_metadata.json" not in zf.namelist()
+
+    config_dict["questions"][0]["marking_items"].append({
+        "type": "gitlab_submission_exists",
+        "total_mark": 5,
+    })
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    buf_gl = engine.generate_correct_answer_zip()
+    with zipfile.ZipFile(buf_gl, "r") as zf:
         assert "submission_metadata.json" in zf.namelist()
         data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
-        assert data["users"][0]["sid"] == "123456"
+        assert data == {"submission_method": "GitLab"}
+        assert "users" not in data
 
 
 def test_get_student_id_default_fallback(tmp_path: Path):
@@ -149,7 +144,7 @@ def test_get_student_id_default_fallback(tmp_path: Path):
     meta_path.write_text(json.dumps(meta), encoding="utf-8")
 
     result = get_student_id(autograder_root=tmp_path)
-    assert result == "12345678"
+    assert result == str(STUDENT_ID_FALLBACK)
 
 
 def test_generator_output_with_retrieve_student_id(tmp_path: Path):
@@ -368,13 +363,13 @@ def test_student_id_log_messages(tmp_path: Path, capsys):
 
     sid_def = get_student_id(autograder_root=tmp_path)
     captured_def = capsys.readouterr().out
-    assert sid_def == "12345678"
+    assert sid_def == str(STUDENT_ID_FALLBACK)
     assert "[INFO] Checking student ID..." in captured_def
     assert (
         "[ERROR] Student ID not found in submission metadata. Please notify the module instructor."
         in captured_def
     )
-    assert "[INFO] Using student ID: 12345678" in captured_def
+    assert f"[INFO] Using student ID: {STUDENT_ID_FALLBACK}" in captured_def
 
 
 def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
@@ -482,23 +477,18 @@ def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_ou
     engine = ag.Engine(cfg, config_dict)
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
-        assert "submission_metadata.json" in zf.namelist()
-        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
-        assert data["users"][0]["sid"] == "42"
+        assert "submission_metadata.json" not in zf.namelist()
         content = zf.read("calc.py").decode("utf-8")
-        assert "Ans: 210" in content
+        assert f"Ans: {STUDENT_ID_FALLBACK * 5}" in content
+        assert f"Fallback student ID: {STUDENT_ID_FALLBACK}" in content
 
     buf_wrong = engine.generate_wrong_answer_zip()
     with zipfile.ZipFile(buf_wrong, "r") as zf:
-        assert "submission_metadata.json" in zf.namelist()
-        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
-        assert data["users"][0]["sid"] == "42"
+        assert "submission_metadata.json" not in zf.namelist()
 
     buf_loc = engine.generate_wrong_file_location_zip()
     with zipfile.ZipFile(buf_loc, "r") as zf:
-        assert "src/submission_metadata.json" in zf.namelist()
-        data = json.loads(zf.read("src/submission_metadata.json").decode("utf-8"))
-        assert data["users"][0]["sid"] == "42"
+        assert "src/submission_metadata.json" not in zf.namelist()
 
 
 def test_expected_output_script_java_skeleton():
@@ -524,11 +514,10 @@ def test_expected_output_script_java_skeleton():
     engine = ag.Engine(cfg, config_dict)
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
-        assert "submission_metadata.json" in zf.namelist()
-        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
-        assert data["users"][0]["sid"] == "42"
+        assert "submission_metadata.json" not in zf.namelist()
         content = zf.read("App.java").decode("utf-8")
-        assert "JAVA_SID_42" in content
+        assert f"JAVA_SID_{STUDENT_ID_FALLBACK}" in content
+        assert f"Fallback student ID: {STUDENT_ID_FALLBACK}" in content
 
 
 def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
@@ -676,5 +665,83 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
     runner_ok = ag.AutograderRunner(cfg_file)
     results_ok = runner_ok.run_autograder_for_submission(sub_dir)
     assert results_ok["tests"][0]["score"] == 10
+
+
+def test_autograder_run_with_custom_student_id_no_stubs(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Custom SID Test",
+                "marking_items": [
+                    {
+                        "name": "Dynamic Output",
+                        "target_file": "solution.py",
+                        "total_mark": 25,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(f'CUSTOM_SID_{STUDENT_ID}')",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "custom_submission"
+    sub_dir.mkdir()
+    custom_sid = "98765432"
+    assert custom_sid != str(STUDENT_ID_FALLBACK)
+
+    meta = {"users": [{"sid": custom_sid, "email": "custom_user@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "solution.py").write_text(
+        f'print("CUSTOM_SID_{custom_sid}")\n',
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert "tests" in results
+    total_score = sum(t.get("score", 0) for t in results["tests"])
+    assert total_score == 25
+    assert f"Using student ID: {custom_sid}" in results.get("_stdout", "")
+
+
+def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Stub Fallback Test",
+                "marking_items": [
+                    {
+                        "name": "Output Item",
+                        "target_file": "solution.py",
+                        "total_mark": 20,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(STUDENT_ID)",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_generated_submissions()
+    correct_score = sum(t.get("score", 0) for t in results["correct_answer"]["tests"])
+    wrong_score = sum(t.get("score", 0) for t in results["wrong_answer"]["tests"])
+    compiler_score = sum(t.get("score", 0) for t in results["compiler_error"]["tests"])
+    assert correct_score == 20
+    assert wrong_score == 0
+    assert compiler_score == 0
 
 

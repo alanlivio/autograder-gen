@@ -15,10 +15,11 @@ import html
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from autograder_gen.config import Config, DEFAULT_LANGUAGE_RUNTIMES
 from autograder_gen.logger import print_error, print_success, print_warning
+from autograder_gen.grader_utils import STUDENT_ID_FALLBACK
 
 
 def _eval_expected_output_script(
-    script: str, student_id: str = "42", expected_input: str = ""
+    script: str, student_id: str = str(STUDENT_ID_FALLBACK), expected_input: str = ""
 ) -> str:
     import io
     import sys
@@ -71,6 +72,7 @@ class AutograderGen:
         output_dir: str,
         description: bool = False,
         generate_description: bool | None = None,
+        quiet: bool = False,
     ) -> str:
         """Generate the autograder.zip file using Jinja templates."""
         if generate_description is not None:
@@ -92,8 +94,9 @@ class AutograderGen:
             verification = self.verify_autograder_zip(zip_path)
             for err in verification.get("errors", []):
                 print_error(err)
-            for warn in verification.get("warnings", []):
-                print_warning(warn)
+            if not quiet:
+                for warn in verification.get("warnings", []):
+                    print_warning(warn)
             if description:
                 docx_buffer = self.generate_description_docx()
                 with open(output_path / "description.docx", "wb") as f:
@@ -210,7 +213,7 @@ class AutograderGen:
                     if not exp_out and getattr(item, "expected_output_script", None):
                         exp_out = _eval_expected_output_script(
                             item.expected_output_script,
-                            student_id="42",
+                            student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=item.expected_input,
                         )
                     if exp_out:
@@ -280,7 +283,7 @@ class AutograderGen:
                     if not exp_out and getattr(item, "expected_output_script", None):
                         exp_out = _eval_expected_output_script(
                             item.expected_output_script,
-                            student_id="42",
+                            student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=item.expected_input,
                         )
                     if exp_out:
@@ -378,7 +381,7 @@ class AutograderGen:
                     if not exp_out and getattr(item, "expected_output_script", None):
                         exp_out = _eval_expected_output_script(
                             item.expected_output_script,
-                            student_id="42",
+                            student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=item.expected_input,
                         )
                     if exp_out:
@@ -438,23 +441,7 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            has_script = any(
-                getattr(item, "expected_output_script", None)
-                for q in self.config.questions
-                for item in q.marking_items
-            )
-            if getattr(self.config, "retrieve_student_id", False) or has_script:
-                stub_sid = "42" if has_script else "123456"
-                meta_dict = {"users": [{"sid": stub_sid, "email": "student@example.com"}]}
-                if has_gitlab:
-                    meta_dict["submission_method"] = "GitLab"
-                elif has_github:
-                    meta_dict["submission_method"] = "GitHub"
-                zipf.writestr(
-                    "submission_metadata.json",
-                    json.dumps(meta_dict),
-                )
-            elif has_gitlab:
+            if has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -479,16 +466,25 @@ class AutograderGen:
                     zipf.writestr(f"{parent}/", "")
                 content = self._generate_skeleton_content(filename, correct=False)
                 zipf.writestr(filename, content)
-            has_script = any(
-                getattr(item, "expected_output_script", None)
+            has_gitlab = any(
+                item.type == "gitlab_submission_exists"
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if getattr(self.config, "retrieve_student_id", False) or has_script:
-                stub_sid = "42" if has_script else "123456"
+            has_github = any(
+                item.type == "github_submission_exists"
+                for q in self.config.questions
+                for item in q.marking_items
+            )
+            if has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
-                    json.dumps({"users": [{"sid": stub_sid, "email": "student@example.com"}]}),
+                    json.dumps({"submission_method": "GitLab"}),
+                )
+            elif has_github:
+                zipf.writestr(
+                    "submission_metadata.json",
+                    json.dumps({"submission_method": "GitHub"}),
                 )
         buffer.seek(0)
         return buffer
@@ -506,16 +502,25 @@ class AutograderGen:
                     filename, correct=False, compiler_error=True
                 )
                 zipf.writestr(filename, content)
-            has_script = any(
-                getattr(item, "expected_output_script", None)
+            has_gitlab = any(
+                item.type == "gitlab_submission_exists"
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if getattr(self.config, "retrieve_student_id", False) or has_script:
-                stub_sid = "42" if has_script else "123456"
+            has_github = any(
+                item.type == "github_submission_exists"
+                for q in self.config.questions
+                for item in q.marking_items
+            )
+            if has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
-                    json.dumps({"users": [{"sid": stub_sid, "email": "student@example.com"}]}),
+                    json.dumps({"submission_method": "GitLab"}),
+                )
+            elif has_github:
+                zipf.writestr(
+                    "submission_metadata.json",
+                    json.dumps({"submission_method": "GitHub"}),
                 )
         buffer.seek(0)
         return buffer
@@ -549,23 +554,7 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            has_script = any(
-                getattr(item, "expected_output_script", None)
-                for q in self.config.questions
-                for item in q.marking_items
-            )
-            if getattr(self.config, "retrieve_student_id", False) or has_script:
-                stub_sid = "42" if has_script else "123456"
-                meta_dict = {"users": [{"sid": stub_sid, "email": "student@example.com"}]}
-                if has_gitlab:
-                    meta_dict["submission_method"] = "GitLab"
-                elif has_github:
-                    meta_dict["submission_method"] = "GitHub"
-                zipf.writestr(
-                    "src/submission_metadata.json",
-                    json.dumps(meta_dict),
-                )
-            elif has_gitlab:
+            if has_gitlab:
                 zipf.writestr(
                     "src/submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -773,31 +762,38 @@ class AutograderGen:
                     lines.append("    _in = _raw_in.strip()")
                     for idx, item in enumerate(output_items):
                         cond = f"_in == {repr(item.expected_input.strip())}"
-                        if getattr(item, "expected_output_script", None):
+                        has_item_script = bool(getattr(item, "expected_output_script", None))
+                        if has_item_script:
                             out_val = _eval_expected_output_script(
                                 item.expected_output_script,
-                                student_id="42",
+                                student_id=str(STUDENT_ID_FALLBACK),
                                 expected_input=item.expected_input,
                             )
                         else:
                             out_val = item.expected_output
                         branch = "if" if idx == 0 else "elif"
                         lines.append(f"    {branch} {cond}:")
+                        if has_item_script:
+                            lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
                         lines.append(f"        sys.stdout.write({repr(out_val)})")
                         lines.append("        sys.exit(0)")
                     first_item = output_items[0] if output_items else None
                     if first_item and getattr(first_item, "expected_output_script", None):
                         default_out = _eval_expected_output_script(
                             first_item.expected_output_script,
-                            student_id="42",
+                            student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=first_item.expected_input,
                         )
+                        lines.append("    else:")
+                        lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                        lines.append(f"        sys.stdout.write({repr(default_out)})")
                     elif first_item:
                         default_out = first_item.expected_output
+                        lines.append("    else:")
+                        lines.append(f"        sys.stdout.write({repr(default_out)})")
                     else:
-                        default_out = ""
-                    lines.append("    else:")
-                    lines.append(f"        sys.stdout.write({repr(default_out)})")
+                        lines.append("    else:")
+                        lines.append("        sys.stdout.write('')")
                 else:
                     lines.append("    import sys")
                     lines.append('    sys.stdout.write("wrong_output\\n")')
@@ -807,6 +803,8 @@ class AutograderGen:
                 lines.append("# No specific functions defined for this file.")
                 if not correct:
                     lines.append("# This file might be intentionally wrong or missing logic.")
+            if any(getattr(item, "expected_output_script", None) for item in output_items):
+                lines.insert(0, f"# Fallback student ID: {STUDENT_ID_FALLBACK}")
             return "\n".join(lines)
         elif self.config.language == "java":
             import json
@@ -1156,16 +1154,19 @@ class AutograderGen:
                     lines.append("        String inStr = sb.toString().trim();")
                     for idx, item in enumerate(output_items):
                         cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
-                        if getattr(item, "expected_output_script", None):
+                        has_item_script = bool(getattr(item, "expected_output_script", None))
+                        if has_item_script:
                             out_val = _eval_expected_output_script(
                                 item.expected_output_script,
-                                student_id="42",
+                                student_id=str(STUDENT_ID_FALLBACK),
                                 expected_input=item.expected_input,
                             )
                         else:
                             out_val = item.expected_output
                         branch = "if" if idx == 0 else "else if"
                         lines.append(f"        {branch} ({cond}) {{")
+                        if has_item_script:
+                            lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
                         lines.append(
                             f"            System.out.print({json.dumps(out_val)});"
                         )
@@ -1175,22 +1176,26 @@ class AutograderGen:
                     if first_item and getattr(first_item, "expected_output_script", None):
                         default_out = _eval_expected_output_script(
                             first_item.expected_output_script,
-                            student_id="42",
+                            student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=first_item.expected_input,
                         )
+                        lines.append("        else {")
+                        lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
+                        lines.append(f"            System.out.print({json.dumps(default_out)});")
+                        lines.append("        }")
                     elif first_item:
                         default_out = first_item.expected_output
-                    else:
-                        default_out = ""
-                    lines.append("        else {")
-                    lines.append(f"            System.out.print({json.dumps(default_out)});")
-                    lines.append("        }")
+                        lines.append("        else {")
+                        lines.append(f"            System.out.print({json.dumps(default_out)});")
+                        lines.append("        }")
                 else:
                     lines.append('        System.out.print("wrong_output\\n");')
                 lines.append("    }")
                 lines.append("")
 
             lines.append("}")
+            if any(getattr(item, "expected_output_script", None) for item in output_items):
+                lines.insert(0, f"// Fallback student ID: {STUDENT_ID_FALLBACK}")
             return "\n".join(lines)
 
         return "# Skeleton for " + target_file

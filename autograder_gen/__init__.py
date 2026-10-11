@@ -38,6 +38,7 @@ from autograder_gen.grader_utils import (
     JAVA_RUNNER_CODE,
     ensure_java_runner,
     call_java_function,
+    STUDENT_ID_FALLBACK,
 )
 
 __all__ = [
@@ -71,4 +72,5 @@ __all__ = [
     "print_info",
     "print_success",
     "print_warning",
+    "STUDENT_ID_FALLBACK",
 ]

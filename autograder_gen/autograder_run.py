@@ -16,6 +16,7 @@ import yaml
 
 from autograder_gen.config import Config
 from autograder_gen.autograder_gen import AutograderGen, Engine
+from autograder_gen.grader_utils import STUDENT_ID_FALLBACK
 
 
 class AutograderRun:
@@ -390,18 +391,26 @@ class AutograderRun:
                 z.extractall(source_dir)
             return
 
-        if isinstance(self.config, (str, Path)) and (
-            str(self.config).endswith(".zip")
-            or (Path(self.config).is_file() and zipfile.is_zipfile(self.config))
-        ):
-            with open(self.config, "rb") as f:
-                self._cached_zip_bytes = f.read()
-            with zipfile.ZipFile(self.config, "r") as z:
-                z.extractall(source_dir)
-            return
+        if isinstance(self.config, (str, Path)):
+            cfg_p = Path(self.config)
+            if str(cfg_p).endswith(".zip") or (cfg_p.is_file() and zipfile.is_zipfile(cfg_p)):
+                with open(cfg_p, "rb") as f:
+                    self._cached_zip_bytes = f.read()
+                with zipfile.ZipFile(cfg_p, "r") as z:
+                    z.extractall(source_dir)
+                return
+
+            parent_dir = cfg_p.parent if str(cfg_p.parent) != "" else Path(".")
+            existing_zip = parent_dir / "autograder.zip"
+            if existing_zip.exists() and zipfile.is_zipfile(existing_zip):
+                with open(existing_zip, "rb") as f:
+                    self._cached_zip_bytes = f.read()
+                with zipfile.ZipFile(existing_zip, "r") as z:
+                    z.extractall(source_dir)
+                return
 
         generator = self._get_engine()
-        output_zip = generator.generate(str(gen_dir))
+        output_zip = generator.generate(str(gen_dir), quiet=True)
         with open(output_zip, "rb") as f:
             self._cached_zip_bytes = f.read()
         for p in (
@@ -734,7 +743,7 @@ class AutograderRun:
                 lines.append(
                     "[ERROR] Student ID not found in submission metadata. Please notify the module instructor."
                 )
-                sid = "12345678"
+                sid = str(STUDENT_ID_FALLBACK)
             lines.append(f"[INFO] Using student ID: {sid}")
 
         lang = getattr(self.config_obj, "language", "").lower()
