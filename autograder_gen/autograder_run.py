@@ -706,12 +706,19 @@ class AutograderRun:
             sub_p = None
             if isinstance(actual_submission, (str, Path)):
                 sub_p = Path(actual_submission)
+            meta_candidates = []
+            if self.autograder_root:
+                meta_candidates.append(Path(self.autograder_root) / "submission_metadata.json")
+            if os.environ.get("AUTOGRADER_ROOT"):
+                meta_candidates.append(Path(os.environ["AUTOGRADER_ROOT"]) / "submission_metadata.json")
+            meta_candidates.append(Path("/autograder/submission_metadata.json"))
             if sub_p and sub_p.is_dir():
-                for meta_candidate in (
+                meta_candidates.extend([
                     sub_p / "submission_metadata.json",
                     sub_p / "source" / "submission_metadata.json",
                     sub_p / "submission" / "submission_metadata.json",
-                ):
+                ])
+            for meta_candidate in meta_candidates:
                     if meta_candidate.exists():
                         try:
                             meta = json.loads(meta_candidate.read_text(encoding="utf-8"))

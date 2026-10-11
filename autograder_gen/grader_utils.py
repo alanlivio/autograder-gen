@@ -76,9 +76,11 @@ def get_student_id(
     )
     metadata_candidates = [
         root / "submission_metadata.json",
+        Path("/autograder/submission_metadata.json"),
         root / "submission" / "submission_metadata.json",
         root / "source" / "submission_metadata.json",
         Path("submission_metadata.json"),
+        Path("submission/submission_metadata.json"),
         Path("source/submission_metadata.json"),
     ]
     metadata = {}

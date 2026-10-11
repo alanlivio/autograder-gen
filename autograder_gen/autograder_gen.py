@@ -396,7 +396,17 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if has_gitlab:
+            if getattr(self.config, "retrieve_student_id", False):
+                meta_dict = {"users": [{"sid": "12345678", "email": "student@example.com"}]}
+                if has_gitlab:
+                    meta_dict["submission_method"] = "GitLab"
+                elif has_github:
+                    meta_dict["submission_method"] = "GitHub"
+                zipf.writestr(
+                    "submission_metadata.json",
+                    json.dumps(meta_dict),
+                )
+            elif has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -469,7 +479,17 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if has_gitlab:
+            if getattr(self.config, "retrieve_student_id", False):
+                meta_dict = {"users": [{"sid": "12345678", "email": "student@example.com"}]}
+                if has_gitlab:
+                    meta_dict["submission_method"] = "GitLab"
+                elif has_github:
+                    meta_dict["submission_method"] = "GitHub"
+                zipf.writestr(
+                    "src/submission_metadata.json",
+                    json.dumps(meta_dict),
+                )
+            elif has_gitlab:
                 zipf.writestr(
                     "src/submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),

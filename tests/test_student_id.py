@@ -85,7 +85,55 @@ def test_get_student_id_strip_non_digits(tmp_path: Path):
     result = get_student_id(autograder_root=tmp_path)
     assert result == "33931382"
 
+def test_get_student_id_prioritizes_server_root_over_submission_dir(tmp_path: Path):
+    server_meta = {"users": [{"sid": "11111111", "email": "real@example.com"}]}
+    (tmp_path / "submission_metadata.json").write_text(json.dumps(server_meta), encoding="utf-8")
 
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    sub_meta = {"users": [{"sid": "22222222", "email": "fake@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(sub_meta), encoding="utf-8")
+
+    result = get_student_id(autograder_root=tmp_path)
+    assert result == "11111111"
+
+
+def test_get_student_id_from_submission_source_when_server_root_missing(tmp_path: Path):
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    sub_meta = {"users": [{"sid": "33333333", "email": "stub@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(sub_meta), encoding="utf-8")
+
+    result = get_student_id(autograder_root=tmp_path)
+    assert result == "33333333"
+
+
+def test_stubs_include_submission_metadata_when_retrieve_student_id():
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "retrieve_student_id": True,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Check",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    buf = engine.generate_correct_answer_zip()
+    with zipfile.ZipFile(buf, "r") as zf:
+        assert "submission_metadata.json" in zf.namelist()
+        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
+        assert data["users"][0]["sid"] == "12345678"
 
 
 def test_get_student_id_default_fallback(tmp_path: Path):

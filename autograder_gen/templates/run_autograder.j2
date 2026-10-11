@@ -17,11 +17,14 @@ FILE_CHECK_LOG="$RESULTS_DIR/file_check.log"
 true > "$FILE_CHECK_LOG"
 
 echo "Starting autograder..."
-if [ -d "$SUBMISSION_DIR" ]; then
-    if [ -f "$SUBMISSION_DIR/submission_metadata.json" ]; then
-        cp "$SUBMISSION_DIR/submission_metadata.json" "$SOURCE_DIR/"
-    fi
-
+if [ -f "$AUTOGRADER_ROOT/submission_metadata.json" ]; then
+    cp "$AUTOGRADER_ROOT/submission_metadata.json" "$SOURCE_DIR/"
+elif [ -f "/autograder/submission_metadata.json" ]; then
+    cp "/autograder/submission_metadata.json" "$SOURCE_DIR/"
+elif [ -d "$SUBMISSION_DIR" ] && [ -f "$SUBMISSION_DIR/submission_metadata.json" ]; then
+    cp "$SUBMISSION_DIR/submission_metadata.json" "$SOURCE_DIR/"
+elif [ -f "submission_metadata.json" ]; then
+    cp "submission_metadata.json" "$SOURCE_DIR/"
 fi
 
 {% if config.retrieve_student_id %}
@@ -76,7 +79,7 @@ if [ -d "$SUBMISSION_DIR" ]; then
         {% endif %}
     fi
     {% endfor %}
-    if [ -f "submission_metadata.json" ]; then
+    if [ ! -f "$SOURCE_DIR/submission_metadata.json" ] && [ -f "submission_metadata.json" ]; then
         cp "submission_metadata.json" "$SOURCE_DIR/"
     fi
 
