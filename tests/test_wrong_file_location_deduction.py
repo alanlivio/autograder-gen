@@ -296,3 +296,39 @@ def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
     assert tests[0]["max_score"] == 10.0
     assert tests[1]["score"] == 10.0
     assert tests[1]["max_score"] == 20.0
+
+
+def test_wrong_file_location_autograder_run_log(tmp_path: Path):
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "strict_file_location": False,
+        "wrong_file_location_deduction": 0.5,
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "output_comparison",
+                        "expected_output": "hello",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "sub"
+    (sub_dir / "nested").mkdir(parents=True)
+    (sub_dir / "nested" / "solution.py").write_text("print('hello')", encoding="utf-8")
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert "_file_check_log" in results
+    assert "Found file 'solution.py' at nested/solution.py, penalties will be applied" in results["_file_check_log"]
+

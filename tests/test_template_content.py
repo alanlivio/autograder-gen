@@ -461,3 +461,31 @@ def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
         content = z.read("run_autograder").decode("utf-8")
         assert '[INFO] Question 2) has 2 hidden marking items' in content
         assert '[INFO] Question 1' not in content
+
+
+def test_run_autograder_found_file_penalties_message(temp_output_dir):
+    cfg_data = {
+        "version": __version__,
+        "language": "python",
+        "required_files": ["solution.py"],
+        "strict_file_location": False,
+        "wrong_file_location_deduction": 0.5,
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    gen = ag.Engine(ag.Config.model_validate(cfg_data), cfg_data)
+    zip_path = gen.generate(temp_output_dir)
+    with zipfile.ZipFile(zip_path, "r") as z:
+        content = z.read("run_autograder").decode("utf-8")
+        assert "Found file 'solution.py' at $FOUND_FILE, penalties will be applied" in content
+

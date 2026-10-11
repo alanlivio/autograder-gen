@@ -805,7 +805,12 @@ class AutograderRun:
                     req_base = Path(req_file).name
                     found_matches = [f for f in sub_files if Path(f).name == req_base]
                     if found_matches:
-                        lines.append(f"[INFO] Found file '{req_file}' at {found_matches[0]}")
+                        penalty_msg = (
+                            ", penalties will be applied"
+                            if getattr(self.config_obj, "wrong_file_location_deduction", 0.0) > 0
+                            else ""
+                        )
+                        lines.append(f"[INFO] Found file '{req_file}' at {found_matches[0]}{penalty_msg}")
         for q in getattr(self.config_obj, "questions", []):
             hidden_count = sum(
                 1

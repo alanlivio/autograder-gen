@@ -67,7 +67,7 @@ if [ -d "$SUBMISSION_DIR" ]; then
         {% if not config.strict_file_location %}
         FOUND_FILE=$(find . -name "$(basename "{{ file }}")" -type f | head -n 1)
         if [ -n "$FOUND_FILE" ]; then
-            echo "[INFO] Found file '{{ file }}' at $FOUND_FILE" | tee -a "$FILE_CHECK_LOG"
+            echo "[INFO] Found file '{{ file }}' at $FOUND_FILE{% if config.wrong_file_location_deduction > 0 %}, penalties will be applied{% endif %}" | tee -a "$FILE_CHECK_LOG"
             TARGET_SUBDIR=$(dirname "$FOUND_FILE" | sed 's|^\./||')
             mkdir -p "$SOURCE_DIR/$TARGET_SUBDIR"
             cp "$FOUND_FILE" "$SOURCE_DIR/$TARGET_SUBDIR/"
