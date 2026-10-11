@@ -7,7 +7,7 @@
         target_file = "{{ item.target_file }}"
         expected_input = """{{ item.expected_input }}"""
 {% if item.expected_output_script %}
-        student_id = getattr(self, "student_id", None) or os.environ.get("STUDENT_ID", "")
+        student_id = getattr(self, "student_id", None)
         if not student_id:
             try:
                 from grader_utils import get_student_id

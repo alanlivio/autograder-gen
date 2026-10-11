@@ -67,9 +67,6 @@ STUDENT_ID_FALLBACK = 12345678
 def get_student_id(
     autograder_root: Union[str, Path, None] = None,
 ) -> str:
-    if autograder_root is None and os.environ.get("STUDENT_ID"):
-        return os.environ["STUDENT_ID"]
-
     print("[INFO] Checking student ID...")
     root = (
         Path(autograder_root)

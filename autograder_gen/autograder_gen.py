@@ -77,7 +77,6 @@ class AutograderGen:
         output_dir: str,
         description: bool = False,
         generate_description: bool | None = None,
-        quiet: bool = False,
     ) -> str:
         """Generate the autograder.zip file using Jinja templates."""
         if generate_description is not None:
@@ -99,9 +98,8 @@ class AutograderGen:
             verification = self.verify_autograder_zip(zip_path)
             for err in verification.get("errors", []):
                 print_error(err)
-            if not quiet:
-                for warn in verification.get("warnings", []):
-                    print_warning(warn)
+            for warn in verification.get("warnings", []):
+                print_warning(warn)
             if description:
                 docx_buffer = self.generate_description_docx()
                 with open(output_path / "description.docx", "wb") as f:
@@ -762,43 +760,57 @@ class AutograderGen:
             if output_items:
                 lines.append('if __name__ == "__main__":')
                 if correct:
-                    lines.append("    import sys, os")
-                    lines.append("    _raw_in = sys.stdin.read()")
-                    lines.append("    _in = _raw_in.strip()")
-                    for idx, item in enumerate(output_items):
-                        cond = f"_in == {repr(item.expected_input.strip())}"
-                        has_item_script = bool(getattr(item, "expected_output_script", None))
+                    if len(output_items) == 1 and not output_items[0].expected_input.strip():
+                        single_item = output_items[0]
+                        has_item_script = bool(getattr(single_item, "expected_output_script", None))
                         if has_item_script:
                             out_val = _eval_expected_output_script(
-                                item.expected_output_script,
+                                single_item.expected_output_script,
                                 student_id=str(STUDENT_ID_FALLBACK),
-                                expected_input=item.expected_input,
+                                expected_input=single_item.expected_input,
                             )
                         else:
-                            out_val = item.expected_output
-                        branch = "if" if idx == 0 else "elif"
-                        lines.append(f"    {branch} {cond}:")
+                            out_val = single_item.expected_output
+                        lines.append("    import sys")
                         if has_item_script:
-                            lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
-                        lines.append(f"        sys.stdout.write({repr(out_val)})")
-                        lines.append("        sys.exit(0)")
-                    first_item = output_items[0] if output_items else None
-                    if first_item and getattr(first_item, "expected_output_script", None):
-                        default_out = _eval_expected_output_script(
-                            first_item.expected_output_script,
-                            student_id=str(STUDENT_ID_FALLBACK),
-                            expected_input=first_item.expected_input,
-                        )
-                        lines.append("    else:")
-                        lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
-                        lines.append(f"        sys.stdout.write({repr(default_out)})")
-                    elif first_item:
-                        default_out = first_item.expected_output
-                        lines.append("    else:")
-                        lines.append(f"        sys.stdout.write({repr(default_out)})")
+                            lines.append(f"    # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                        lines.append(f"    sys.stdout.write({repr(out_val)})")
                     else:
-                        lines.append("    else:")
-                        lines.append("        sys.stdout.write('')")
+                        lines.append("    import sys, os")
+                        lines.append("    _raw_in = sys.stdin.read()")
+                        lines.append("    _in = _raw_in.strip()")
+                        for idx, item in enumerate(output_items):
+                            cond = f"_in == {repr(item.expected_input.strip())}"
+                            has_item_script = bool(getattr(item, "expected_output_script", None))
+                            if has_item_script:
+                                out_val = _eval_expected_output_script(
+                                    item.expected_output_script,
+                                    student_id=str(STUDENT_ID_FALLBACK),
+                                    expected_input=item.expected_input,
+                                )
+                            else:
+                                out_val = item.expected_output
+                            branch = "if" if idx == 0 else "elif"
+                            lines.append(f"    {branch} {cond}:")
+                            if has_item_script:
+                                lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                            lines.append(f"        sys.stdout.write({repr(out_val)})")
+                            lines.append("        sys.exit(0)")
+                        if len(output_items) > 1:
+                            first_item = output_items[0] if output_items else None
+                            if first_item and getattr(first_item, "expected_output_script", None):
+                                default_out = _eval_expected_output_script(
+                                    first_item.expected_output_script,
+                                    student_id=str(STUDENT_ID_FALLBACK),
+                                    expected_input=first_item.expected_input,
+                                )
+                                lines.append("    else:")
+                                lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                                lines.append(f"        sys.stdout.write({repr(default_out)})")
+                            elif first_item:
+                                default_out = first_item.expected_output
+                                lines.append("    else:")
+                                lines.append(f"        sys.stdout.write({repr(default_out)})")
                 else:
                     lines.append("    import sys")
                     lines.append('    sys.stdout.write("wrong_output\\n")')
@@ -1046,11 +1058,6 @@ class AutograderGen:
                             lines.append(
                                 f"            System.out.print({json.dumps(str(exp_val))});"
                             )
-                            lines.append("            try {")
-                            lines.append(
-                                f'                java.nio.file.Files.writeString(java.nio.file.Path.of("sortComparison.csv"), {json.dumps(str(exp_val))});'
-                            )
-                            lines.append("            } catch (Exception e) {}")
                             lines.append("            return;")
                             lines.append("        }")
                         elif ret_type == "java.util.ArrayList<String>":
@@ -1151,48 +1158,63 @@ class AutograderGen:
             if output_items:
                 lines.append("    public static void main(String[] args) {")
                 if correct:
-                    lines.append("        java.util.Scanner sc = new java.util.Scanner(System.in);")
-                    lines.append("        StringBuilder sb = new StringBuilder();")
-                    lines.append("        while (sc.hasNextLine()) {")
-                    lines.append('            sb.append(sc.nextLine()).append("\\n");')
-                    lines.append("        }")
-                    lines.append("        String inStr = sb.toString().trim();")
-                    for idx, item in enumerate(output_items):
-                        cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
-                        has_item_script = bool(getattr(item, "expected_output_script", None))
+                    if len(output_items) == 1 and not output_items[0].expected_input.strip():
+                        single_item = output_items[0]
+                        has_item_script = bool(getattr(single_item, "expected_output_script", None))
                         if has_item_script:
                             out_val = _eval_expected_output_script(
-                                item.expected_output_script,
+                                single_item.expected_output_script,
                                 student_id=str(STUDENT_ID_FALLBACK),
-                                expected_input=item.expected_input,
+                                expected_input=single_item.expected_input,
                             )
+                            lines.append(f"        // Fallback student ID: {STUDENT_ID_FALLBACK}")
                         else:
-                            out_val = item.expected_output
-                        branch = "if" if idx == 0 else "else if"
-                        lines.append(f"        {branch} ({cond}) {{")
-                        if has_item_script:
-                            lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
-                        lines.append(
-                            f"            System.out.print({json.dumps(out_val)});"
-                        )
-                        lines.append("            return;")
+                            out_val = single_item.expected_output
+                        lines.append(f"        System.out.print({json.dumps(out_val)});")
+                    else:
+                        lines.append("        java.util.Scanner sc = new java.util.Scanner(System.in);")
+                        lines.append("        StringBuilder sb = new StringBuilder();")
+                        lines.append("        while (sc.hasNextLine()) {")
+                        lines.append('            sb.append(sc.nextLine()).append("\\n");')
                         lines.append("        }")
-                    first_item = output_items[0] if output_items else None
-                    if first_item and getattr(first_item, "expected_output_script", None):
-                        default_out = _eval_expected_output_script(
-                            first_item.expected_output_script,
-                            student_id=str(STUDENT_ID_FALLBACK),
-                            expected_input=first_item.expected_input,
-                        )
-                        lines.append("        else {")
-                        lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
-                        lines.append(f"            System.out.print({json.dumps(default_out)});")
-                        lines.append("        }")
-                    elif first_item:
-                        default_out = first_item.expected_output
-                        lines.append("        else {")
-                        lines.append(f"            System.out.print({json.dumps(default_out)});")
-                        lines.append("        }")
+                        lines.append("        String inStr = sb.toString().trim();")
+                        for idx, item in enumerate(output_items):
+                            cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
+                            has_item_script = bool(getattr(item, "expected_output_script", None))
+                            if has_item_script:
+                                out_val = _eval_expected_output_script(
+                                    item.expected_output_script,
+                                    student_id=str(STUDENT_ID_FALLBACK),
+                                    expected_input=item.expected_input,
+                                )
+                            else:
+                                out_val = item.expected_output
+                            branch = "if" if idx == 0 else "else if"
+                            lines.append(f"        {branch} ({cond}) {{")
+                            if has_item_script:
+                                lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
+                            lines.append(
+                                f"            System.out.print({json.dumps(out_val)});"
+                            )
+                            lines.append("            return;")
+                            lines.append("        }")
+                        if len(output_items) > 1:
+                            first_item = output_items[0] if output_items else None
+                            if first_item and getattr(first_item, "expected_output_script", None):
+                                default_out = _eval_expected_output_script(
+                                    first_item.expected_output_script,
+                                    student_id=str(STUDENT_ID_FALLBACK),
+                                    expected_input=first_item.expected_input,
+                                )
+                                lines.append("        else {")
+                                lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
+                                lines.append(f"            System.out.print({json.dumps(default_out)});")
+                                lines.append("        }")
+                            elif first_item:
+                                default_out = first_item.expected_output
+                                lines.append("        else {")
+                                lines.append(f"            System.out.print({json.dumps(default_out)});")
+                                lines.append("        }")
                 else:
                     lines.append('        System.out.print("wrong_output\\n");')
                 lines.append("    }")

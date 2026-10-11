@@ -88,6 +88,15 @@ def test_get_student_id_prioritizes_server_root_over_submission_dir(tmp_path: Pa
     assert result == "11111111"
 
 
+def test_get_student_id_ignores_environment_variable(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("STUDENT_ID", "99999999")
+    meta = {"users": [{"sid": "88888888", "email": "test@example.com"}]}
+    (tmp_path / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    result = get_student_id(autograder_root=tmp_path)
+    assert result == "88888888"
+
+
 def test_stubs_submission_metadata_only_when_gitlab_or_github():
     config_dict = {
         "version": "1.0",
@@ -172,6 +181,8 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         assert "get_student_id" in test_py
         assert "self.student_id = get_student_id()" in test_py
         assert 'os.environ["STUDENT_ID"] = self.student_id' in test_py
+        assert 'os.environ.get("STUDENT_ID"' not in test_py
+        assert 'student_id = getattr(self, "student_id", None)' in test_py
 
         run_tests_py = z.read("run_tests.py").decode("utf-8")
         assert 'os.environ["STUDENT_ID"] = get_student_id()' in run_tests_py
@@ -512,6 +523,39 @@ def test_expected_output_script_java_skeleton():
         content = zf.read("App.java").decode("utf-8")
         assert f"JAVA_SID_{STUDENT_ID_FALLBACK}" in content
         assert f"Fallback student ID: {STUDENT_ID_FALLBACK}" in content
+        assert content.count(f"JAVA_SID_{STUDENT_ID_FALLBACK}") == 1
+        assert "inStr" not in content
+
+
+def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
+    config_dict = {
+        "version": "1.0",
+        "language": "java",
+        "required_files": ["CW1P3.java"],
+        "questions": [
+            {
+                "name": "Q3",
+                "marking_items": [
+                    {
+                        "target_file": "CW1P3.java",
+                        "total_mark": 10,
+                        "type": "function_test",
+                        "function_name": "display",
+                        "test_cases": [
+                            {"args": [28], "expected": "28"}
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    buf = engine.generate_correct_answer_zip()
+    with zipfile.ZipFile(buf, "r") as zf:
+        content = zf.read("CW1P3.java").decode("utf-8")
+        assert "sortComparison.csv" not in content
+        assert "Files.writeString" not in content
 
 
 def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
