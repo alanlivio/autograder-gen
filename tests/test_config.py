@@ -426,3 +426,11 @@ questions:
     cfg_file.write_text(yaml_content, encoding="utf-8")
     cfg = ag.Config.parse(cfg_file)
     assert cfg.questions[0].marking_items[0].expected_input == "42\n"
+
+
+def test_config_parse_rejects_yml(tmp_path):
+    cfg_file = tmp_path / "config.yml"
+    cfg_file.write_text("version: '1.0'\nlanguage: python\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Only YAML format \\(.yaml\\) is supported."):
+        ag.Config.parse(cfg_file)
+

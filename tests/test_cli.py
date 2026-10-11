@@ -423,27 +423,35 @@ def test_cli_batch_generation(tmp_path):
 
 
 def test_find_configs_single_file(tmp_path: Path):
-    cfg = tmp_path / "config.yml"
-    cfg.write_text("version: '1.0'", encoding="utf-8")
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(f"version: '{__version__}'", encoding="utf-8")
     assert find_configs(cfg) == [cfg]
+
+    cfg_yml = tmp_path / "config.yml"
+    cfg_yml.write_text(f"version: '{__version__}'", encoding="utf-8")
+    assert find_configs(cfg_yml) == []
+
+    cfg_other = tmp_path / "other.yaml"
+    cfg_other.write_text(f"version: '{__version__}'", encoding="utf-8")
+    assert find_configs(cfg_other) == []
 
 
 def test_find_configs_directory_direct(tmp_path: Path):
     cfg = tmp_path / "config.yaml"
-    cfg.write_text("version: '1.0'", encoding="utf-8")
+    cfg.write_text(f"version: '{__version__}'", encoding="utf-8")
     assert find_configs(tmp_path) == [cfg]
 
 
 def test_find_configs_directory_nested(tmp_path: Path):
     sub1 = tmp_path / "sub1"
     sub1.mkdir()
-    cfg1 = sub1 / "config.yml"
-    cfg1.write_text("version: '1.0'", encoding="utf-8")
+    cfg1 = sub1 / "config.yaml"
+    cfg1.write_text(f"version: '{__version__}'", encoding="utf-8")
 
     sub2 = tmp_path / "sub2"
     sub2.mkdir()
     cfg2 = sub2 / "config.yaml"
-    cfg2.write_text("version: '1.0'", encoding="utf-8")
+    cfg2.write_text(f"version: '{__version__}'", encoding="utf-8")
 
     configs = find_configs(tmp_path)
     assert len(configs) == 2

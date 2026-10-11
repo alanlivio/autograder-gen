@@ -101,8 +101,8 @@ def upload_config():
     file = request.files["config_file"]
     if file.filename == "":
         return jsonify({"error": "No file selected"}), 400
-    if not file.filename or not (file.filename.endswith(".yaml") or file.filename.endswith(".yml")):
-        return jsonify({"error": "File must be a YAML file (.yml or .yaml)"}), 400
+    if not file.filename or not file.filename.endswith(".yaml"):
+        return jsonify({"error": "File must be a YAML file (.yaml)"}), 400
     try:
         content = file.read().decode("utf-8")
         config_data = yaml.safe_load(content)

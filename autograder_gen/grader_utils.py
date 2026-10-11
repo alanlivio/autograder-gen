@@ -102,13 +102,9 @@ def get_student_id(
         excluded_ids = []
         for cfg_cand in [
             root / "config.yaml",
-            root / "config.yml",
             root / "source" / "config.yaml",
-            root / "source" / "config.yml",
             Path("config.yaml"),
-            Path("config.yml"),
             Path("source/config.yaml"),
-            Path("source/config.yml"),
         ]:
             if cfg_cand.exists():
                 try:

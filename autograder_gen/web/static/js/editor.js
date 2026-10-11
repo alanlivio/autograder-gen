@@ -236,7 +236,7 @@ function handleConfigUpload(input) {
         try {
             const raw = e.target.result;
             let config;
-            if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
+            if (file.name.endsWith('.yaml')) {
                 config = jsyaml.load(raw);
             } else {
                 config = JSON.parse(raw);

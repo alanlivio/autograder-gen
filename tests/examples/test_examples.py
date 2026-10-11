@@ -21,7 +21,7 @@ def run_autograder_scenario(
     :param example_name: Name of the example folder (e.g., 'py_simple')
     :param subdir: Subfolder containing student code (e.g., 'correct_answer')
     :param expected_score: If provided, verify the total score matches this value.
-    :param config_file: The configuration file to use (e.g., 'config.yaml' or 'config.yaml')
+    :param config_file: The configuration file to use ( 'config.yaml')
     """
     base_dir = Path(__file__).parent.parent.parent
     example_dir = base_dir / "tests/examples" / example_name
@@ -36,7 +36,7 @@ def run_autograder_scenario(
 
         # Original config for generator (dict)
         with open(config_path, "r", encoding="utf-8") as f:
-            if config_path.suffix.lower() in [".yaml", ".yml"]:
+            if config_path.suffix.lower() == ".yaml":
                 original_config = yaml.safe_load(f)
             else:
                 original_config = json.load(f)

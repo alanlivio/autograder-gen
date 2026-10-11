@@ -22,19 +22,12 @@ from autograder_gen.logger import (
 
 
 def find_configs(target: Path) -> list[Path]:
-    if target.is_file() and target.suffix.lower() in [".yaml", ".yml"]:
-        return [target]
-    if not target.is_dir():
-        return []
-
-    direct_configs = [target / f for f in ("config.yaml", "config.yml") if (target / f).is_file()]
-    if direct_configs:
-        return [direct_configs[0]]
-
-    sub_configs: list[Path] = []
-    for pattern in ("*/config.yaml", "*/config.yml"):
-        sub_configs.extend(target.glob(pattern))
-    return sorted(set(sub_configs))
+    if target.is_file():
+        return [target] if target.name == "config.yaml" else []
+    if target.is_dir():
+        direct = target / "config.yaml"
+        return [direct] if direct.is_file() else sorted(target.glob("*/config.yaml"))
+    return []
 
 
 def run_batch(
@@ -107,7 +100,7 @@ def run_batch(
         for config_path in all_configs:
             config = ag.Config.parse(config_path)
             with open(config_path, "r", encoding="utf-8") as f:
-                if config_path.suffix.lower() in [".yaml", ".yml"]:
+                if config_path.suffix.lower() == ".yaml":
                     original_config = yaml.safe_load(f)
                 else:
                     original_config = json.load(f)
@@ -192,8 +185,6 @@ def main(argv=None):
     if not argv:
         if Path("config.yaml").is_file():
             argv = ["config.yaml"]
-        elif Path("config.yml").is_file():
-            argv = ["config.yml"]
         elif find_configs(Path(".")):
             argv = ["."]
         else:
@@ -207,14 +198,11 @@ def main(argv=None):
     if not targets:
         if Path("config.yaml").is_file():
             targets = ["config.yaml"]
-        elif Path("config.yml").is_file():
-            targets = ["config.yml"]
         elif find_configs(Path(".")):
             targets = ["."]
         elif args.run_stubs or args.run_solution:
             for candidate in (
                 Path("config.yaml"),
-                Path("config.yml"),
                 Path("output/autograder.zip"),
                 Path("autograder.zip"),
             ):
@@ -246,8 +234,6 @@ def main(argv=None):
             with zipfile.ZipFile(path, "r") as z:
                 if "config.yaml" in z.namelist():
                     raw_config_data = yaml.safe_load(z.read("config.yaml"))
-                elif "config.yml" in z.namelist():
-                    raw_config_data = yaml.safe_load(z.read("config.yml"))
                 else:
                     print_error(f"config.yaml not found in zip archive: {path}")
                     return 1
@@ -308,8 +294,8 @@ def main(argv=None):
         original_config_dict = None
         try:
             with open(path, "r", encoding="utf-8") as f:
-                if path.suffix.lower() not in [".yaml", ".yml"]:
-                    raise ValueError("File must be a YAML file (.yml or .yaml)")
+                if path.suffix.lower() != ".yaml":
+                    raise ValueError("File must be a YAML file (.yaml)")
                 original_config_dict = yaml.safe_load(f)
         except Exception:
             pass  # If we can't load original config, proceed without it

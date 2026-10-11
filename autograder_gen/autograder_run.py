@@ -459,14 +459,13 @@ class AutograderRun:
                 str(cfg_path).endswith(".zip") or zipfile.is_zipfile(cfg_path)
             ):
                 with zipfile.ZipFile(cfg_path, "r") as z:
-                    for name in ("config.yaml", "config.yml"):
-                        if name in z.namelist():
-                            data = yaml.safe_load(z.read(name))
-                            parsed_config = Config.model_validate(data)
-                            return AutograderGen(parsed_config, data, base_dir=cfg_path.parent)
+                    if "config.yaml" in z.namelist():
+                        data = yaml.safe_load(z.read("config.yaml"))
+                        parsed_config = Config.model_validate(data)
+                        return AutograderGen(parsed_config, data, base_dir=cfg_path.parent)
             parsed_config = Config.parse(cfg_path)
             with open(cfg_path, "r", encoding="utf-8") as f:
-                if cfg_path.suffix.lower() in [".yaml", ".yml"]:
+                if cfg_path.suffix.lower() == ".yaml":
                     original_config = yaml.safe_load(f)
                 else:
                     original_config = json.load(f)

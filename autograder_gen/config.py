@@ -360,8 +360,8 @@ class Config(BaseModel):
         path = Path(config_path)
         if not path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
-        if path.suffix.lower() not in [".yaml", ".yml"]:
-            raise ValueError("Only YAML format (.yml, .yaml) is supported.")
+        if path.suffix != ".yaml":
+            raise ValueError("Only YAML format (.yaml) is supported.")
 
         try:
             with open(path, "r", encoding="utf-8") as f:

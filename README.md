@@ -106,7 +106,7 @@ autograder-gen config.yaml --run-stubs
 
 ## Batch Processing
 
-Pass a directory or multiple configuration files as targets to process them together. When passing a directory, each subfolder containing a `config.yaml` (or `config.yml`) will be processed:
+Pass a directory or multiple configuration files as targets to process them together. When passing a directory, each subfolder containing a `config.yaml` will be processed:
 
 Batch generate autograders:
 
