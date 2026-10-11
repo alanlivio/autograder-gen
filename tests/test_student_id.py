@@ -191,6 +191,13 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         assert "submission_metadata.json" in run_autograder
         assert "classlist.csv" not in run_autograder
 
+    with zipfile.ZipFile(out_dir / "stub_correct_answer.zip", "r") as z:
+        assert "solution.py" in z.namelist()
+        stub_content = z.read("solution.py").decode("utf-8")
+        assert str(STUDENT_ID_FALLBACK) in stub_content
+        assert f"# Fallback student ID: {STUDENT_ID_FALLBACK}" in stub_content
+        assert "submission_metadata.json" not in z.namelist()
+
 
 def test_question_hello_student_id_python(tmp_path: Path):
     config_dict = {
@@ -380,6 +387,15 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
         "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
     )
     assert expected_warn in captured
+
+    cfg_file = tmp_path / "out_warn" / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+    runner = ag.AutograderRun(cfg_file)
+    capsys.readouterr()
+    runner.run_autograder_for_generated_submissions()
+    captured_stubs = capsys.readouterr().out
+    assert expected_warn not in captured_stubs
 
     config_no_script = {
         "version": "1.0",

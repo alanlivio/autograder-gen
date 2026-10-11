@@ -410,7 +410,7 @@ class AutograderRun:
                 return
 
         generator = self._get_engine()
-        output_zip = generator.generate(str(gen_dir), quiet=True)
+        output_zip = generator.generate(str(gen_dir))
         with open(output_zip, "rb") as f:
             self._cached_zip_bytes = f.read()
         for p in (
