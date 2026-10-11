@@ -67,9 +67,12 @@ class AutograderGen:
             lstrip_blocks=True,
         )
         self.retrieve_student_id: bool = any(
-            bool(getattr(item, "expected_output_script", None))
+            bool(getattr(q, "expected_output_script", None))
+            or any(
+                bool(getattr(item, "expected_output_script", None))
+                for item in q.marking_items
+            )
             for q in self.config.questions
-            for item in q.marking_items
         )
 
     def generate(
@@ -213,9 +216,12 @@ class AutograderGen:
                         run = p.add_run(item.expected_input)
                         run.font.name = "Courier New"
                     exp_out = item.expected_output
-                    if not exp_out and getattr(item, "expected_output_script", None):
+                    exp_script = getattr(item, "expected_output_script", None) or getattr(
+                        question, "expected_output_script", None
+                    )
+                    if not exp_out and exp_script:
                         exp_out = _eval_expected_output_script(
-                            item.expected_output_script,
+                            exp_script,
                             student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=item.expected_input,
                         )
@@ -283,9 +289,12 @@ class AutograderGen:
                         lines.append(item.expected_input)
                         lines.append("```")
                     exp_out = item.expected_output
-                    if not exp_out and getattr(item, "expected_output_script", None):
+                    exp_script = getattr(item, "expected_output_script", None) or getattr(
+                        question, "expected_output_script", None
+                    )
+                    if not exp_out and exp_script:
                         exp_out = _eval_expected_output_script(
-                            item.expected_output_script,
+                            exp_script,
                             student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=item.expected_input,
                         )
@@ -381,9 +390,12 @@ class AutograderGen:
                         html_lines.append("      <p><strong>Example Input:</strong></p>")
                         html_lines.append(f"      <pre>{html.escape(item.expected_input)}</pre>")
                     exp_out = item.expected_output
-                    if not exp_out and getattr(item, "expected_output_script", None):
+                    exp_script = getattr(item, "expected_output_script", None) or getattr(
+                        question, "expected_output_script", None
+                    )
+                    if not exp_out and exp_script:
                         exp_out = _eval_expected_output_script(
-                            item.expected_output_script,
+                            exp_script,
                             student_id=str(STUDENT_ID_FALLBACK),
                             expected_input=item.expected_input,
                         )
@@ -751,21 +763,26 @@ class AutograderGen:
                     else:
                         lines.append("    return None")
                 lines.append("")
-            output_items = []
-            for q in self.config.questions:
-                for item in q.marking_items:
-                    if item.target_file == target_file and item.type == "output_comparison":
-                        output_items.append(item)
+            output_items = [
+                (
+                    item,
+                    getattr(item, "expected_output_script", None)
+                    or getattr(q, "expected_output_script", None),
+                )
+                for q in self.config.questions
+                for item in q.marking_items
+                if item.target_file == target_file and item.type == "output_comparison"
+            ]
 
             if output_items:
                 lines.append('if __name__ == "__main__":')
                 if correct:
-                    if len(output_items) == 1 and not output_items[0].expected_input.strip():
-                        single_item = output_items[0]
-                        has_item_script = bool(getattr(single_item, "expected_output_script", None))
+                    if len(output_items) == 1 and not output_items[0][0].expected_input.strip():
+                        single_item, single_script = output_items[0]
+                        has_item_script = bool(single_script)
                         if has_item_script:
                             out_val = _eval_expected_output_script(
-                                single_item.expected_output_script,
+                                single_script,
                                 student_id=str(STUDENT_ID_FALLBACK),
                                 expected_input=single_item.expected_input,
                             )
@@ -779,12 +796,12 @@ class AutograderGen:
                         lines.append("    import sys, os")
                         lines.append("    _raw_in = sys.stdin.read()")
                         lines.append("    _in = _raw_in.strip()")
-                        for idx, item in enumerate(output_items):
+                        for idx, (item, item_script) in enumerate(output_items):
                             cond = f"_in == {repr(item.expected_input.strip())}"
-                            has_item_script = bool(getattr(item, "expected_output_script", None))
+                            has_item_script = bool(item_script)
                             if has_item_script:
                                 out_val = _eval_expected_output_script(
-                                    item.expected_output_script,
+                                    item_script,
                                     student_id=str(STUDENT_ID_FALLBACK),
                                     expected_input=item.expected_input,
                                 )
@@ -797,17 +814,17 @@ class AutograderGen:
                             lines.append(f"        sys.stdout.write({repr(out_val)})")
                             lines.append("        sys.exit(0)")
                         if len(output_items) > 1:
-                            first_item = output_items[0] if output_items else None
-                            if first_item and getattr(first_item, "expected_output_script", None):
+                            first_item, first_script = output_items[0]
+                            if first_script:
                                 default_out = _eval_expected_output_script(
-                                    first_item.expected_output_script,
+                                    first_script,
                                     student_id=str(STUDENT_ID_FALLBACK),
                                     expected_input=first_item.expected_input,
                                 )
                                 lines.append("    else:")
                                 lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
                                 lines.append(f"        sys.stdout.write({repr(default_out)})")
-                            elif first_item:
+                            else:
                                 default_out = first_item.expected_output
                                 lines.append("    else:")
                                 lines.append(f"        sys.stdout.write({repr(default_out)})")
@@ -820,7 +837,7 @@ class AutograderGen:
                 lines.append("# No specific functions defined for this file.")
                 if not correct:
                     lines.append("# This file might be intentionally wrong or missing logic.")
-            if any(getattr(item, "expected_output_script", None) for item in output_items):
+            if any(item_script for _, item_script in output_items):
                 lines.insert(0, f"# Fallback student ID: {STUDENT_ID_FALLBACK}")
             return "\n".join(lines)
         elif self.config.language == "java":
@@ -1150,7 +1167,11 @@ class AutograderGen:
                 lines.append("")
 
             output_items = [
-                item
+                (
+                    item,
+                    getattr(item, "expected_output_script", None)
+                    or getattr(q, "expected_output_script", None),
+                )
                 for q in self.config.questions
                 for item in q.marking_items
                 if item.target_file == target_file and item.type == "output_comparison"
@@ -1158,12 +1179,12 @@ class AutograderGen:
             if output_items:
                 lines.append("    public static void main(String[] args) {")
                 if correct:
-                    if len(output_items) == 1 and not output_items[0].expected_input.strip():
-                        single_item = output_items[0]
-                        has_item_script = bool(getattr(single_item, "expected_output_script", None))
+                    if len(output_items) == 1 and not output_items[0][0].expected_input.strip():
+                        single_item, single_script = output_items[0]
+                        has_item_script = bool(single_script)
                         if has_item_script:
                             out_val = _eval_expected_output_script(
-                                single_item.expected_output_script,
+                                single_script,
                                 student_id=str(STUDENT_ID_FALLBACK),
                                 expected_input=single_item.expected_input,
                             )
@@ -1178,12 +1199,12 @@ class AutograderGen:
                         lines.append('            sb.append(sc.nextLine()).append("\\n");')
                         lines.append("        }")
                         lines.append("        String inStr = sb.toString().trim();")
-                        for idx, item in enumerate(output_items):
+                        for idx, (item, item_script) in enumerate(output_items):
                             cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
-                            has_item_script = bool(getattr(item, "expected_output_script", None))
+                            has_item_script = bool(item_script)
                             if has_item_script:
                                 out_val = _eval_expected_output_script(
-                                    item.expected_output_script,
+                                    item_script,
                                     student_id=str(STUDENT_ID_FALLBACK),
                                     expected_input=item.expected_input,
                                 )
@@ -1199,10 +1220,10 @@ class AutograderGen:
                             lines.append("            return;")
                             lines.append("        }")
                         if len(output_items) > 1:
-                            first_item = output_items[0] if output_items else None
-                            if first_item and getattr(first_item, "expected_output_script", None):
+                            first_item, first_script = output_items[0]
+                            if first_script:
                                 default_out = _eval_expected_output_script(
-                                    first_item.expected_output_script,
+                                    first_script,
                                     student_id=str(STUDENT_ID_FALLBACK),
                                     expected_input=first_item.expected_input,
                                 )
@@ -1221,7 +1242,7 @@ class AutograderGen:
                 lines.append("")
 
             lines.append("}")
-            if any(getattr(item, "expected_output_script", None) for item in output_items):
+            if any(item_script for _, item_script in output_items):
                 lines.insert(0, f"// Fallback student ID: {STUDENT_ID_FALLBACK}")
             return "\n".join(lines)
 

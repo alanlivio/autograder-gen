@@ -125,6 +125,11 @@ class Question(BaseModel):
     description: str = Field(default="", title="Description (for documentation)")
     strict_float: bool = Field(default=False, title="Strict Float Comparison")
     manual_review: bool = Field(default=False, title="Manual Review Question")
+    expected_output_script: Optional[str] = Field(
+        default=None,
+        title="Expected Output Script",
+        description="Python script to dynamically generate expected standard output for output_comparison marking items in this question. The script writes to stdout (via print), accesses expected input using input(), and has access to STUDENT_ID.",
+    )
     marking_items: List[MarkingItem] = Field(min_length=1, title="Marking Items")
 
     @model_validator(mode="before")

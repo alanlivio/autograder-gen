@@ -712,9 +712,12 @@ class AutograderRun:
 
         lines: list[str] = []
         has_script = any(
-            bool(getattr(item, "expected_output_script", None))
+            bool(getattr(q, "expected_output_script", None))
+            or any(
+                bool(getattr(item, "expected_output_script", None))
+                for item in getattr(q, "marking_items", [])
+            )
             for q in getattr(self.config_obj, "questions", [])
-            for item in getattr(q, "marking_items", [])
         )
         if has_script:
             lines.append("[INFO] Checking student ID...")

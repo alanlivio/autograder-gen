@@ -182,3 +182,66 @@ def test_validator_mutual_exclusion_validation():
     assert validator.validate_json(data) is False
     assert any("mutually exclusive" in err for err in validator.get_errors())
 
+
+def test_question_level_expected_output_script():
+    schema = ag.Config.model_json_schema()
+    question_props = schema["$defs"]["Question"]["properties"]
+    assert "expected_output_script" in question_props
+
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "expected_output_script": "print(f'Hello {STUDENT_ID}')",
+                "marking_items": [
+                    {
+                        "name": "Item 1",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                    },
+                    {
+                        "name": "Item 2",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                    },
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    assert cfg.questions[0].expected_output_script == "print(f'Hello {STUDENT_ID}')"
+    assert cfg.questions[0].marking_items[0].expected_output_script is None
+    assert cfg.questions[0].marking_items[1].expected_output_script is None
+
+    validator = ag.Validator()
+    assert validator.validate_json(config_dict) is True
+
+
+def test_question_level_expected_output_script_syntax_error():
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "expected_output_script": "print(def",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    validator = ag.Validator()
+    assert validator.validate_json(config_dict) is False
+    assert any("invalid expected_output_script syntax" in err for err in validator.get_errors())
+

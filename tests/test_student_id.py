@@ -950,5 +950,52 @@ def test_config_file_has_excluded_student_ids(tmp_path: Path):
     assert validator.validate_from_file(str(cfg_file)) is True
 
 
+def test_question_level_expected_output_script_execution(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "expected_output_script": "num = int(input().strip()); print(f'VAL:{int(STUDENT_ID) + num}')",
+                "marking_items": [
+                    {
+                        "name": "Add 5",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                        "expected_input": "5",
+                    },
+                    {
+                        "name": "Add 10",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                        "expected_input": "10",
+                    },
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "sub"
+    sub_dir.mkdir()
+    meta = {"users": [{"sid": "20000000", "email": "test@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "solution.py").write_text(
+        "n = int(input().strip())\nprint(f'VAL:{20000000 + n}')\n",
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRunner(cfg_file)
+    res = runner.run_autograder_for_submission(sub_dir)
+    assert res["tests"][0]["score"] == 5
+    assert res["tests"][1]["score"] == 5
+
+
 
 

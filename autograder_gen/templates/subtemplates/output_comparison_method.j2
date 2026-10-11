@@ -6,7 +6,8 @@
         print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
         target_file = "{{ item.target_file }}"
         expected_input = """{{ item.expected_input }}"""
-{% if item.expected_output_script %}
+{% set script_to_use = item.expected_output_script or question.expected_output_script %}
+{% if script_to_use %}
         student_id = getattr(self, "student_id", None)
         if not student_id:
             try:
@@ -24,7 +25,7 @@
         _script_scope = {"STUDENT_ID": student_id}
         try:
             with redirect_stdout(_script_buf):
-                exec({{ item.expected_output_script | tojson }}, _script_scope)
+                exec({{ script_to_use | tojson }}, _script_scope)
             expected_output = _script_buf.getvalue()
         finally:
             sys.stdin = _old_stdin

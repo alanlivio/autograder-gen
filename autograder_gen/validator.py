@@ -70,12 +70,20 @@ class Validator:
         total_marks = 0.0
         questions = data.get("questions", [])
         for q in questions:
+            q_script = q.get("expected_output_script")
+            if q_script:
+                try:
+                    compile(q_script, "<expected_output_script>", "exec")
+                except SyntaxError as e:
+                    self.errors.append(
+                        f"Question '{q.get('name', 'unnamed')}' has invalid expected_output_script syntax: {e}"
+                    )
             marking_items = q.get("marking_items", [])
             for item in marking_items:
                 total_marks += float(item.get("total_mark", 0))
 
                 # Custom check: output comparison warning
-                self._validate_output_comparison_warnings(item)
+                self._validate_output_comparison_warnings(item, q)
                 self._validate_signature_check_warnings(item)
 
         if total_marks <= 0:
@@ -87,12 +95,16 @@ class Validator:
         if len(q_names) != len(set(q_names)):
             self.warnings.append("Duplicate question names found.")
 
-    def _validate_output_comparison_warnings(self, item: Dict[str, Any]):
+    def _validate_output_comparison_warnings(
+        self, item: Dict[str, Any], question: Optional[Dict[str, Any]] = None
+    ):
         """Check for potentially problematic output comparison configurations."""
         item_type = item.get("type", "")
         if item_type == "output_comparison":
             expected = item.get("expected_output")
             expected_script = item.get("expected_output_script")
+            q_script = question.get("expected_output_script") if question else None
+            effective_script = expected_script or q_script
             if (
                 expected is not None
                 and str(expected).strip()
@@ -102,7 +114,7 @@ class Validator:
                 self.errors.append(
                     f"Output comparison item '{item.get('name', 'unnamed')}' specifies both expected_output and expected_output_script; they are mutually exclusive."
                 )
-            if expected is None and expected_script is None:
+            if expected is None and effective_script is None:
                 self.warnings.append(
                     f"Output comparison item '{item.get('name', 'unnamed')}' has null expected_output"
                 )
