@@ -78,6 +78,12 @@ if [ -d "$SUBMISSION_DIR" ]; then
     if [ ! -f "$SOURCE_DIR/submission_metadata.json" ] && [ -f "submission_metadata.json" ]; then
         cp "submission_metadata.json" "$SOURCE_DIR/"
     fi
+{% for question in config.questions %}
+{% set hidden_count = question.marking_items | selectattr('visibility', 'in', ['after_due_date', 'after_published']) | list | length %}
+{% if hidden_count > 0 %}
+    echo "[INFO] {{ question.name }}{% if not question.name.endswith(')') %}){% endif %} has {{ hidden_count }} hidden marking item{{ 's' if hidden_count > 1 else '' }}" | tee -a "$FILE_CHECK_LOG"
+{% endif %}
+{% endfor %}
 
 else
     echo "[WARNING] Submission directory not found" | tee -a "$FILE_CHECK_LOG"

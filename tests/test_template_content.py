@@ -416,3 +416,47 @@ def test_environment_in_description_md_and_docx(temp_output_dir):
     gen_java = ag.Engine(ag.Config.model_validate(cfg_java), cfg_java)
     md_java = gen_java.generate_description_md().getvalue()
     assert b"**Environment:** OpenJDK 25" in md_java
+
+
+def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
+    cfg_data = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Question 1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                        "visibility": "visible",
+                    }
+                ],
+            },
+            {
+                "name": "Question 2",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                        "visibility": "after_due_date",
+                    },
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "output_comparison",
+                        "visibility": "after_published",
+                    },
+                ],
+            },
+        ],
+    }
+    gen = ag.Engine(ag.Config.model_validate(cfg_data), cfg_data)
+    zip_path = gen.generate(temp_output_dir)
+    with zipfile.ZipFile(zip_path, "r") as z:
+        content = z.read("run_autograder").decode("utf-8")
+        assert '[INFO] Question 2) has 2 hidden marking items' in content
+        assert '[INFO] Question 1' not in content

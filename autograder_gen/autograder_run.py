@@ -210,6 +210,11 @@ class AutograderRun:
                         )
                         and " at " in stripped
                     )
+                    or (
+                        stripped.startswith("[INFO] ")
+                        and " has " in stripped
+                        and " hidden" in stripped
+                    )
                 ):
                     file_check_lines.append(stripped)
         elif results.get("_stdout"):
@@ -237,6 +242,11 @@ class AutograderRun:
                             or stripped.startswith("Found file '")
                         )
                         and " at " in stripped
+                    )
+                    or (
+                        stripped.startswith("[INFO] ")
+                        and " has " in stripped
+                        and " hidden" in stripped
                     )
                 ):
                     file_check_lines.append(stripped)
@@ -796,6 +806,16 @@ class AutograderRun:
                     found_matches = [f for f in sub_files if Path(f).name == req_base]
                     if found_matches:
                         lines.append(f"[INFO] Found file '{req_file}' at {found_matches[0]}")
+        for q in getattr(self.config_obj, "questions", []):
+            hidden_count = sum(
+                1
+                for item in getattr(q, "marking_items", [])
+                if getattr(item, "visibility", "visible") in ("after_due_date", "after_published")
+            )
+            if hidden_count > 0:
+                q_name = q.name if q.name.endswith(")") else f"{q.name})"
+                item_word = "marking item" if hidden_count == 1 else "marking items"
+                lines.append(f"[INFO] {q_name} has {hidden_count} hidden {item_word}")
         return lines
 
 
