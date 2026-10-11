@@ -725,30 +725,9 @@ class AutograderRun:
                             pass
             if not meta_found:
                 lines.append(
-                    "[INFO] Student ID not found in submission metadata; checking classlist.csv..."
+                    "[ERROR] Student ID not found in submission metadata. Please notify the module instructor."
                 )
-                cl_found = False
-                if sub_p and sub_p.is_dir():
-                    for cl_candidate in (
-                        sub_p / "classlist.csv",
-                        sub_p / "source" / "classlist.csv",
-                    ):
-                        if cl_candidate.exists():
-                            try:
-                                with cl_candidate.open(encoding="utf-8", errors="ignore") as f:
-                                    for row in f:
-                                        m = re.search(r"(\d+)", row)
-                                        if m:
-                                            sid = m.group(1)
-                                            cl_found = True
-                                            break
-                            except Exception:
-                                pass
-                        if cl_found:
-                            break
-                if not cl_found:
-                    lines.append("[INFO] Student not found in classlist.csv; using default ID.")
-                    sid = "12345678"
+                sid = "12345678"
             lines.append(f"[INFO] Using student ID: {sid}")
 
         lang = getattr(self.config_obj, "language", "").lower()

@@ -86,26 +86,6 @@ def test_get_student_id_strip_non_digits(tmp_path: Path):
     assert result == "33931382"
 
 
-def test_get_student_id_fallback_to_classlist(tmp_path: Path):
-    meta = {
-        "users": [
-            {
-                "sid": "",
-                "email": "c.anstee@student.reading.ac.uk",
-            }
-        ]
-    }
-    meta_path = tmp_path / "submission_metadata.json"
-    meta_path.write_text(json.dumps(meta), encoding="utf-8")
-
-    classlist_file = tmp_path / "classlist.csv"
-    classlist_file.write_text(
-        "SPR code,Email address\n33931382,a.guedes@reading.ac.uk\n31018601,c.anstee@student.reading.ac.uk\n",
-        encoding="utf-8",
-    )
-
-    result = get_student_id(autograder_root=tmp_path, classlist_path=classlist_file)
-    assert result == "31018601"
 
 
 def test_get_student_id_default_fallback(tmp_path: Path):
@@ -158,7 +138,8 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         assert 'os.environ["STUDENT_ID"] = get_student_id()' in run_tests_py
 
         run_autograder = z.read("run_autograder").decode("utf-8")
-        assert 'cp "classlist.csv"' in run_autograder
+        assert "submission_metadata.json" in run_autograder
+        assert "classlist.csv" not in run_autograder
 
 
 def test_config_auto_enable_retrieve_student_id_from_placeholder():
@@ -336,29 +317,15 @@ def test_student_id_log_messages(tmp_path: Path, capsys):
 
     meta_empty = {"users": [{"sid": "", "email": "test@example.com"}]}
     meta_path.write_text(json.dumps(meta_empty), encoding="utf-8")
-    cl_path = tmp_path / "classlist.csv"
-    cl_path.write_text("11223344,test@example.com\n", encoding="utf-8")
 
-    sid_cl = get_student_id(autograder_root=tmp_path, classlist_path=cl_path)
-    captured_cl = capsys.readouterr().out
-    assert sid_cl == "11223344"
-    assert "[INFO] Checking student ID..." in captured_cl
-    assert (
-        "[INFO] Student ID not found in submission metadata; checking classlist.csv..."
-        in captured_cl
-    )
-    assert "[INFO] Using student ID: 11223344" in captured_cl
-
-    cl_path.write_text("55667788,other@example.com\n", encoding="utf-8")
-    sid_def = get_student_id(autograder_root=tmp_path, classlist_path=cl_path)
+    sid_def = get_student_id(autograder_root=tmp_path)
     captured_def = capsys.readouterr().out
     assert sid_def == "12345678"
     assert "[INFO] Checking student ID..." in captured_def
     assert (
-        "[INFO] Student ID not found in submission metadata; checking classlist.csv..."
+        "[ERROR] Student ID not found in submission metadata. Please notify the module instructor."
         in captured_def
     )
-    assert "[INFO] Student not found in classlist.csv; using default ID." in captured_def
     assert "[INFO] Using student ID: 12345678" in captured_def
 
 
@@ -387,8 +354,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
     captured = capsys.readouterr().out
     expected_warn = (
         "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> "
-        "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas). "
-        "Or download the XXX_roster.csv and put at the same folder as the config.yaml."
+        "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
     )
     assert expected_warn in captured
 

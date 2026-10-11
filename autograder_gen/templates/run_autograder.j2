@@ -21,9 +21,7 @@ if [ -d "$SUBMISSION_DIR" ]; then
     if [ -f "$SUBMISSION_DIR/submission_metadata.json" ]; then
         cp "$SUBMISSION_DIR/submission_metadata.json" "$SOURCE_DIR/"
     fi
-    if [ -f "$SUBMISSION_DIR/classlist.csv" ]; then
-        cp "$SUBMISSION_DIR/classlist.csv" "$SOURCE_DIR/"
-    fi
+
 fi
 
 {% if config.retrieve_student_id %}
@@ -81,9 +79,7 @@ if [ -d "$SUBMISSION_DIR" ]; then
     if [ -f "submission_metadata.json" ]; then
         cp "submission_metadata.json" "$SOURCE_DIR/"
     fi
-    if [ -f "classlist.csv" ]; then
-        cp "classlist.csv" "$SOURCE_DIR/"
-    fi
+
 else
     echo "[WARNING] Submission directory not found" | tee -a "$FILE_CHECK_LOG"
     exit 1

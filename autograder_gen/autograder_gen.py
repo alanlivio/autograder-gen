@@ -65,13 +65,14 @@ class AutograderGen:
             self._generate_run_autograder()
             self._generate_run_tests()
             self._generate_metadata_files()
+
             zip_path = output_path / "autograder.zip"
             self._create_zip(zip_path)
             verification = self.verify_autograder_zip(zip_path)
             for err in verification.get("errors", []):
-                print_error(f"  [ERROR] {err}")
+                print_error(err)
             for warn in verification.get("warnings", []):
-                print_warning(f"  [WARNING] {warn}")
+                print_warning(warn)
             if description:
                 docx_buffer = self.generate_description_docx()
                 with open(output_path / "description.docx", "wb") as f:
@@ -140,7 +141,7 @@ class AutograderGen:
                 checks.append("Archive contains valid folder structures")
             if getattr(self.config, "retrieve_student_id", False):
                 warnings.append(
-                    "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas). Or download the XXX_roster.csv and put at the same folder as the config.yaml."
+                    "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
                 )
             valid = len(errors) == 0
         except Exception as e:

@@ -63,10 +63,9 @@ def remove_package_line(path: Union[str, Path]) -> None:
 
 def get_student_id(
     autograder_root: Union[str, Path, None] = None,
-    classlist_path: Union[str, Path, None] = None,
     default_id: str = "12345678",
 ) -> str:
-    if autograder_root is None and classlist_path is None and os.environ.get("STUDENT_ID"):
+    if autograder_root is None and os.environ.get("STUDENT_ID"):
         return os.environ["STUDENT_ID"]
 
     print("[INFO] Checking student ID...")
@@ -96,39 +95,9 @@ def get_student_id(
     first_user = users[0] if users else {}
     student_id = first_user.get("sid")
     student_id = re.sub(r"\D+", "", str(student_id) if student_id else "")
-    email = first_user.get("email")
 
     if not student_id.strip():
-        print("[INFO] Student ID not found in submission metadata; checking classlist.csv...")
-        class_entry = ""
-        classlist_candidates = [
-            Path(classlist_path) if classlist_path else None,
-            root / "source" / "classlist.csv",
-            root / "classlist.csv",
-            Path("source/classlist.csv"),
-            Path("classlist.csv"),
-        ]
-        chosen_classlist = None
-        for cp in classlist_candidates:
-            if cp and cp.exists():
-                chosen_classlist = cp
-                break
-
-        if email and chosen_classlist:
-            with chosen_classlist.open(encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if email in line:
-                        class_entry = line
-                        break
-
-        match = re.search(r"(\d+)", class_entry) if class_entry else None
-        if match:
-            student_id = match.group(1)
-        else:
-            print("[INFO] Student not found in classlist.csv; using default ID.")
-            student_id = default_id
-
-    if not student_id.strip():
+        print("[ERROR] Student ID not found in submission metadata. Please notify the module instructor.")
         student_id = default_id
 
     print(f"[INFO] Using student ID: {student_id}")
