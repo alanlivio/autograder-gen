@@ -279,7 +279,7 @@ function downloadYamlConfig() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'autograder_gen.yaml';
+    a.download = 'config.yaml';
     a.click();
     URL.revokeObjectURL(url);
 }

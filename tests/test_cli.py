@@ -288,7 +288,7 @@ def test_cli_run_stubs_with_zip(tmp_path):
     assert autograder_zip.exists()
 
     with zipfile.ZipFile(autograder_zip, "a") as z:
-        z.writestr("autograder_gen.yaml", cfg_src)
+        z.writestr("config.yaml", cfg_src)
 
     result = subprocess.run(
         [
@@ -334,7 +334,7 @@ def test_cli_run_stubs_with_generated_zip_missing_config(tmp_path):
         text=True,
     )
     assert result.returncode == 1
-    assert "autograder_gen.yaml not found in zip archive" in result.stderr
+    assert "config.yaml not found in zip archive" in result.stderr
 
 
 def test_cli_run_stubs_does_not_accept_arg():

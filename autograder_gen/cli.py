@@ -254,10 +254,12 @@ def main(argv=None):
 
         if path.is_file() and (path.suffix.lower() == ".zip" or zipfile.is_zipfile(path)):
             with zipfile.ZipFile(path, "r") as z:
-                if "autograder_gen.yaml" in z.namelist():
-                    raw_config_data = yaml.safe_load(z.read("autograder_gen.yaml"))
+                if "config.yaml" in z.namelist():
+                    raw_config_data = yaml.safe_load(z.read("config.yaml"))
+                elif "config.yml" in z.namelist():
+                    raw_config_data = yaml.safe_load(z.read("config.yml"))
                 else:
-                    print_error(f"autograder_gen.yaml not found in zip archive: {path}")
+                    print_error(f"config.yaml not found in zip archive: {path}")
                     return 1
         else:
             with open(path, "r", encoding="utf-8") as f:
