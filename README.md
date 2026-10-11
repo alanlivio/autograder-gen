@@ -37,7 +37,6 @@ autograder-gen
 ```text
 usage: autograder-gen [TARGET ...] [-h] [--version] [--description]
                       [--run-solution] [--run-stubs] [--verbose]
-                      [--schema]
 
 Generate Gradescope autograder script from YAML configuration.
 
@@ -57,7 +56,6 @@ options:
                   stub_correct_answer_wrong_location.zip)
   --verbose, -v   Print full autograder execution logs instead of only paths to
                   log files
-  --schema        Print JSON schema for the YAML configuration file and exit
 ```
 
 ### Examples
@@ -82,10 +80,10 @@ autograder-gen lab1/ lab2/config.yaml
 autograder-gen lab1/ lab2/
 ```
 
-Show configuration JSON schema:
+Generate configuration JSON schema (`schema.json`):
 
 ```bash
-autograder-gen --schema
+make schema
 ```
 
 Generate assessment description (`description.docx` and `description.md`):

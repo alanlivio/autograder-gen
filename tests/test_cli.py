@@ -233,7 +233,9 @@ def test_cli_run_solution_verbose():
 
 def test_cli_run_solution_not_found(tmp_path):
     cfg = tmp_path / "config.yaml"
-    cfg.write_text(Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    cfg.write_text(
+        Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
     result = subprocess.run(
         [
             sys.executable,
@@ -576,9 +578,7 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    monkeypatch.setattr(
-        sys, "argv", ["autograder-gen", str(tmp_path), "--run-stubs"]
-    )
+    monkeypatch.setattr(sys, "argv", ["autograder-gen", str(tmp_path), "--run-stubs"])
     main()
 
     captured = capsys.readouterr()
@@ -810,32 +810,6 @@ def test_cli_batch_logs_found_configs_first(tmp_path):
     assert len(config_lines) == 2
     assert any("sub1" in line for line in config_lines)
     assert any("sub2" in line for line in config_lines)
-
-
-def test_cli_schema_flag(capsys):
-    ret = main(["--schema"])
-    assert ret == 0
-    captured = capsys.readouterr()
-    data = json.loads(captured.out)
-    assert data["title"] == "Config"
-    assert "properties" in data
-    assert "$defs" in data
-
-
-def test_cli_schema_subprocess():
-    result = subprocess.run(
-        [
-            sys.executable,
-            "autograder_gen/cli.py",
-            "--schema",
-        ],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0
-    data = json.loads(result.stdout)
-    assert data["title"] == "Config"
-    assert "properties" in data
 
 
 def test_cli_positional_single_config(tmp_path):

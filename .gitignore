@@ -1,6 +1,3 @@
-.data/
-*.zip
-
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode
 
@@ -209,3 +206,6 @@ pyrightconfig.json
 /**/rubric.csv
 package-lock.json
 /**/output/
+schema.json
+.data/
+*.zip
