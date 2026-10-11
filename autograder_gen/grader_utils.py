@@ -76,12 +76,7 @@ def get_student_id(
     )
     metadata_candidates = [
         root / "submission_metadata.json",
-        Path("/autograder/submission_metadata.json"),
         root / "submission" / "submission_metadata.json",
-        root / "source" / "submission_metadata.json",
-        Path("submission_metadata.json"),
-        Path("submission/submission_metadata.json"),
-        Path("source/submission_metadata.json"),
     ]
     metadata = {}
     for p in metadata_candidates:
@@ -100,23 +95,6 @@ def get_student_id(
 
     if excluded_ids is None:
         excluded_ids = []
-        for cfg_cand in [
-            root / "config.yaml",
-            root / "source" / "config.yaml",
-            Path("config.yaml"),
-            Path("source/config.yaml"),
-        ]:
-            if cfg_cand.exists():
-                try:
-                    import yaml
-
-                    with cfg_cand.open(encoding="utf-8") as f:
-                        cfg_data = yaml.safe_load(f)
-                    if isinstance(cfg_data, dict) and "excluded_student_ids" in cfg_data:
-                        excluded_ids = cfg_data["excluded_student_ids"]
-                        break
-                except Exception:
-                    pass
 
     excluded_raw = {str(x).strip() for x in (excluded_ids or []) if str(x).strip()}
     excluded_digits = {re.sub(r"\D+", "", x) for x in excluded_raw if re.sub(r"\D+", "", x)}
