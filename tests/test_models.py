@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+from autograder_gen.version import __version__
 import autograder_gen as ag
 
 
@@ -48,7 +49,7 @@ def test_question_schema_valid():
 
 def test_autograder_config_schema_full():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -65,7 +66,7 @@ def test_autograder_config_schema_full():
         ],
     }
     result = ag.Config(**data)
-    assert result.version == "1.0"
+    assert result.version == __version__
     assert result.language == "python"
     assert len(result.questions) == 1
 
@@ -82,7 +83,7 @@ def test_get_example_config_yaml_java():
 
 def test_validator_and_utility_functions():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -111,7 +112,7 @@ def test_validator_and_utility_functions():
 
 def test_validator_output_comparison_no_command_warning():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -160,7 +161,7 @@ def test_marking_item_mutual_exclusion_validation():
 
 def test_validator_mutual_exclusion_validation():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -189,7 +190,7 @@ def test_question_level_expected_output_script():
     assert "expected_output_script" in question_props
 
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -224,7 +225,7 @@ def test_question_level_expected_output_script():
 
 def test_question_level_expected_output_script_syntax_error():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [

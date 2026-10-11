@@ -5,18 +5,19 @@ import shutil
 import json
 import os
 import pytest
+from autograder_gen.version import __version__
 
 MAIN_PATH = "autograder_gen/cli.py"
 
 INVALID_CONFIG = {
     # Missing 'questions' and 'files_necessary'
-    "version": "1.0",
+    "version": __version__,
     "language": "python",
     "global_time_limit": 300,
 }
 
 UNSUPPORTED_LANG_CONFIG = {
-    "version": "1.0",
+    "version": __version__,
     "language": "brainfuck",
     "global_time_limit": 300,
     "files_necessary": ["solution.bf"],

@@ -4,10 +4,11 @@ import shutil
 import yaml
 import pytest
 import autograder_gen as ag
+from autograder_gen.version import __version__
 from autograder_gen.grader_utils import StudentMessage
 
 CONFIG_FOR_TEMPLATES = {
-    "version": "1.0",
+    "version": __version__,
     "language": "python",
     "setup_commands": ["pip install numpy pandas matplotlib"],
     "files_necessary": ["solution.py", "math_functions.py"],
@@ -97,7 +98,7 @@ def test_java_setup_sh_contains_openjdk_25(temp_output_dir):
 
 def test_output_comparison_template(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -141,7 +142,7 @@ def test_output_comparison_template(tmp_path):
 
 def test_function_test_template_expected_actual_output(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -193,7 +194,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
 
 def test_run_autograder_logs_checking_required_files(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -223,7 +224,7 @@ def test_run_autograder_logs_checking_required_files(tmp_path):
 
 def test_java_remove_package_template(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "remove_use_of_java_package": True,
         "files_necessary": ["Solution.java"],
@@ -260,7 +261,7 @@ def test_java_remove_package_template(tmp_path):
 
 def test_java_remove_package_execution(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "remove_use_of_java_package": True,
         "files_necessary": ["Solution.java"],
@@ -299,7 +300,7 @@ def test_java_remove_package_execution(tmp_path):
 
 def test_float_comparison_tolerance_non_strict(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -338,7 +339,7 @@ def test_float_comparison_tolerance_non_strict(tmp_path):
 
 def test_float_comparison_strict_fails(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -420,7 +421,7 @@ def test_environment_in_description_md_and_docx(temp_output_dir):
 
 def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
     cfg_data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [

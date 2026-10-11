@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 import autograder_gen as ag
+from autograder_gen.version import __version__
 from autograder_gen.grader_utils import StudentMessage
 
 
@@ -48,7 +49,7 @@ def test_config_with_gitlab_submission_exists_yaml(tmp_path):
     import yaml
 
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "questions": [
             {
@@ -84,7 +85,7 @@ def test_config_with_gitlab_submission_exists_yaml(tmp_path):
 
 def test_template_generation_gitlab(tmp_path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "questions": [
             {

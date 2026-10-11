@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 import autograder_gen as ag
+from autograder_gen.version import __version__
 from autograder_gen.grader_utils import get_student_id, STUDENT_ID_FALLBACK
 
 
@@ -12,7 +13,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
     assert "retrieve_student_id" not in schema.get("properties", {})
 
     data_without_script = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -35,7 +36,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
     assert engine1.retrieve_student_id is False
 
     data_with_script = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -99,7 +100,7 @@ def test_get_student_id_ignores_environment_variable(tmp_path: Path, monkeypatch
 
 def test_stubs_submission_metadata_only_when_gitlab_or_github():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -153,7 +154,7 @@ def test_get_student_id_default_fallback(tmp_path: Path):
 
 def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -199,7 +200,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
 
 def test_question_hello_student_id_python(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["CW1P1.py"],
         "questions": [
@@ -262,7 +263,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
 
 def test_question_hello_student_id_java(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "required_files": ["CW1P1.java"],
         "questions": [
@@ -358,7 +359,7 @@ def test_student_id_log_messages(tmp_path: Path, capsys):
 
 def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -396,7 +397,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
     assert expected_warn not in captured_stubs
 
     config_no_script = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -424,7 +425,7 @@ def test_expected_output_script_config_and_validation():
     from autograder_gen.validator import Validator
 
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["main.py"],
         "questions": [
@@ -449,7 +450,7 @@ def test_expected_output_script_config_and_validation():
     assert not any("null expected_output" in w for w in validator.warnings)
 
     bad_config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["main.py"],
         "questions": [
@@ -473,7 +474,7 @@ def test_expected_output_script_config_and_validation():
 
 def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_output_script():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["calc.py"],
         "questions": [
@@ -512,7 +513,7 @@ def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_ou
 
 def test_expected_output_script_java_skeleton():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "required_files": ["App.java"],
         "questions": [
@@ -543,7 +544,7 @@ def test_expected_output_script_java_skeleton():
 
 def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "required_files": ["CW1P3.java"],
         "questions": [
@@ -574,7 +575,7 @@ def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
 
 def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -639,7 +640,7 @@ def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
 
 def test_expected_output_script_scope_only_has_uppercase_student_id(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -674,7 +675,7 @@ def test_expected_output_script_scope_only_has_uppercase_student_id(tmp_path: Pa
 
 def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -721,7 +722,7 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
 
 def test_autograder_run_with_custom_student_id_no_stubs(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -765,7 +766,7 @@ def test_autograder_run_with_custom_student_id_no_stubs(tmp_path: Path):
 
 def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -799,7 +800,7 @@ def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
 
 def test_config_excluded_student_ids():
     base_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -860,7 +861,7 @@ def test_get_student_id_with_excluded_student_ids(tmp_path: Path, capsys):
 
 def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "excluded_student_ids": [33811500, "tb931382"],
@@ -906,7 +907,7 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
 
 def test_config_file_has_excluded_student_ids(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "excluded_student_ids": [12345678, "instructor1"],
@@ -952,7 +953,7 @@ def test_config_file_has_excluded_student_ids(tmp_path: Path):
 
 def test_question_level_expected_output_script_execution(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [

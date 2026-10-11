@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 import pytest
 import autograder_gen as ag
+from autograder_gen.version import __version__
 
 
 def test_question_manual_review_defaults():
@@ -58,7 +59,7 @@ def test_question_manual_review_flag_defaults_item_type():
 
 def test_manual_review_execution_file_present(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["report.pdf"],
         "questions": [
@@ -115,7 +116,7 @@ def test_manual_review_execution_file_present(tmp_path: Path):
 
 def test_manual_review_execution_file_missing(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["report.pdf"],
         "questions": [
@@ -171,7 +172,7 @@ def test_manual_review_execution_file_missing(tmp_path: Path):
 
 def test_manual_review_execution_no_target_file(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "questions": [
             {
@@ -225,7 +226,7 @@ def test_manual_review_execution_no_target_file(tmp_path: Path):
 
 def test_manual_review_generation_and_inspection(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "global_time_limit": 300,
         "files_necessary": ["Main.java", "report.pdf"],

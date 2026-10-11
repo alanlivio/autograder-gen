@@ -3,12 +3,13 @@ import yaml
 from pathlib import Path
 from pydantic import ValidationError
 
+from autograder_gen.version import __version__
 import autograder_gen as ag
 
 
 def test_config_total_score_single_question():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -30,7 +31,7 @@ def test_config_total_score_single_question():
 
 def test_config_total_score_float_marks():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -61,7 +62,7 @@ def test_config_total_score_float_marks():
 
 def test_config_total_score_multiple_questions_and_items():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py", "helper.py"],
         "questions": [
@@ -100,8 +101,8 @@ def test_config_total_score_multiple_questions_and_items():
 
 
 def test_config_total_score_from_yaml_file(tmp_path: Path):
-    yaml_content = """
-version: '1.0'
+    yaml_content = f"""
+version: '{__version__}'
 language: python
 files_necessary:
   - solution.py
@@ -134,7 +135,7 @@ questions:
 
 def test_config_missing_target_file_in_files_necessary():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["other.py"],
         "questions": [
@@ -156,7 +157,7 @@ def test_config_missing_target_file_in_files_necessary():
 
 def test_file_exists_type_fails_validation():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -179,7 +180,7 @@ def test_file_exists_type_fails_validation():
 
 def test_signature_check_with_time_limit_fails_validation():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -203,7 +204,7 @@ def test_signature_check_with_time_limit_fails_validation():
 
 def test_strict_file_location_configuration():
     base_data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -228,7 +229,7 @@ def test_strict_file_location_configuration():
 
 def test_remove_use_of_java_package_configuration():
     base_data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "files_necessary": ["Solution.java"],
         "questions": [
@@ -253,7 +254,7 @@ def test_remove_use_of_java_package_configuration():
 
 def test_required_files_and_backwards_compatibility():
     legacy_files_necessary = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -279,7 +280,7 @@ def test_required_files_and_backwards_compatibility():
     assert summary_fn["files_necessary"] == ["solution.py"]
 
     legacy_src_files = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "src_files": ["main.py"],
         "questions": [
@@ -301,7 +302,7 @@ def test_required_files_and_backwards_compatibility():
     assert cfg_sf.files_necessary == ["main.py"]
 
     modern_data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["app.py"],
         "questions": [
@@ -329,7 +330,7 @@ def test_required_files_and_backwards_compatibility():
 
 def test_question_strict_float_configuration():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -410,7 +411,7 @@ def test_marking_item_expected_input_multiline_unchanged():
 
 
 def test_config_from_yaml_single_line_expected_input(tmp_path: Path):
-    yaml_content = """version: '1.0'
+    yaml_content = f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py
@@ -430,7 +431,7 @@ questions:
 
 def test_config_parse_rejects_yml(tmp_path):
     cfg_file = tmp_path / "config.yml"
-    cfg_file.write_text("version: '1.0'\nlanguage: python\n", encoding="utf-8")
+    cfg_file.write_text(f"version: '{__version__}'\nlanguage: python\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Only YAML format \\(.yaml\\) is supported."):
         ag.Config.parse(cfg_file)
 

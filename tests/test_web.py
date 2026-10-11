@@ -1,6 +1,7 @@
 import yaml
 import pytest
 import autograder_gen as ag
+from autograder_gen.version import __version__
 from autograder_gen.web.app import app
 
 
@@ -78,7 +79,7 @@ def test_generate_page_contains_new_fields(client):
 
 def test_web_validate_and_export_with_expected_output_script(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["solution.py"],
         "questions": [
@@ -108,7 +109,7 @@ def test_web_validate_and_export_with_expected_output_script(client):
 
 def test_web_validate_and_export_with_wrong_file_location_deduction(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "wrong_file_location_deduction": 0.5,
         "required_files": ["solution.py"],
@@ -139,7 +140,7 @@ def test_web_validate_and_export_with_wrong_file_location_deduction(client):
 
 def test_web_validate_and_export_with_manual_review(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "required_files": ["report.pdf"],
         "questions": [
@@ -174,7 +175,7 @@ def test_web_validate_and_export_with_manual_review(client):
 def test_upload_config_with_new_fields(client):
     import io
 
-    yaml_content = """version: '1.0'
+    yaml_content = f"""version: '{__version__}'
 language: python
 wrong_file_location_deduction: 0.5
 required_files:
@@ -197,7 +198,7 @@ questions:
 
 def test_web_validate_and_export_with_strict_file_location(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "strict_file_location": True,
         "required_files": ["solution.py"],
@@ -228,7 +229,7 @@ def test_web_validate_and_export_with_strict_file_location(client):
 
 def test_web_validate_and_export_with_remove_use_of_java_package(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "remove_use_of_java_package": True,
         "required_files": ["Solution.java"],
@@ -259,7 +260,7 @@ def test_web_validate_and_export_with_remove_use_of_java_package(client):
 
 def test_web_validate_rejects_strict_file_location_with_deduction(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "strict_file_location": True,
         "wrong_file_location_deduction": 0.5,
@@ -292,7 +293,7 @@ def test_web_validate_rejects_strict_file_location_with_deduction(client):
 def test_upload_config_with_strict_file_location_and_java_package(client):
     import io
 
-    yaml_content = """version: '1.0'
+    yaml_content = f"""version: '{__version__}'
 language: java
 strict_file_location: true
 remove_use_of_java_package: true
@@ -317,7 +318,7 @@ questions:
 
 def test_web_validate_rejects_out_of_bounds_deduction(client):
     config = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "wrong_file_location_deduction": 1.5,
         "required_files": ["solution.py"],

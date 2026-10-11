@@ -9,7 +9,7 @@ from autograder_gen.cli import find_configs, main
 from autograder_gen.version import __version__
 
 SAMPLE_CONFIG = {
-    "version": "1.0",
+    "version": __version__,
     "language": "python",
     "files_necessary": ["solution.py"],
     "questions": [
@@ -502,7 +502,7 @@ def test_batch_cli_subprocess_no_args():
 
 def test_batch_gen_execution(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - test.py
@@ -535,7 +535,7 @@ questions:
 
 def test_batch_gen_with_description(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - test.py
@@ -568,7 +568,7 @@ questions:
 
 def test_batch_run_stub_submissions_flag(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py
@@ -603,7 +603,7 @@ questions:
 
 def test_batch_run_solution_folder(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py
@@ -644,7 +644,7 @@ def test_batch_run_solution_multiple_folders(tmp_path: Path, monkeypatch, capsys
         sub_project = tmp_path / f"project_{i}"
         sub_project.mkdir()
         (sub_project / "config.yaml").write_text(
-            """version: '1.0'
+            f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py
@@ -680,7 +680,7 @@ questions:
 
 def test_batch_run_solution_not_found(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py
@@ -711,7 +711,7 @@ questions:
 
 def test_batch_run_solution_verbose(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py
@@ -752,7 +752,7 @@ questions:
 
 def test_batch_run_stubs_and_solution_together(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
-    cfg_content = """version: '1.0'
+    cfg_content = f"""version: '{__version__}'
 language: python
 required_files:
   - solution.py

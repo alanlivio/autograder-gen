@@ -5,11 +5,12 @@ import zipfile
 from pathlib import Path
 import yaml
 import pytest
+from autograder_gen.version import __version__
 
 import autograder_gen as ag
 
 SAMPLE_CONFIG_DICT = {
-    "version": "1.0",
+    "version": __version__,
     "language": "python",
     "files_necessary": ["solution.py"],
     "questions": [
@@ -72,7 +73,7 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
 
 def test_skeleton_generation():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -108,7 +109,7 @@ def test_skeleton_generation():
 
 def test_skeleton_generation_java():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "java",
         "files_necessary": ["Solution.java"],
         "questions": [
@@ -177,7 +178,7 @@ def test_generator_essential_exports():
 
 def test_skeleton_generation_compiler_error():
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [

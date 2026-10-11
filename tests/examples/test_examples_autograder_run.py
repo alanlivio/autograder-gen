@@ -13,6 +13,7 @@ if str(ROOT_DIR) not in sys.path:
 
 import pytest
 import yaml
+from autograder_gen.version import __version__
 import autograder_gen as ag
 
 
@@ -70,7 +71,7 @@ def test_examples_run_autograder_sh(example_name, subdir, expected_score):
 
 def test_autograder_runner_config_obj(tmp_path):
     cfg_data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [

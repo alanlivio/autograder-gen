@@ -8,11 +8,12 @@ import pytest
 import yaml
 from pydantic import ValidationError
 import autograder_gen as ag
+from autograder_gen.version import __version__
 
 
 def test_config_wrong_file_location_deduction_default():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -34,7 +35,7 @@ def test_config_wrong_file_location_deduction_default():
 
 def test_config_wrong_file_location_deduction_custom():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "wrong_file_location_deduction": 0.5,
         "files_necessary": ["solution.py"],
@@ -57,7 +58,7 @@ def test_config_wrong_file_location_deduction_custom():
 
 def test_config_wrong_file_location_deduction_requires_strict_false():
     data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "strict_file_location": True,
         "wrong_file_location_deduction": 0.5,
@@ -85,7 +86,7 @@ def test_config_wrong_file_location_deduction_requires_strict_false():
 
 def test_config_wrong_file_location_deduction_out_of_bounds_fails():
     base_data = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
@@ -112,7 +113,7 @@ def test_config_wrong_file_location_deduction_out_of_bounds_fails():
 
 def test_wrong_file_location_deduction_execution(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
@@ -170,7 +171,7 @@ def test_wrong_file_location_deduction_execution(tmp_path: Path):
 
 def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
@@ -227,7 +228,7 @@ def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_pat
 
 def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
     config_dict = {
-        "version": "1.0",
+        "version": __version__,
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,

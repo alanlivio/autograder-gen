@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+from autograder_gen.version import __version__
 import autograder_gen as ag
 
 
@@ -8,7 +9,7 @@ def test_language_validation():
     # Valid languages
     ag.Config.model_validate(
         {
-            "version": "1.0",
+            "version": __version__,
             "language": "python",
             "files_necessary": ["t.py"],
             "questions": [
@@ -23,7 +24,7 @@ def test_language_validation():
     )
     ag.Config.model_validate(
         {
-            "version": "1.0",
+            "version": __version__,
             "language": "java",
             "files_necessary": ["t.py"],
             "questions": [
@@ -41,7 +42,7 @@ def test_language_validation():
     with pytest.raises(ValidationError) as excinfo:
         ag.Config.model_validate(
             {
-                "version": "1.0",
+                "version": __version__,
                 "language": "r",
                 "files_necessary": ["t.py"],
                 "questions": [
