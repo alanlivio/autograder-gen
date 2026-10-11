@@ -7,8 +7,11 @@ import autograder_gen as ag
 from autograder_gen.grader_utils import get_student_id, STUDENT_ID_FALLBACK
 
 
-def test_config_retrieve_student_id_default():
-    data = {
+def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen():
+    schema = ag.Config.model_json_schema()
+    assert "retrieve_student_id" not in schema.get("properties", {})
+
+    data_without_script = {
         "version": "1.0",
         "language": "python",
         "files_necessary": ["solution.py"],
@@ -25,16 +28,15 @@ def test_config_retrieve_student_id_default():
             }
         ],
     }
-    cfg = ag.Config.model_validate(data)
-    assert cfg.retrieve_student_id is False
-    assert cfg.get_config_summary()["retrieve_student_id"] is False
+    cfg1 = ag.Config.model_validate(data_without_script)
+    assert "retrieve_student_id" not in cfg1.get_config_summary()
+    assert not hasattr(cfg1, "retrieve_student_id")
+    engine1 = ag.Engine(cfg1, data_without_script)
+    assert engine1.retrieve_student_id is False
 
-
-def test_config_retrieve_student_id_enabled():
-    data = {
+    data_with_script = {
         "version": "1.0",
         "language": "python",
-        "retrieve_student_id": True,
         "files_necessary": ["solution.py"],
         "questions": [
             {
@@ -44,14 +46,17 @@ def test_config_retrieve_student_id_enabled():
                         "target_file": "solution.py",
                         "total_mark": 10,
                         "type": "output_comparison",
+                        "expected_output_script": "print(f'Hello {STUDENT_ID}')",
                     }
                 ],
             }
         ],
     }
-    cfg = ag.Config.model_validate(data)
-    assert cfg.retrieve_student_id is True
-    assert cfg.get_config_summary()["retrieve_student_id"] is True
+    cfg2 = ag.Config.model_validate(data_with_script)
+    assert "retrieve_student_id" not in cfg2.get_config_summary()
+    assert not hasattr(cfg2, "retrieve_student_id")
+    engine2 = ag.Engine(cfg2, data_with_script)
+    assert engine2.retrieve_student_id is True
 
 
 def test_get_student_id_strip_non_digits(tmp_path: Path):
@@ -69,6 +74,7 @@ def test_get_student_id_strip_non_digits(tmp_path: Path):
     result = get_student_id(autograder_root=tmp_path)
     assert result == "33931382"
 
+
 def test_get_student_id_prioritizes_server_root_over_submission_dir(tmp_path: Path):
     server_meta = {"users": [{"sid": "11111111", "email": "real@example.com"}]}
     (tmp_path / "submission_metadata.json").write_text(json.dumps(server_meta), encoding="utf-8")
@@ -82,21 +88,10 @@ def test_get_student_id_prioritizes_server_root_over_submission_dir(tmp_path: Pa
     assert result == "11111111"
 
 
-def test_get_student_id_from_submission_source_when_server_root_missing(tmp_path: Path):
-    sub_dir = tmp_path / "submission"
-    sub_dir.mkdir()
-    sub_meta = {"users": [{"sid": "33333333", "email": "stub@example.com"}]}
-    (sub_dir / "submission_metadata.json").write_text(json.dumps(sub_meta), encoding="utf-8")
-
-    result = get_student_id(autograder_root=tmp_path)
-    assert result == "33333333"
-
-
 def test_stubs_submission_metadata_only_when_gitlab_or_github():
     config_dict = {
         "version": "1.0",
         "language": "python",
-        "retrieve_student_id": True,
         "required_files": ["solution.py"],
         "questions": [
             {
@@ -151,7 +146,6 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     config_dict = {
         "version": "1.0",
         "language": "python",
-        "retrieve_student_id": True,
         "files_necessary": ["solution.py"],
         "questions": [
             {
@@ -161,6 +155,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
                         "target_file": "solution.py",
                         "total_mark": 10,
                         "type": "output_comparison",
+                        "expected_output_script": "print(STUDENT_ID)",
                     }
                 ],
             }
@@ -168,6 +163,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     }
     cfg = ag.Config.model_validate(config_dict)
     engine = ag.Engine(cfg, config_dict)
+    assert engine.retrieve_student_id is True
     out_dir = tmp_path / "out"
     zip_path = engine.generate(str(out_dir))
 
@@ -183,34 +179,6 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         run_autograder = z.read("run_autograder").decode("utf-8")
         assert "submission_metadata.json" in run_autograder
         assert "classlist.csv" not in run_autograder
-
-
-def test_config_auto_enable_retrieve_student_id_from_expected_output_script():
-    data = {
-        "version": "1.0",
-        "language": "python",
-        "required_files": ["CW1P1.py"],
-        "questions": [
-            {
-                "name": "Question 1 - Hello",
-                "description": "Program prints greeting including student number.",
-                "marking_items": [
-                    {
-                        "name": "Hello Output Check",
-                        "target_file": "CW1P1.py",
-                        "total_mark": 15,
-                        "type": "output_comparison",
-                        "visibility": "visible",
-                        "expected_input": "",
-                        "expected_output_script": "print(f'Hello, student {STUDENT_ID}.')",
-                    }
-                ],
-            }
-        ],
-    }
-    cfg = ag.Config.model_validate(data)
-    assert cfg.retrieve_student_id is True
-    assert cfg.get_config_summary()["retrieve_student_id"] is True
 
 
 def test_question_hello_student_id_python(tmp_path: Path):
@@ -376,7 +344,35 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
     config_dict = {
         "version": "1.0",
         "language": "python",
-        "retrieve_student_id": True,
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Check File",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(STUDENT_ID)",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    assert engine.retrieve_student_id is True
+    engine.generate(str(tmp_path / "out_warn"))
+    captured = capsys.readouterr().out
+    expected_warn = (
+        "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> "
+        "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
+    )
+    assert expected_warn in captured
+
+    config_no_script = {
+        "version": "1.0",
+        "language": "python",
         "files_necessary": ["solution.py"],
         "questions": [
             {
@@ -391,15 +387,12 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
             }
         ],
     }
-    cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
-    engine.generate(str(tmp_path))
-    captured = capsys.readouterr().out
-    expected_warn = (
-        "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> "
-        "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
-    )
-    assert expected_warn in captured
+    cfg_no_script = ag.Config.model_validate(config_no_script)
+    engine_no_script = ag.Engine(cfg_no_script, config_no_script)
+    assert engine_no_script.retrieve_student_id is False
+    engine_no_script.generate(str(tmp_path / "out_nowarn"))
+    captured_no_script = capsys.readouterr().out
+    assert expected_warn not in captured_no_script
 
 
 def test_expected_output_script_config_and_validation():
@@ -424,7 +417,8 @@ def test_expected_output_script_config_and_validation():
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    assert cfg.retrieve_student_id is True
+    engine = ag.Engine(cfg, config_dict)
+    assert engine.retrieve_student_id is True
     validator = Validator()
     assert validator.validate_json(config_dict) is True
     assert not any("null expected_output" in w for w in validator.warnings)
@@ -473,8 +467,8 @@ def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_ou
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    assert cfg.retrieve_student_id is True
     engine = ag.Engine(cfg, config_dict)
+    assert engine.retrieve_student_id is True
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
         assert "submission_metadata.json" not in zf.namelist()

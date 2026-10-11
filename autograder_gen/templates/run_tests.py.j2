@@ -30,7 +30,7 @@ class NaturalOrderTestLoader(unittest.TestLoader):
 
 def main():
     """Main test runner that combines all question tests."""
-{% if config.retrieve_student_id %}
+{% if retrieve_student_id %}
     try:
         from grader_utils import get_student_id
         os.environ["STUDENT_ID"] = get_student_id()

@@ -27,7 +27,7 @@ elif [ -f "submission_metadata.json" ]; then
     cp "submission_metadata.json" "$SOURCE_DIR/"
 fi
 
-{% if config.retrieve_student_id %}
+{% if retrieve_student_id %}
 if [ -f "$SOURCE_DIR/grader_utils.py" ]; then
     STUDENT_ID_OUTPUT=$("$PYTHON" -c "
 import sys

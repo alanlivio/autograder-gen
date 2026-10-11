@@ -66,6 +66,11 @@ class AutograderGen:
             trim_blocks=True,
             lstrip_blocks=True,
         )
+        self.retrieve_student_id: bool = any(
+            bool(getattr(item, "expected_output_script", None))
+            for q in self.config.questions
+            for item in q.marking_items
+        )
 
     def generate(
         self,
@@ -163,7 +168,7 @@ class AutograderGen:
                 n.startswith("source/") or n.startswith("autograder/") or "/" in n for n in names
             ):
                 checks.append("Archive contains valid folder structures")
-            if getattr(self.config, "retrieve_student_id", False):
+            if self.retrieve_student_id:
                 warnings.append(
                     "To allow student id retreive go to Gradescope -> Course dashboard's left sidebar -> click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
                 )
@@ -1205,7 +1210,9 @@ class AutograderGen:
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
 
         template = self.jinja_env.get_template("setup.sh.j2")
-        content = template.render(config=self.config)
+        content = template.render(
+            config=self.config, retrieve_student_id=self.retrieve_student_id
+        )
 
         setup_file = self.temp_dir / "setup.sh"
         with open(setup_file, "w", encoding="utf-8") as f:
@@ -1217,7 +1224,9 @@ class AutograderGen:
         """Generate run_autograder using Jinja template."""
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
         template = self.jinja_env.get_template("run_autograder.j2")
-        content = template.render(config=self.config)
+        content = template.render(
+            config=self.config, retrieve_student_id=self.retrieve_student_id
+        )
 
         filepath = self.temp_dir / "run_autograder"
         with open(filepath, "w", encoding="utf-8") as f:
@@ -1228,7 +1237,9 @@ class AutograderGen:
         """Generate modular test files: main run_tests.py and individual question test files."""
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
         template = self.jinja_env.get_template("run_tests.py.j2")
-        content = template.render(config=self.config)
+        content = template.render(
+            config=self.config, retrieve_student_id=self.retrieve_student_id
+        )
 
         run_tests_file = self.temp_dir / "run_tests.py"
         with open(run_tests_file, "w", encoding="utf-8") as f:
@@ -1251,7 +1262,10 @@ class AutograderGen:
             processed_question = self._preprocess_question_for_output_comparison(question)
 
             content = question_template.render(
-                config=self.config, question=processed_question, question_number=idx
+                config=self.config,
+                question=processed_question,
+                question_number=idx,
+                retrieve_student_id=self.retrieve_student_id,
             )
 
             test_file = self.temp_dir / f"{question_filename}_test.py"

@@ -708,7 +708,12 @@ class AutograderRun:
                 sub_files = [Path(x).name for x in actual_submission if Path(x).is_file()]
 
         lines: list[str] = []
-        if getattr(self.config_obj, "retrieve_student_id", False):
+        has_script = any(
+            bool(getattr(item, "expected_output_script", None))
+            for q in getattr(self.config_obj, "questions", [])
+            for item in getattr(q, "marking_items", [])
+        )
+        if has_script:
             lines.append("[INFO] Checking student ID...")
             sid = ""
             meta_found = False

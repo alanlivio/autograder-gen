@@ -67,7 +67,7 @@ def test_web_app_import_and_export_all_templates(client, template_name):
 def test_generate_page_contains_new_fields(client):
     response = client.get("/generate")
     assert response.status_code == 200
-    assert b"retrieve_student_id" in response.data
+    assert b"retrieve_student_id" not in response.data
     assert b"wrong_file_location_deduction" in response.data
     assert b'id="wrong_file_location_deduction"' in response.data
     assert b"q-wrong-file-location-deduction-input" not in response.data
@@ -76,11 +76,10 @@ def test_generate_page_contains_new_fields(client):
     assert b"remove_use_of_java_package" in response.data
 
 
-def test_web_validate_and_export_with_retrieve_student_id(client):
+def test_web_validate_and_export_with_expected_output_script(client):
     config = {
         "version": "1.0",
         "language": "python",
-        "retrieve_student_id": True,
         "required_files": ["solution.py"],
         "questions": [
             {
@@ -91,7 +90,7 @@ def test_web_validate_and_export_with_retrieve_student_id(client):
                         "target_file": "solution.py",
                         "total_mark": 10.0,
                         "type": "output_comparison",
-                        "expected_output": "hello",
+                        "expected_output_script": "print(f'hello {STUDENT_ID}')",
                     }
                 ],
             }
@@ -177,7 +176,6 @@ def test_upload_config_with_new_fields(client):
 
     yaml_content = """version: '1.0'
 language: python
-retrieve_student_id: true
 wrong_file_location_deduction: 0.5
 required_files:
   - doc.pdf
@@ -194,7 +192,6 @@ questions:
     assert resp.status_code == 200
     res_json = resp.get_json()
     assert res_json["success"] is True
-    assert res_json["config"]["retrieve_student_id"] is True
     assert res_json["config"]["wrong_file_location_deduction"] == 0.5
 
 

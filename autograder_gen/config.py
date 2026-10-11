@@ -209,7 +209,6 @@ class Config(BaseModel):
     remove_use_of_java_package: bool = Field(
         default=False, title="Remove Java Package Declarations"
     )
-    retrieve_student_id: bool = Field(default=False, title="Retrieve Student ID")
     wrong_file_location_deduction: float = Field(
         default=0.0,
         title="Wrong File Location Deduction",
@@ -276,15 +275,6 @@ class Config(BaseModel):
             )
         return self
 
-    @model_validator(mode="after")
-    def auto_enable_retrieve_student_id(self) -> "Config":
-        if not self.retrieve_student_id:
-            for q in self.questions:
-                for item in q.marking_items:
-                    if getattr(item, "expected_output_script", None):
-                        self.retrieve_student_id = True
-                        return self
-        return self
 
     @property
     def total_score(self) -> float:
@@ -308,7 +298,6 @@ class Config(BaseModel):
             "total_questions": len(self.questions),
             "total_marking_items": total_items,
             "total_marks": total_marks,
-            "retrieve_student_id": self.retrieve_student_id,
             "required_files": self.required_files,
             "src_files": self.required_files,
             "files_necessary": self.required_files,
