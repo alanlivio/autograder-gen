@@ -180,8 +180,8 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     with zipfile.ZipFile(zip_path, "r") as z:
         test_py = z.read("question_1_test.py").decode("utf-8")
         assert "get_student_id" in test_py
-        assert "self.student_id = get_student_id(" in test_py
-        assert 'student_id = getattr(self, "student_id", None)' in test_py
+        assert "self.student_id = get_student_id(" not in test_py
+        assert 'STUDENT_ID": student_id' in test_py
 
         run_tests_py = z.read("run_tests.py").decode("utf-8")
         assert 'STUDENT_ID' not in run_tests_py
