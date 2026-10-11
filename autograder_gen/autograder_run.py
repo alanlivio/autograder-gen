@@ -189,7 +189,8 @@ class AutograderRun:
                 stripped = line.strip()
                 if (
                     stripped.startswith("[INFO] Checking student ID")
-                    or stripped.startswith("[INFO] Student ID not found")
+                    or stripped.startswith("[INFO] Student ID")
+                    or stripped.startswith("[ERROR] Student ID")
                     or stripped.startswith("[INFO] Student not found")
                     or stripped.startswith("[INFO] Using student ID:")
                     or stripped.startswith("[INFO] Environment:")
@@ -216,7 +217,8 @@ class AutograderRun:
                 stripped = line.strip()
                 if (
                     stripped.startswith("[INFO] Checking student ID")
-                    or stripped.startswith("[INFO] Student ID not found")
+                    or stripped.startswith("[INFO] Student ID")
+                    or stripped.startswith("[ERROR] Student ID")
                     or stripped.startswith("[INFO] Student not found")
                     or stripped.startswith("[INFO] Using student ID:")
                     or stripped.startswith("[INFO] Environment:")
@@ -717,6 +719,7 @@ class AutograderRun:
         if has_script:
             lines.append("[INFO] Checking student ID...")
             sid = ""
+            raw_sid = ""
             meta_found = False
             sub_p = None
             if isinstance(actual_submission, (str, Path)):
@@ -739,13 +742,35 @@ class AutograderRun:
                             meta = json.loads(meta_candidate.read_text(encoding="utf-8"))
                             users = meta.get("users") or []
                             if users and users[0].get("sid"):
-                                sid = re.sub(r"\D+", "", str(users[0]["sid"]))
-                                if sid:
+                                raw_sid = str(users[0]["sid"])
+                                sid = re.sub(r"\D+", "", raw_sid)
+                                if sid or raw_sid:
                                     meta_found = True
                                     break
                         except Exception:
                             pass
-            if not meta_found:
+            excluded_raw = {
+                str(x).strip()
+                for x in getattr(self.config_obj, "excluded_student_ids", [])
+                if str(x).strip()
+            }
+            excluded_digits = {
+                re.sub(r"\D+", "", x) for x in excluded_raw if re.sub(r"\D+", "", x)
+            }
+            is_excluded = bool(
+                raw_sid
+                and (
+                    raw_sid in excluded_raw
+                    or sid in excluded_raw
+                    or (sid and sid in excluded_digits)
+                )
+            )
+            if is_excluded:
+                lines.append(
+                    f"[INFO] Student ID '{raw_sid or sid}' is excluded; using fallback ID."
+                )
+                sid = str(STUDENT_ID_FALLBACK)
+            elif not meta_found or not sid:
                 lines.append(
                     "[ERROR] Student ID not found in submission metadata. Please notify the module instructor."
                 )

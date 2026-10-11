@@ -1,6 +1,6 @@
 from pathlib import Path
 import re
-from typing import Union, Optional
+from typing import Union, Optional, List, Any
 import json
 import os
 import math
@@ -66,6 +66,7 @@ STUDENT_ID_FALLBACK = 12345678
 
 def get_student_id(
     autograder_root: Union[str, Path, None] = None,
+    excluded_ids: Union[List[Any], None] = None,
 ) -> str:
     print("[INFO] Checking student ID...")
     root = (
@@ -94,11 +95,51 @@ def get_student_id(
 
     users = metadata.get("users") or []
     first_user = users[0] if users else {}
-    student_id = first_user.get("sid")
-    student_id = re.sub(r"\D+", "", str(student_id) if student_id else "")
+    raw_sid = str(first_user.get("sid", "")) if first_user.get("sid") is not None else ""
+    student_id = re.sub(r"\D+", "", raw_sid)
 
-    if not student_id.strip():
-        print("[ERROR] Student ID not found in submission metadata. Please notify the module instructor.")
+    if excluded_ids is None:
+        excluded_ids = []
+        for cfg_cand in [
+            root / "config.yaml",
+            root / "config.yml",
+            root / "source" / "config.yaml",
+            root / "source" / "config.yml",
+            Path("config.yaml"),
+            Path("config.yml"),
+            Path("source/config.yaml"),
+            Path("source/config.yml"),
+        ]:
+            if cfg_cand.exists():
+                try:
+                    import yaml
+
+                    with cfg_cand.open(encoding="utf-8") as f:
+                        cfg_data = yaml.safe_load(f)
+                    if isinstance(cfg_data, dict) and "excluded_student_ids" in cfg_data:
+                        excluded_ids = cfg_data["excluded_student_ids"]
+                        break
+                except Exception:
+                    pass
+
+    excluded_raw = {str(x).strip() for x in (excluded_ids or []) if str(x).strip()}
+    excluded_digits = {re.sub(r"\D+", "", x) for x in excluded_raw if re.sub(r"\D+", "", x)}
+    is_excluded = bool(
+        raw_sid
+        and (
+            raw_sid in excluded_raw
+            or student_id in excluded_raw
+            or (student_id and student_id in excluded_digits)
+        )
+    )
+
+    if is_excluded:
+        print(f"[INFO] Student ID '{raw_sid or student_id}' is excluded; using fallback ID.")
+        student_id = str(STUDENT_ID_FALLBACK)
+    elif not student_id.strip():
+        print(
+            "[ERROR] Student ID not found in submission metadata. Please notify the module instructor."
+        )
         student_id = str(STUDENT_ID_FALLBACK)
 
     print(f"[INFO] Using student ID: {student_id}")

@@ -48,8 +48,7 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
         if str(self.source_dir) not in sys.path:
             sys.path.insert(0, str(self.source_dir))
 {% if retrieve_student_id %}
-        self.student_id = get_student_id()
-        os.environ["STUDENT_ID"] = self.student_id
+        self.student_id = get_student_id(excluded_ids={{ config.excluded_student_ids | tojson }})
 {% endif %}
 {% if config.language == 'java' and config.remove_use_of_java_package %}
         for java_file in self.source_dir.rglob("*.java"):

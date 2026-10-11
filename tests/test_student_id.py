@@ -179,13 +179,11 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     with zipfile.ZipFile(zip_path, "r") as z:
         test_py = z.read("question_1_test.py").decode("utf-8")
         assert "get_student_id" in test_py
-        assert "self.student_id = get_student_id()" in test_py
-        assert 'os.environ["STUDENT_ID"] = self.student_id' in test_py
-        assert 'os.environ.get("STUDENT_ID"' not in test_py
+        assert "self.student_id = get_student_id(" in test_py
         assert 'student_id = getattr(self, "student_id", None)' in test_py
 
         run_tests_py = z.read("run_tests.py").decode("utf-8")
-        assert 'os.environ["STUDENT_ID"] = get_student_id()' in run_tests_py
+        assert 'STUDENT_ID' not in run_tests_py
 
         run_autograder = z.read("run_autograder").decode("utf-8")
         assert "submission_metadata.json" in run_autograder
@@ -239,7 +237,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
     sub_dir.mkdir()
     (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
     (sub_dir / "CW1P1.py").write_text(
-        'import os\nsid = os.environ.get("STUDENT_ID", "")\nprint(f"Hello, student {sid}.")\n',
+        'print("Hello, student 33931382.")\n',
         encoding="utf-8",
     )
 
@@ -302,7 +300,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
     sub_dir.mkdir()
     (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
     (sub_dir / "CW1P1.java").write_text(
-        'public class CW1P1 {\n    public static void main(String[] args) {\n        String sid = System.getenv("STUDENT_ID");\n        System.out.println("Hello, student " + sid + ".");\n    }\n}\n',
+        'public class CW1P1 {\n    public static void main(String[] args) {\n        System.out.println("Hello, student 33931382.");\n    }\n}\n',
         encoding="utf-8",
     )
 
@@ -797,5 +795,160 @@ def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
     assert correct_score == 20
     assert wrong_score == 0
     assert compiler_score == 0
+
+
+def test_config_excluded_student_ids():
+    base_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_default = ag.Config.model_validate(base_dict)
+    assert cfg_default.excluded_student_ids == []
+    assert cfg_default.get_config_summary()["excluded_student_ids"] == []
+
+    dict_with_excluded = {
+        **base_dict,
+        "excluded_student_ids": [33811500, "tb931382"],
+    }
+    cfg = ag.Config.model_validate(dict_with_excluded)
+    assert cfg.excluded_student_ids == ["33811500", "tb931382"]
+    assert cfg.get_config_summary()["excluded_student_ids"] == ["33811500", "tb931382"]
+
+    schema = ag.Config.model_json_schema()
+    desc = schema["properties"]["excluded_student_ids"]["description"]
+    assert "Helpful to allow instructors to use the stubs with STUDENT_ID_FALLBACK" in desc
+
+
+def test_get_student_id_with_excluded_student_ids(tmp_path: Path, capsys):
+    meta_num = {"users": [{"sid": "33811500", "email": "excluded@reading.ac.uk"}]}
+    (tmp_path / "submission_metadata.json").write_text(json.dumps(meta_num), encoding="utf-8")
+    capsys.readouterr()
+    res1 = get_student_id(autograder_root=tmp_path, excluded_ids=["33811500", "tb931382"])
+    out1 = capsys.readouterr().out
+    assert res1 == str(STUDENT_ID_FALLBACK)
+    assert "Student ID '33811500' is excluded; using fallback ID." in out1
+    assert f"[INFO] Using student ID: {STUDENT_ID_FALLBACK}" in out1
+
+    meta_str = {"users": [{"sid": "tb931382", "email": "staff@reading.ac.uk"}]}
+    (tmp_path / "submission_metadata.json").write_text(json.dumps(meta_str), encoding="utf-8")
+    res2 = get_student_id(autograder_root=tmp_path, excluded_ids=["33811500", "tb931382"])
+    out2 = capsys.readouterr().out
+    assert res2 == str(STUDENT_ID_FALLBACK)
+    assert "Student ID 'tb931382' is excluded; using fallback ID." in out2
+
+    meta_normal = {"users": [{"sid": "77889900", "email": "valid@reading.ac.uk"}]}
+    (tmp_path / "submission_metadata.json").write_text(json.dumps(meta_normal), encoding="utf-8")
+    res3 = get_student_id(autograder_root=tmp_path, excluded_ids=["33811500", "tb931382"])
+    out3 = capsys.readouterr().out
+    assert res3 == "77889900"
+    assert "excluded" not in out3
+    assert "[INFO] Using student ID: 77889900" in out3
+
+
+def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "excluded_student_ids": [33811500, "tb931382"],
+        "questions": [
+            {
+                "name": "Excluded SID Test",
+                "marking_items": [
+                    {
+                        "name": "Dynamic Output",
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(f'SID:{STUDENT_ID}')",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_excluded = tmp_path / "sub_excluded"
+    sub_excluded.mkdir()
+    meta_excluded = {"users": [{"sid": "33811500", "email": "s33811500@reading.ac.uk"}]}
+    (sub_excluded / "submission_metadata.json").write_text(json.dumps(meta_excluded), encoding="utf-8")
+    (sub_excluded / "solution.py").write_text(f'print("SID:{STUDENT_ID_FALLBACK}")\n', encoding="utf-8")
+
+    runner = ag.AutograderRunner(cfg_file)
+    res_excluded = runner.run_autograder_for_submission(sub_excluded)
+    assert res_excluded["tests"][0]["score"] == 10
+
+    sub_regular = tmp_path / "sub_regular"
+    sub_regular.mkdir()
+    meta_regular = {"users": [{"sid": "44556677", "email": "s44556677@reading.ac.uk"}]}
+    (sub_regular / "submission_metadata.json").write_text(json.dumps(meta_regular), encoding="utf-8")
+    (sub_regular / "solution.py").write_text('print("SID:44556677")\n', encoding="utf-8")
+
+    runner_regular = ag.AutograderRunner(cfg_file)
+    res_regular = runner_regular.run_autograder_for_submission(sub_regular)
+    assert res_regular["tests"][0]["score"] == 10
+
+
+def test_config_file_has_excluded_student_ids(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "excluded_student_ids": [12345678, "instructor1"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Item 1",
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output": "Hello\n",
+                    }
+                ],
+            },
+            {
+                "name": "Q2",
+                "expected_output_script": "print(f'STUDENT_ID: {STUDENT_ID}')",
+                "marking_items": [
+                    {
+                        "name": "Item 2",
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                    }
+                ],
+            },
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    cfg = ag.Config.parse(cfg_file)
+    assert "12345678" in cfg.excluded_student_ids
+    assert "instructor1" in cfg.excluded_student_ids
+    assert cfg.questions[1].expected_output_script is not None
+    assert "STUDENT_ID" in cfg.questions[1].expected_output_script
+    validator = ag.Validator()
+    assert validator.validate_from_file(str(cfg_file)) is True
+
+
 
 

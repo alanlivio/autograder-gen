@@ -214,9 +214,28 @@ class Config(BaseModel):
         title="Wrong File Location Deduction",
         json_schema_extra={"minimum": 0.0, "maximum": 1.0},
     )
+    excluded_student_ids: List[str] = Field(
+        default_factory=list,
+        title="Excluded Student IDs",
+        description=(
+            "List of student IDs to ignore and use the fallback student ID instead. "
+            "Helpful to allow instructors to use the stubs with STUDENT_ID_FALLBACK."
+        ),
+    )
     setup_commands: List[str] = Field(default_factory=list, title="Setup Commands")
     required_files: List[str] = Field(default_factory=list, title="Required Files")
     questions: List[Question] = Field(min_length=1, title="Questions")
+
+    @field_validator("excluded_student_ids", mode="before")
+    @classmethod
+    def normalize_excluded_student_ids(cls, v: Any) -> List[str]:
+        if v is None:
+            return []
+        if isinstance(v, (str, int)):
+            return [str(v)]
+        if isinstance(v, (list, tuple, set)):
+            return [str(item) for item in v]
+        return v
 
     @field_validator("wrong_file_location_deduction")
     @classmethod
@@ -302,6 +321,7 @@ class Config(BaseModel):
             "src_files": self.required_files,
             "files_necessary": self.required_files,
             "visibility_counts": visibility_counts,
+            "excluded_student_ids": self.excluded_student_ids,
         }
 
     @staticmethod

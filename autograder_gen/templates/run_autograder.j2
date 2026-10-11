@@ -29,17 +29,13 @@ fi
 
 {% if retrieve_student_id %}
 if [ -f "$SOURCE_DIR/grader_utils.py" ]; then
-    STUDENT_ID_OUTPUT=$("$PYTHON" -c "
-import sys
-sys.path.insert(0, '$SOURCE_DIR')
+    STUDENT_ID_OUTPUT=$("$PYTHON" -c '
+import sys, json
+sys.path.insert(0, sys.argv[1])
 from grader_utils import get_student_id
-get_student_id('$AUTOGRADER_ROOT')
-" 2>&1)
+get_student_id(sys.argv[2], excluded_ids=json.loads(sys.argv[3]))
+' "$SOURCE_DIR" "$AUTOGRADER_ROOT" '{{ config.excluded_student_ids | tojson }}' 2>&1)
     echo "$STUDENT_ID_OUTPUT" | tee -a "$FILE_CHECK_LOG"
-    RETRIEVED_SID=$(echo "$STUDENT_ID_OUTPUT" | grep '\[INFO\] Using student ID:' | sed 's/.*\[INFO\] Using student ID:[[:space:]]*//')
-    if [ -n "$RETRIEVED_SID" ]; then
-        export STUDENT_ID="$RETRIEVED_SID"
-    fi
 fi
 {% endif %}
 {% if config.language == 'python' %}
