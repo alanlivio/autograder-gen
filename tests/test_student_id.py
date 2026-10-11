@@ -133,7 +133,7 @@ def test_stubs_include_submission_metadata_when_retrieve_student_id():
     with zipfile.ZipFile(buf, "r") as zf:
         assert "submission_metadata.json" in zf.namelist()
         data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
-        assert data["users"][0]["sid"] == "12345678"
+        assert data["users"][0]["sid"] == "123456"
 
 
 def test_get_student_id_default_fallback(tmp_path: Path):
@@ -190,7 +190,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         assert "classlist.csv" not in run_autograder
 
 
-def test_config_auto_enable_retrieve_student_id_from_placeholder():
+def test_config_auto_enable_retrieve_student_id_from_expected_output_script():
     data = {
         "version": "1.0",
         "language": "python",
@@ -198,7 +198,7 @@ def test_config_auto_enable_retrieve_student_id_from_placeholder():
         "questions": [
             {
                 "name": "Question 1 - Hello",
-                "description": "Program prints greeting including student number. Format: 'Hello, student <student_id>.'",
+                "description": "Program prints greeting including student number.",
                 "marking_items": [
                     {
                         "name": "Hello Output Check",
@@ -207,7 +207,7 @@ def test_config_auto_enable_retrieve_student_id_from_placeholder():
                         "type": "output_comparison",
                         "visibility": "visible",
                         "expected_input": "",
-                        "expected_output": "Hello, student <STUDENT_ID>.",
+                        "expected_output_script": "print(f'Hello, student {STUDENT_ID}.')",
                     }
                 ],
             }
@@ -226,7 +226,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
         "questions": [
             {
                 "name": "Question 1 - Hello",
-                "description": "Program prints greeting including student number. Format: 'Hello, student <student_id>.'",
+                "description": "Program prints greeting including student number.",
                 "marking_items": [
                     {
                         "name": "Hello Output Check",
@@ -235,7 +235,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
                         "type": "output_comparison",
                         "visibility": "visible",
                         "expected_input": "",
-                        "expected_output": "Hello, student <STUDENT_ID>.",
+                        "expected_output_script": "print(f'Hello, student {STUDENT_ID}.')",
                     }
                 ],
             }
@@ -289,7 +289,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
         "questions": [
             {
                 "name": "Question 1 - Hello",
-                "description": "Program prints greeting including student number. Format: 'Hello, student <student_id>.'",
+                "description": "Program prints greeting including student number.",
                 "marking_items": [
                     {
                         "name": "Hello Output Check",
@@ -298,7 +298,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
                         "type": "output_comparison",
                         "visibility": "visible",
                         "expected_input": "",
-                        "expected_output": "Hello, student <STUDENT_ID>.",
+                        "expected_output_script": "print(f'Hello, student {STUDENT_ID}.')",
                     }
                 ],
             }
@@ -405,4 +405,276 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
         "click Roster -> Click Sync Roster (if linked to Blackboard/Moodle/Canvas)."
     )
     assert expected_warn in captured
+
+
+def test_expected_output_script_config_and_validation():
+    from autograder_gen.validator import Validator
+
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["main.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "main.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(f'Hello {STUDENT_ID}')",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    assert cfg.retrieve_student_id is True
+    validator = Validator()
+    assert validator.validate_json(config_dict) is True
+    assert not any("null expected_output" in w for w in validator.warnings)
+
+    bad_config = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["main.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "main.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(f'Hello ",
+                    }
+                ],
+            }
+        ],
+    }
+    bad_val = Validator()
+    assert bad_val.validate_json(bad_config) is False
+    assert any("invalid expected_output_script syntax" in err for err in bad_val.errors)
+
+
+def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_output_script():
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["calc.py"],
+        "questions": [
+            {
+                "name": "Calc",
+                "marking_items": [
+                    {
+                        "target_file": "calc.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_input": "5\n",
+                        "expected_output_script": "n = int(input().strip()); print(f'Ans: {int(STUDENT_ID) * n}')",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    assert cfg.retrieve_student_id is True
+    engine = ag.Engine(cfg, config_dict)
+    buf = engine.generate_correct_answer_zip()
+    with zipfile.ZipFile(buf, "r") as zf:
+        assert "submission_metadata.json" in zf.namelist()
+        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
+        assert data["users"][0]["sid"] == "42"
+        content = zf.read("calc.py").decode("utf-8")
+        assert "Ans: 210" in content
+
+    buf_wrong = engine.generate_wrong_answer_zip()
+    with zipfile.ZipFile(buf_wrong, "r") as zf:
+        assert "submission_metadata.json" in zf.namelist()
+        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
+        assert data["users"][0]["sid"] == "42"
+
+    buf_loc = engine.generate_wrong_file_location_zip()
+    with zipfile.ZipFile(buf_loc, "r") as zf:
+        assert "src/submission_metadata.json" in zf.namelist()
+        data = json.loads(zf.read("src/submission_metadata.json").decode("utf-8"))
+        assert data["users"][0]["sid"] == "42"
+
+
+def test_expected_output_script_java_skeleton():
+    config_dict = {
+        "version": "1.0",
+        "language": "java",
+        "required_files": ["App.java"],
+        "questions": [
+            {
+                "name": "App",
+                "marking_items": [
+                    {
+                        "target_file": "App.java",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(f'JAVA_SID_{STUDENT_ID}')",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(config_dict)
+    engine = ag.Engine(cfg, config_dict)
+    buf = engine.generate_correct_answer_zip()
+    with zipfile.ZipFile(buf, "r") as zf:
+        assert "submission_metadata.json" in zf.namelist()
+        data = json.loads(zf.read("submission_metadata.json").decode("utf-8"))
+        assert data["users"][0]["sid"] == "42"
+        content = zf.read("App.java").decode("utf-8")
+        assert "JAVA_SID_42" in content
+
+
+def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Script Output Test",
+                "marking_items": [
+                    {
+                        "name": "Dynamic Output",
+                        "target_file": "solution.py",
+                        "total_mark": 20,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(f'Computed for {STUDENT_ID}: {int(STUDENT_ID) * 2}')",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    meta = {"users": [{"sid": "42", "email": "s42@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "solution.py").write_text(
+        'print("Computed for 42: 84")\n',
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert "tests" in results
+    total_score = sum(t.get("score", 0) for t in results["tests"])
+    assert total_score == 20
+
+    sub_custom = tmp_path / "sub_custom"
+    sub_custom.mkdir()
+    meta_custom = {"users": [{"sid": "100", "email": "s100@example.com"}]}
+    (sub_custom / "submission_metadata.json").write_text(json.dumps(meta_custom), encoding="utf-8")
+    (sub_custom / "solution.py").write_text(
+        'print("Computed for 100: 200")\n',
+        encoding="utf-8",
+    )
+    runner_custom = ag.AutograderRunner(cfg_file)
+    results_custom = runner_custom.run_autograder_for_submission(sub_custom)
+    total_score_custom = sum(t.get("score", 0) for t in results_custom["tests"])
+    assert total_score_custom == 20
+
+    sub_wrong = tmp_path / "sub_wrong"
+    sub_wrong.mkdir()
+    (sub_wrong / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_wrong / "solution.py").write_text(
+        'print("Computed for 42: 9999")\n',
+        encoding="utf-8",
+    )
+    runner_wrong = ag.AutograderRunner(cfg_file)
+    results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
+    total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
+    assert total_score_wrong == 0
+
+
+def test_expected_output_script_scope_only_has_uppercase_student_id(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Scope Test",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output_script": "print(student_id)",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    meta = {"users": [{"sid": "42", "email": "s42@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "solution.py").write_text('print("42")\n', encoding="utf-8")
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert results["tests"][0]["score"] == 0
+    assert "name 'student_id' is not defined" in results["tests"][0]["output"]
+
+
+def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
+    config_dict = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Scope Input Test",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_input": "hello_input\n",
+                        "expected_output_script": "print(expected_input)",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    meta = {"users": [{"sid": "42", "email": "s42@example.com"}]}
+    (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    (sub_dir / "solution.py").write_text('print("hello_input")\n', encoding="utf-8")
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert results["tests"][0]["score"] == 0
+    assert "name 'expected_input' is not defined" in results["tests"][0]["output"]
+
+    config_dict["questions"][0]["marking_items"][0]["expected_output_script"] = (
+        "val = input().strip(); print(f'{val}_{STUDENT_ID}')"
+    )
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    (sub_dir / "solution.py").write_text('print("hello_input_42")\n', encoding="utf-8")
+    runner_ok = ag.AutograderRunner(cfg_file)
+    results_ok = runner_ok.run_autograder_for_submission(sub_dir)
+    assert results_ok["tests"][0]["score"] == 10
+
 

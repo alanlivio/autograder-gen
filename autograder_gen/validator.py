@@ -92,10 +92,27 @@ class Validator:
         item_type = item.get("type", "")
         if item_type == "output_comparison":
             expected = item.get("expected_output")
-            if expected is None:
+            expected_script = item.get("expected_output_script")
+            if (
+                expected is not None
+                and str(expected).strip()
+                and expected_script is not None
+                and str(expected_script).strip()
+            ):
+                self.errors.append(
+                    f"Output comparison item '{item.get('name', 'unnamed')}' specifies both expected_output and expected_output_script; they are mutually exclusive."
+                )
+            if expected is None and expected_script is None:
                 self.warnings.append(
                     f"Output comparison item '{item.get('name', 'unnamed')}' has null expected_output"
                 )
+            if expected_script:
+                try:
+                    compile(expected_script, "<expected_output_script>", "exec")
+                except SyntaxError as e:
+                    self.errors.append(
+                        f"Output comparison item '{item.get('name', 'unnamed')}' has invalid expected_output_script syntax: {e}"
+                    )
 
     def _validate_signature_check_warnings(self, item: Dict[str, Any]):
         """Check for signature_check item configurations."""

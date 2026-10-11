@@ -17,6 +17,27 @@ from autograder_gen.config import Config, DEFAULT_LANGUAGE_RUNTIMES
 from autograder_gen.logger import print_error, print_success, print_warning
 
 
+def _eval_expected_output_script(
+    script: str, student_id: str = "42", expected_input: str = ""
+) -> str:
+    import io
+    import sys
+    from contextlib import redirect_stdout
+
+    buf = io.StringIO()
+    old_stdin = sys.stdin
+    sys.stdin = io.StringIO(expected_input)
+    scope = {"STUDENT_ID": student_id}
+    try:
+        with redirect_stdout(buf):
+            exec(script, scope)
+        return buf.getvalue()
+    except Exception as e:
+        return f"Error executing expected_output_script: {e}\n"
+    finally:
+        sys.stdin = old_stdin
+
+
 class AutograderGen:
     """Generates Gradescope autograder packages from configuration using Jinja templates."""
 
@@ -185,10 +206,17 @@ class AutograderGen:
                         p = doc.add_paragraph()
                         run = p.add_run(item.expected_input)
                         run.font.name = "Courier New"
-                    if item.expected_output:
+                    exp_out = item.expected_output
+                    if not exp_out and getattr(item, "expected_output_script", None):
+                        exp_out = _eval_expected_output_script(
+                            item.expected_output_script,
+                            student_id="42",
+                            expected_input=item.expected_input,
+                        )
+                    if exp_out:
                         doc.add_heading("Expected Output:", level=4)
                         p = doc.add_paragraph()
-                        run = p.add_run(item.expected_output)
+                        run = p.add_run(exp_out)
                         run.font.name = "Courier New"
                 elif item.type == "signature_check":
                     doc.add_paragraph(
@@ -248,11 +276,18 @@ class AutograderGen:
                         lines.append("```")
                         lines.append(item.expected_input)
                         lines.append("```")
-                    if item.expected_output:
+                    exp_out = item.expected_output
+                    if not exp_out and getattr(item, "expected_output_script", None):
+                        exp_out = _eval_expected_output_script(
+                            item.expected_output_script,
+                            student_id="42",
+                            expected_input=item.expected_input,
+                        )
+                    if exp_out:
                         lines.append("")
                         lines.append("##### Expected Output:")
                         lines.append("```")
-                        lines.append(item.expected_output)
+                        lines.append(exp_out)
                         lines.append("```")
                 elif item.type == "signature_check":
                     lines.append(
@@ -339,9 +374,16 @@ class AutograderGen:
                     if item.expected_input:
                         html_lines.append("      <p><strong>Example Input:</strong></p>")
                         html_lines.append(f"      <pre>{html.escape(item.expected_input)}</pre>")
-                    if item.expected_output:
+                    exp_out = item.expected_output
+                    if not exp_out and getattr(item, "expected_output_script", None):
+                        exp_out = _eval_expected_output_script(
+                            item.expected_output_script,
+                            student_id="42",
+                            expected_input=item.expected_input,
+                        )
+                    if exp_out:
                         html_lines.append("      <p><strong>Expected Output:</strong></p>")
-                        html_lines.append(f"      <pre>{html.escape(item.expected_output)}</pre>")
+                        html_lines.append(f"      <pre>{html.escape(exp_out)}</pre>")
                 elif item.type == "signature_check":
                     html_lines.append(
                         f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must match signature.</p>"
@@ -396,8 +438,14 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if getattr(self.config, "retrieve_student_id", False):
-                meta_dict = {"users": [{"sid": "12345678", "email": "student@example.com"}]}
+            has_script = any(
+                getattr(item, "expected_output_script", None)
+                for q in self.config.questions
+                for item in q.marking_items
+            )
+            if getattr(self.config, "retrieve_student_id", False) or has_script:
+                stub_sid = "42" if has_script else "123456"
+                meta_dict = {"users": [{"sid": stub_sid, "email": "student@example.com"}]}
                 if has_gitlab:
                     meta_dict["submission_method"] = "GitLab"
                 elif has_github:
@@ -431,6 +479,17 @@ class AutograderGen:
                     zipf.writestr(f"{parent}/", "")
                 content = self._generate_skeleton_content(filename, correct=False)
                 zipf.writestr(filename, content)
+            has_script = any(
+                getattr(item, "expected_output_script", None)
+                for q in self.config.questions
+                for item in q.marking_items
+            )
+            if getattr(self.config, "retrieve_student_id", False) or has_script:
+                stub_sid = "42" if has_script else "123456"
+                zipf.writestr(
+                    "submission_metadata.json",
+                    json.dumps({"users": [{"sid": stub_sid, "email": "student@example.com"}]}),
+                )
         buffer.seek(0)
         return buffer
 
@@ -447,6 +506,17 @@ class AutograderGen:
                     filename, correct=False, compiler_error=True
                 )
                 zipf.writestr(filename, content)
+            has_script = any(
+                getattr(item, "expected_output_script", None)
+                for q in self.config.questions
+                for item in q.marking_items
+            )
+            if getattr(self.config, "retrieve_student_id", False) or has_script:
+                stub_sid = "42" if has_script else "123456"
+                zipf.writestr(
+                    "submission_metadata.json",
+                    json.dumps({"users": [{"sid": stub_sid, "email": "student@example.com"}]}),
+                )
         buffer.seek(0)
         return buffer
 
@@ -479,8 +549,14 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if getattr(self.config, "retrieve_student_id", False):
-                meta_dict = {"users": [{"sid": "12345678", "email": "student@example.com"}]}
+            has_script = any(
+                getattr(item, "expected_output_script", None)
+                for q in self.config.questions
+                for item in q.marking_items
+            )
+            if getattr(self.config, "retrieve_student_id", False) or has_script:
+                stub_sid = "42" if has_script else "123456"
+                meta_dict = {"users": [{"sid": stub_sid, "email": "student@example.com"}]}
                 if has_gitlab:
                     meta_dict["submission_method"] = "GitLab"
                 elif has_github:
@@ -695,29 +771,33 @@ class AutograderGen:
                     lines.append("    import sys, os")
                     lines.append("    _raw_in = sys.stdin.read()")
                     lines.append("    _in = _raw_in.strip()")
-                    lines.append("    _sid = os.environ.get('STUDENT_ID', '12345678')")
                     for idx, item in enumerate(output_items):
                         cond = f"_in == {repr(item.expected_input.strip())}"
-                        out_val = item.expected_output
+                        if getattr(item, "expected_output_script", None):
+                            out_val = _eval_expected_output_script(
+                                item.expected_output_script,
+                                student_id="42",
+                                expected_input=item.expected_input,
+                            )
+                        else:
+                            out_val = item.expected_output
                         branch = "if" if idx == 0 else "elif"
                         lines.append(f"    {branch} {cond}:")
-                        if "<STUDENT_ID>" in out_val or "<student_id>" in out_val:
-                            lines.append(
-                                f"        _out = {repr(out_val)}.replace('<STUDENT_ID>', _sid).replace('<student_id>', _sid)"
-                            )
-                            lines.append("        sys.stdout.write(_out)")
-                        else:
-                            lines.append(f"        sys.stdout.write({repr(out_val)})")
+                        lines.append(f"        sys.stdout.write({repr(out_val)})")
                         lines.append("        sys.exit(0)")
-                    default_out = output_items[0].expected_output if output_items else ""
-                    lines.append("    else:")
-                    if "<STUDENT_ID>" in default_out or "<student_id>" in default_out:
-                        lines.append(
-                            f"        _out = {repr(default_out)}.replace('<STUDENT_ID>', _sid).replace('<student_id>', _sid)"
+                    first_item = output_items[0] if output_items else None
+                    if first_item and getattr(first_item, "expected_output_script", None):
+                        default_out = _eval_expected_output_script(
+                            first_item.expected_output_script,
+                            student_id="42",
+                            expected_input=first_item.expected_input,
                         )
-                        lines.append("        sys.stdout.write(_out)")
+                    elif first_item:
+                        default_out = first_item.expected_output
                     else:
-                        lines.append(f"        sys.stdout.write({repr(default_out)})")
+                        default_out = ""
+                    lines.append("    else:")
+                    lines.append(f"        sys.stdout.write({repr(default_out)})")
                 else:
                     lines.append("    import sys")
                     lines.append('    sys.stdout.write("wrong_output\\n")')
@@ -1074,35 +1154,36 @@ class AutograderGen:
                     lines.append('            sb.append(sc.nextLine()).append("\\n");')
                     lines.append("        }")
                     lines.append("        String inStr = sb.toString().trim();")
-                    lines.append('        String _sid = System.getenv("STUDENT_ID");')
-                    lines.append('        if (_sid == null) { _sid = "12345678"; }')
                     for idx, item in enumerate(output_items):
                         cond = f"inStr.equals({json.dumps(item.expected_input.strip())})"
+                        if getattr(item, "expected_output_script", None):
+                            out_val = _eval_expected_output_script(
+                                item.expected_output_script,
+                                student_id="42",
+                                expected_input=item.expected_input,
+                            )
+                        else:
+                            out_val = item.expected_output
                         branch = "if" if idx == 0 else "else if"
                         lines.append(f"        {branch} ({cond}) {{")
-                        if (
-                            "<STUDENT_ID>" in item.expected_output
-                            or "<student_id>" in item.expected_output
-                        ):
-                            lines.append(
-                                f'            String _out = {json.dumps(item.expected_output)}.replace("<STUDENT_ID>", _sid).replace("<student_id>", _sid);'
-                            )
-                            lines.append("            System.out.print(_out);")
-                        else:
-                            lines.append(
-                                f"            System.out.print({json.dumps(item.expected_output)});"
-                            )
+                        lines.append(
+                            f"            System.out.print({json.dumps(out_val)});"
+                        )
                         lines.append("            return;")
                         lines.append("        }")
-                    default_out = output_items[0].expected_output if output_items else ""
-                    lines.append("        else {")
-                    if "<STUDENT_ID>" in default_out or "<student_id>" in default_out:
-                        lines.append(
-                            f'            String _out = {json.dumps(default_out)}.replace("<STUDENT_ID>", _sid).replace("<student_id>", _sid);'
+                    first_item = output_items[0] if output_items else None
+                    if first_item and getattr(first_item, "expected_output_script", None):
+                        default_out = _eval_expected_output_script(
+                            first_item.expected_output_script,
+                            student_id="42",
+                            expected_input=first_item.expected_input,
                         )
-                        lines.append("            System.out.print(_out);")
+                    elif first_item:
+                        default_out = first_item.expected_output
                     else:
-                        lines.append(f"            System.out.print({json.dumps(default_out)});")
+                        default_out = ""
+                    lines.append("        else {")
+                    lines.append(f"            System.out.print({json.dumps(default_out)});")
                     lines.append("        }")
                 else:
                     lines.append('        System.out.print("wrong_output\\n");')

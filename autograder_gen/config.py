@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator, ValidationError
 
 
@@ -47,7 +47,12 @@ class MarkingItem(BaseModel):
     expected_output: str = Field(
         default="",
         title="Expected Output",
-        description="Expected standard output. Program output and expected output are trimmed before comparison.",
+        description="Expected standard output. Program output and expected output are trimmed before comparison. Mutually exclusive with expected_output_script.",
+    )
+    expected_output_script: Optional[str] = Field(
+        default=None,
+        title="Expected Output Script",
+        description="Python script to dynamically generate expected standard output. The script writes to stdout (via print), accesses expected input using input(), and has access to STUDENT_ID. Mutually exclusive with expected_output.",
     )
 
     # Function testing fields
@@ -90,6 +95,13 @@ class MarkingItem(BaseModel):
 
     @model_validator(mode="after")
     def validate_type_fields(self) -> "MarkingItem":
+        if (
+            bool(self.expected_output and self.expected_output.strip())
+            and bool(self.expected_output_script and self.expected_output_script.strip())
+        ):
+            raise ValueError(
+                "expected_output and expected_output_script are mutually exclusive"
+            )
         if (
             self.type not in ("output_comparison", "function_test")
             and "time_limit" in self.model_fields_set
@@ -269,12 +281,9 @@ class Config(BaseModel):
         if not self.retrieve_student_id:
             for q in self.questions:
                 for item in q.marking_items:
-                    for ph in ("<STUDENT_ID>", "<student_id>"):
-                        if (item.expected_output and ph in item.expected_output) or (
-                            item.expected_input and ph in item.expected_input
-                        ):
-                            self.retrieve_student_id = True
-                            return self
+                    if getattr(item, "expected_output_script", None):
+                        self.retrieve_student_id = True
+                        return self
         return self
 
     @property

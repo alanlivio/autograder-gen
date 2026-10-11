@@ -102,6 +102,12 @@
                                         [{{ prop.items['$ref'].split('/')[-1] }}]
                                     {%- endif -%}
                                 {%- endif -%}
+                            {%- elif prop.anyOf -%}
+                                {%- set types = [] -%}
+                                {%- for sub in prop.anyOf if sub.type and sub.type != 'null' -%}
+                                    {%- set _ = types.append(sub.type) -%}
+                                {%- endfor -%}
+                                {{ types|join(' | ') if types else 'any' }}
                             {%- elif prop['$ref'] -%}
                                 {{ prop['$ref'].split('/')[-1] }}
                             {%- else -%}

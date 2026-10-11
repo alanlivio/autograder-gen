@@ -132,3 +132,53 @@ def test_validator_output_comparison_no_command_warning():
     validator = ag.Validator()
     assert validator.validate_json(data) is True
     assert len(validator.get_warnings()) == 0
+
+
+def test_schema_includes_expected_output_script_mutual_exclusivity():
+    schema = ag.Config.model_json_schema()
+    marking_item_props = schema["$defs"]["MarkingItem"]["properties"]
+    assert "expected_output_script" in marking_item_props
+    assert "expected_output" in marking_item_props
+
+    exp_out_desc = marking_item_props["expected_output"]["description"]
+    exp_script_desc = marking_item_props["expected_output_script"]["description"]
+    assert "Mutually exclusive with expected_output_script" in exp_out_desc
+    assert "Mutually exclusive with expected_output" in exp_script_desc
+
+
+def test_marking_item_mutual_exclusion_validation():
+    with pytest.raises(ValidationError) as excinfo:
+        ag.MarkingItem(
+            target_file="solution.py",
+            total_mark=10,
+            type="output_comparison",
+            expected_output="Hello",
+            expected_output_script="print('Hello')",
+        )
+    assert "mutually exclusive" in str(excinfo.value)
+
+
+def test_validator_mutual_exclusion_validation():
+    data = {
+        "version": "1.0",
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "output_comparison",
+                        "expected_output": "Hello",
+                        "expected_output_script": "print('Hello')",
+                    }
+                ],
+            }
+        ],
+    }
+    validator = ag.Validator()
+    assert validator.validate_json(data) is False
+    assert any("mutually exclusive" in err for err in validator.get_errors())
+
