@@ -26,10 +26,10 @@ make deps
 
 ### CLI Generator
 
-Run `autograder_gen/cli.py` directly using Python:
+Run `autograder_gen/cli_gen.py` directly using Python:
 
 ```bash
-python autograder_gen/cli.py tests/examples/py_simple/config.yaml
+python autograder_gen/cli_gen.py tests/examples/py_simple/config.yaml
 ```
 
 Options:
@@ -37,19 +37,23 @@ Options:
 - Generate assessment description (`description.docx` and `description.md`):
 
 ```bash
-python autograder_gen/cli.py tests/examples/py_simple/config.yaml --description
+python autograder_gen/cli_gen.py tests/examples/py_simple/config.yaml --description
 ```
 
-- Run solution against an autograder configuration:
+### CLI Runner
+
+Run `autograder_gen/cli_run.py` directly using Python:
+
+- Run a submission against an autograder configuration:
 
 ```bash
-python autograder_gen/cli.py tests/examples/py_simple/config.yaml --run-solution
+python autograder_gen/cli_run.py tests/examples/py_simple/config.yaml submission.zip
 ```
 
 - Run autograder against generated stub submissions:
 
 ```bash
-python autograder_gen/cli.py tests/examples/py_simple/config.yaml --run-stubs
+python autograder_gen/cli_run.py tests/examples/py_simple/config.yaml --stubs
 ```
 
 ### Batch Processing
@@ -57,7 +61,13 @@ python autograder_gen/cli.py tests/examples/py_simple/config.yaml --run-stubs
 Generate autograders for all configurations in a directory:
 
 ```bash
-python autograder_gen/cli.py tests/examples --run-stubs
+python autograder_gen/cli_gen.py tests/examples
+```
+
+Run stub submissions for all configurations in a directory:
+
+```bash
+python autograder_gen/cli_run.py tests/examples --stubs
 ```
 
 ### Web Interface

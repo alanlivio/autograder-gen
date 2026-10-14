@@ -68,10 +68,7 @@ class AutograderGen:
         )
         self.retrieve_student_id: bool = any(
             bool(getattr(q, "expected_output_script", None))
-            or any(
-                bool(getattr(item, "expected_output_script", None))
-                for item in q.marking_items
-            )
+            or any(bool(getattr(item, "expected_output_script", None)) for item in q.marking_items)
             for q in self.config.questions
         )
 
@@ -810,7 +807,9 @@ class AutograderGen:
                             branch = "if" if idx == 0 else "elif"
                             lines.append(f"    {branch} {cond}:")
                             if has_item_script:
-                                lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                                lines.append(
+                                    f"        # Fallback student ID: {STUDENT_ID_FALLBACK}"
+                                )
                             lines.append(f"        sys.stdout.write({repr(out_val)})")
                             lines.append("        sys.exit(0)")
                         if len(output_items) > 1:
@@ -822,7 +821,9 @@ class AutograderGen:
                                     expected_input=first_item.expected_input,
                                 )
                                 lines.append("    else:")
-                                lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                                lines.append(
+                                    f"        # Fallback student ID: {STUDENT_ID_FALLBACK}"
+                                )
                                 lines.append(f"        sys.stdout.write({repr(default_out)})")
                             else:
                                 default_out = first_item.expected_output
@@ -1193,7 +1194,9 @@ class AutograderGen:
                             out_val = single_item.expected_output
                         lines.append(f"        System.out.print({json.dumps(out_val)});")
                     else:
-                        lines.append("        java.util.Scanner sc = new java.util.Scanner(System.in);")
+                        lines.append(
+                            "        java.util.Scanner sc = new java.util.Scanner(System.in);"
+                        )
                         lines.append("        StringBuilder sb = new StringBuilder();")
                         lines.append("        while (sc.hasNextLine()) {")
                         lines.append('            sb.append(sc.nextLine()).append("\\n");')
@@ -1213,10 +1216,10 @@ class AutograderGen:
                             branch = "if" if idx == 0 else "else if"
                             lines.append(f"        {branch} ({cond}) {{")
                             if has_item_script:
-                                lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
-                            lines.append(
-                                f"            System.out.print({json.dumps(out_val)});"
-                            )
+                                lines.append(
+                                    f"            // Fallback student ID: {STUDENT_ID_FALLBACK}"
+                                )
+                            lines.append(f"            System.out.print({json.dumps(out_val)});")
                             lines.append("            return;")
                             lines.append("        }")
                         if len(output_items) > 1:
@@ -1228,13 +1231,19 @@ class AutograderGen:
                                     expected_input=first_item.expected_input,
                                 )
                                 lines.append("        else {")
-                                lines.append(f"            // Fallback student ID: {STUDENT_ID_FALLBACK}")
-                                lines.append(f"            System.out.print({json.dumps(default_out)});")
+                                lines.append(
+                                    f"            // Fallback student ID: {STUDENT_ID_FALLBACK}"
+                                )
+                                lines.append(
+                                    f"            System.out.print({json.dumps(default_out)});"
+                                )
                                 lines.append("        }")
                             elif first_item:
                                 default_out = first_item.expected_output
                                 lines.append("        else {")
-                                lines.append(f"            System.out.print({json.dumps(default_out)});")
+                                lines.append(
+                                    f"            System.out.print({json.dumps(default_out)});"
+                                )
                                 lines.append("        }")
                 else:
                     lines.append('        System.out.print("wrong_output\\n");')
@@ -1253,9 +1262,7 @@ class AutograderGen:
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
 
         template = self.jinja_env.get_template("setup.sh.j2")
-        content = template.render(
-            config=self.config, retrieve_student_id=self.retrieve_student_id
-        )
+        content = template.render(config=self.config, retrieve_student_id=self.retrieve_student_id)
 
         setup_file = self.temp_dir / "setup.sh"
         with open(setup_file, "w", encoding="utf-8") as f:
@@ -1267,9 +1274,7 @@ class AutograderGen:
         """Generate run_autograder using Jinja template."""
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
         template = self.jinja_env.get_template("run_autograder.j2")
-        content = template.render(
-            config=self.config, retrieve_student_id=self.retrieve_student_id
-        )
+        content = template.render(config=self.config, retrieve_student_id=self.retrieve_student_id)
 
         filepath = self.temp_dir / "run_autograder"
         with open(filepath, "w", encoding="utf-8") as f:
@@ -1280,9 +1285,7 @@ class AutograderGen:
         """Generate modular test files: main run_tests.py and individual question test files."""
         assert self.temp_dir is not None, "temp_dir must be set before generating files"
         template = self.jinja_env.get_template("run_tests.py.j2")
-        content = template.render(
-            config=self.config, retrieve_student_id=self.retrieve_student_id
-        )
+        content = template.render(config=self.config, retrieve_student_id=self.retrieve_student_id)
 
         run_tests_file = self.temp_dir / "run_tests.py"
         with open(run_tests_file, "w", encoding="utf-8") as f:

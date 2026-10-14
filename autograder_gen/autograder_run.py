@@ -164,14 +164,53 @@ class AutograderRun:
         else:
             score_line = f"# Actual Score = {actual_score}"
 
+        tests = results.get("tests", [])
+
+        def _parse_test_number(t: dict[str, Any]) -> tuple[int, ...]:
+            num_str = str(t.get("number", ""))
+            digits = re.findall(r"\d+", num_str)
+            return tuple(int(d) for d in digits) if digits else (999999,)
+
+        sorted_tests = sorted(tests, key=_parse_test_number)
+
+        def _format_num(n: float | int) -> str:
+            if isinstance(n, (float, int)):
+                if float(n).is_integer():
+                    return str(int(n))
+                return f"{n:.1f}" if f"{n:.1f}".endswith(".0") else f"{round(n, 2)}"
+            return str(n)
+
+        questions_order: list[str] = []
+        questions_scores: dict[str, dict[str, float]] = {}
+
+        for t in sorted_tests:
+            q_name = t.get("number")
+            if not q_name:
+                q_name = re.sub(r"\s*-\s*Item\s*\d+$", "", t.get("name", "Unknown"))
+            q_name = str(q_name).strip()
+            if q_name not in questions_scores:
+                questions_order.append(q_name)
+                questions_scores[q_name] = {"score": 0.0, "max_score": 0.0}
+            questions_scores[q_name]["score"] += float(t.get("score", 0))
+            questions_scores[q_name]["max_score"] += float(t.get("max_score", 0))
+
         output_buffer: list[str] = []
         header_lines = [
             f"{'#' * 80}",
             "# [AutograderRunner: Student View]",
             f"# config={cfg_display}, submission={sub_display}",
             score_line,
-            f"{'#' * 80}",
+            "# Summary per Question:",
         ]
+        for q in questions_order:
+            q_score_str = _format_num(questions_scores[q]["score"])
+            q_max_str = _format_num(questions_scores[q]["max_score"])
+            header_lines.append(f"# - {q} : {q_score_str} / {q_max_str}")
+
+        header_lines.append("#")
+        header_lines.append("# See student message below.")
+        header_lines.append(f"{'#' * 80}")
+
         should_print = verbose if verbose is not None else self.verbose
         if should_print:
             print(f"\n{header_lines[0]}")
@@ -260,15 +299,7 @@ class AutograderRun:
                 print(f"\n{file_check_text}")
             output_buffer.append(f"\n{file_check_text}")
 
-        tests = results.get("tests", [])
-
-        def _parse_test_number(t: dict[str, Any]) -> tuple[int, ...]:
-            num_str = str(t.get("number", ""))
-            digits = re.findall(r"\d+", num_str)
-            return tuple(int(d) for d in digits) if digits else (999999,)
-
-        tests = sorted(tests, key=_parse_test_number)
-        for t in tests:
+        for t in sorted_tests:
             output = t.get("output", "").strip()
             if output:
                 score = t.get("score", 0)
@@ -337,43 +368,88 @@ class AutograderRun:
         expected_wrong_location_score: int | float | None = None,
         verbose: bool | None = None,
     ) -> dict[str, Any]:
-        with tempfile.TemporaryDirectory() as td:
-            td_path = Path(td)
-            correct_zip = td_path / "stub_correct_answer.zip"
-            correct_zip.write_bytes(self._get_correct_answer_zip_bytes())
+        cfg_dir = None
+        if isinstance(self.config, (str, Path)):
+            cfg_p = Path(self.config)
+            cfg_dir = cfg_p.parent if (cfg_p.is_file() or cfg_p.suffix) else cfg_p
+
+        disk_correct = cfg_dir / "stub_correct_answer.zip" if cfg_dir else None
+        disk_wrong = cfg_dir / "stub_wrong_answer.zip" if cfg_dir else None
+        disk_compiler = cfg_dir / "stub_compiler_error.zip" if cfg_dir else None
+        disk_wrong_loc = cfg_dir / "stub_correct_answer_wrong_location.zip" if cfg_dir else None
+
+        if (
+            disk_correct
+            and disk_correct.is_file()
+            and disk_wrong
+            and disk_wrong.is_file()
+            and disk_compiler
+            and disk_compiler.is_file()
+            and disk_wrong_loc
+            and disk_wrong_loc.is_file()
+        ):
             correct_res = self.run_autograder_for_submission(
-                correct_zip,
+                disk_correct,
                 total_score=total_score if total_score is not None else expected_correct_score,
                 verbose=verbose,
             )
-
-            wrong_zip = td_path / "stub_wrong_answer.zip"
-            wrong_zip.write_bytes(self._get_wrong_answer_zip_bytes())
             wrong_res = self.run_autograder_for_submission(
-                wrong_zip,
+                disk_wrong,
                 total_score=total_score if total_score is not None else expected_wrong_score,
                 verbose=verbose,
             )
-
-            compiler_zip = td_path / "stub_compiler_error.zip"
-            compiler_zip.write_bytes(self._get_compiler_error_zip_bytes())
             compiler_res = self.run_autograder_for_submission(
-                compiler_zip,
+                disk_compiler,
                 total_score=(
                     total_score if total_score is not None else expected_compiler_error_score
                 ),
                 verbose=verbose,
             )
-
-            wrong_loc_zip = td_path / "stub_correct_answer_wrong_location.zip"
-            wrong_loc_zip.write_bytes(self._get_wrong_file_location_zip_bytes())
             wrong_loc_res = self.run_autograder_for_submission(
-                wrong_loc_zip,
+                disk_wrong_loc,
                 total_score=(
                     total_score if total_score is not None else expected_wrong_location_score
                 ),
                 verbose=verbose,
             )
+        else:
+            with tempfile.TemporaryDirectory() as td:
+                td_path = Path(td)
+                correct_zip = td_path / "stub_correct_answer.zip"
+                correct_zip.write_bytes(self._get_correct_answer_zip_bytes())
+                correct_res = self.run_autograder_for_submission(
+                    correct_zip,
+                    total_score=total_score if total_score is not None else expected_correct_score,
+                    verbose=verbose,
+                )
+
+                wrong_zip = td_path / "stub_wrong_answer.zip"
+                wrong_zip.write_bytes(self._get_wrong_answer_zip_bytes())
+                wrong_res = self.run_autograder_for_submission(
+                    wrong_zip,
+                    total_score=total_score if total_score is not None else expected_wrong_score,
+                    verbose=verbose,
+                )
+
+                compiler_zip = td_path / "stub_compiler_error.zip"
+                compiler_zip.write_bytes(self._get_compiler_error_zip_bytes())
+                compiler_res = self.run_autograder_for_submission(
+                    compiler_zip,
+                    total_score=(
+                        total_score if total_score is not None else expected_compiler_error_score
+                    ),
+                    verbose=verbose,
+                )
+
+                wrong_loc_zip = td_path / "stub_correct_answer_wrong_location.zip"
+                wrong_loc_zip.write_bytes(self._get_wrong_file_location_zip_bytes())
+                wrong_loc_res = self.run_autograder_for_submission(
+                    wrong_loc_zip,
+                    total_score=(
+                        total_score if total_score is not None else expected_wrong_location_score
+                    ),
+                    verbose=verbose,
+                )
 
         for res in (correct_res, wrong_res, compiler_res, wrong_loc_res):
             if "log_path" in res:
@@ -740,35 +816,37 @@ class AutograderRun:
             if self.autograder_root:
                 meta_candidates.append(Path(self.autograder_root) / "submission_metadata.json")
             if os.environ.get("AUTOGRADER_ROOT"):
-                meta_candidates.append(Path(os.environ["AUTOGRADER_ROOT"]) / "submission_metadata.json")
+                meta_candidates.append(
+                    Path(os.environ["AUTOGRADER_ROOT"]) / "submission_metadata.json"
+                )
             meta_candidates.append(Path("/autograder/submission_metadata.json"))
             if sub_p and sub_p.is_dir():
-                meta_candidates.extend([
-                    sub_p / "submission_metadata.json",
-                    sub_p / "source" / "submission_metadata.json",
-                    sub_p / "submission" / "submission_metadata.json",
-                ])
+                meta_candidates.extend(
+                    [
+                        sub_p / "submission_metadata.json",
+                        sub_p / "source" / "submission_metadata.json",
+                        sub_p / "submission" / "submission_metadata.json",
+                    ]
+                )
             for meta_candidate in meta_candidates:
-                    if meta_candidate.exists():
-                        try:
-                            meta = json.loads(meta_candidate.read_text(encoding="utf-8"))
-                            users = meta.get("users") or []
-                            if users and users[0].get("sid"):
-                                raw_sid = str(users[0]["sid"])
-                                sid = re.sub(r"\D+", "", raw_sid)
-                                if sid or raw_sid:
-                                    meta_found = True
-                                    break
-                        except Exception:
-                            pass
+                if meta_candidate.exists():
+                    try:
+                        meta = json.loads(meta_candidate.read_text(encoding="utf-8"))
+                        users = meta.get("users") or []
+                        if users and users[0].get("sid"):
+                            raw_sid = str(users[0]["sid"])
+                            sid = re.sub(r"\D+", "", raw_sid)
+                            if sid or raw_sid:
+                                meta_found = True
+                                break
+                    except Exception:
+                        pass
             excluded_raw = {
                 str(x).strip()
                 for x in getattr(self.config_obj, "excluded_student_ids", [])
                 if str(x).strip()
             }
-            excluded_digits = {
-                re.sub(r"\D+", "", x) for x in excluded_raw if re.sub(r"\D+", "", x)
-            }
+            excluded_digits = {re.sub(r"\D+", "", x) for x in excluded_raw if re.sub(r"\D+", "", x)}
             is_excluded = bool(
                 raw_sid
                 and (
@@ -810,7 +888,9 @@ class AutograderRun:
                             if getattr(self.config_obj, "wrong_file_location_deduction", 0.0) > 0
                             else ""
                         )
-                        lines.append(f"[INFO] Found file '{req_file}' at {found_matches[0]}{penalty_msg}")
+                        lines.append(
+                            f"[INFO] Found file '{req_file}' at {found_matches[0]}{penalty_msg}"
+                        )
         for q in getattr(self.config_obj, "questions", []):
             hidden_count = sum(
                 1

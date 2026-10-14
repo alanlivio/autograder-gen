@@ -39,7 +39,7 @@ test:
 	python -m pytest
 
 run-examples:
-	PYTHONPATH=. python -m autograder_gen.cli tests/examples --run-stubs
+	PYTHONPATH=. python -m autograder_gen.cli_run tests/examples --stubs
 
 format:
 	python -m black .

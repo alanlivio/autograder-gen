@@ -46,7 +46,8 @@ Homepage = "https://pypi.org/project/autograder-gen/"
 Repository = "https://github.com/alanlivio/autograder-gen"
 
 [project.scripts]
-autograder-gen = "autograder_gen.cli:main"
+autograder-gen = "autograder_gen.cli_gen:main"
+autograder-run = "autograder_gen.cli_run:main"
 autograder-gen-web = "autograder_gen.web.app:main"
 
 [tool.setuptools.packages.find]
