@@ -459,8 +459,8 @@ def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
     zip_path = gen.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         content = z.read("run_autograder").decode("utf-8")
-        assert '[INFO] Question 2) has 2 hidden marking items' in content
-        assert '[INFO] Question 1' not in content
+        assert "[INFO] Question 2) has 2 hidden marking items" in content
+        assert "[INFO] Question 1" not in content
 
 
 def test_run_autograder_found_file_penalties_message(temp_output_dir):
@@ -488,4 +488,3 @@ def test_run_autograder_found_file_penalties_message(temp_output_dir):
     with zipfile.ZipFile(zip_path, "r") as z:
         content = z.read("run_autograder").decode("utf-8")
         assert "Found file 'solution.py' at $FOUND_FILE, penalties will be applied" in content
-

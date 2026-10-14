@@ -146,7 +146,7 @@ def test_call_java_function_arrays_and_objects(tmp_path):
         "        return res;\n"
         "    }\n"
         "    public static String greet(String name) {\n"
-        "        return \"Hello, \" + name + \"!\";\n"
+        '        return "Hello, " + name + "!";\n'
         "    }\n"
         "    public static int[][] getMatrix() {\n"
         "        return new int[][]{{1, 2}, {3, 4}};\n"
@@ -182,9 +182,7 @@ def test_call_java_function_arrays_and_objects(tmp_path):
     assert res_matrix.strip() == "[[1, 2], [3, 4]]"
 
 
-def test_javarunner_compilation_failure_logged_and_hidden_from_student(
-    tmp_path, capsys, caplog
-):
+def test_javarunner_compilation_failure_logged_and_hidden_from_student(tmp_path, capsys, caplog):
     import logging
     import pytest
     from autograder_gen.grader_utils import call_java_function
@@ -222,9 +220,7 @@ def test_javarunner_compilation_failure_logged_and_hidden_from_student(
     assert any("JavaRunner" in record.message for record in error_logs)
 
 
-def test_javarunner_execution_failure_logged_and_hidden_from_student(
-    tmp_path, capsys, caplog
-):
+def test_javarunner_execution_failure_logged_and_hidden_from_student(tmp_path, capsys, caplog):
     import logging
     import pytest
     import subprocess
@@ -243,7 +239,7 @@ def test_javarunner_execution_failure_logged_and_hidden_from_student(
     runner_file.write_text(
         "public class JavaRunner {\n"
         "    public static void main(String[] args) {\n"
-        "        System.err.println(\"[JAVARUNNER_ERROR] Internal fatal crash\");\n"
+        '        System.err.println("[JAVARUNNER_ERROR] Internal fatal crash");\n'
         "        System.exit(2);\n"
         "    }\n"
         "}\n",
@@ -268,4 +264,3 @@ def test_javarunner_execution_failure_logged_and_hidden_from_student(
     error_logs = [record for record in caplog.records if record.levelno == logging.ERROR]
     assert len(error_logs) > 0
     assert any("JavaRunner" in record.message for record in error_logs)
-

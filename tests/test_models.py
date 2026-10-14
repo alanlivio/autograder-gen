@@ -245,4 +245,3 @@ def test_question_level_expected_output_script_syntax_error():
     validator = ag.Validator()
     assert validator.validate_json(config_dict) is False
     assert any("invalid expected_output_script syntax" in err for err in validator.get_errors())
-

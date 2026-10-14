@@ -122,10 +122,12 @@ def test_stubs_submission_metadata_only_when_gitlab_or_github():
     with zipfile.ZipFile(buf, "r") as zf:
         assert "submission_metadata.json" not in zf.namelist()
 
-    config_dict["questions"][0]["marking_items"].append({
-        "type": "gitlab_submission_exists",
-        "total_mark": 5,
-    })
+    config_dict["questions"][0]["marking_items"].append(
+        {
+            "type": "gitlab_submission_exists",
+            "total_mark": 5,
+        }
+    )
     cfg = ag.Config.model_validate(config_dict)
     engine = ag.Engine(cfg, config_dict)
     buf_gl = engine.generate_correct_answer_zip()
@@ -184,7 +186,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         assert 'STUDENT_ID": student_id' in test_py
 
         run_tests_py = z.read("run_tests.py").decode("utf-8")
-        assert 'STUDENT_ID' not in run_tests_py
+        assert "STUDENT_ID" not in run_tests_py
 
         run_autograder = z.read("run_autograder").decode("utf-8")
         assert "submission_metadata.json" in run_autograder
@@ -556,9 +558,7 @@ def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
                         "total_mark": 10,
                         "type": "function_test",
                         "function_name": "display",
-                        "test_cases": [
-                            {"args": [28], "expected": "28"}
-                        ],
+                        "test_cases": [{"args": [28], "expected": "28"}],
                     }
                 ],
             }
@@ -708,9 +708,9 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
     assert results["tests"][0]["score"] == 0
     assert "name 'expected_input' is not defined" in results["tests"][0]["output"]
 
-    config_dict["questions"][0]["marking_items"][0]["expected_output_script"] = (
-        "val = input().strip(); print(f'{val}_{STUDENT_ID}')"
-    )
+    config_dict["questions"][0]["marking_items"][0][
+        "expected_output_script"
+    ] = "val = input().strip(); print(f'{val}_{STUDENT_ID}')"
     with open(cfg_file, "w", encoding="utf-8") as f:
         yaml.dump(config_dict, f)
 
@@ -887,8 +887,12 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
     sub_excluded = tmp_path / "sub_excluded"
     sub_excluded.mkdir()
     meta_excluded = {"users": [{"sid": "33811500", "email": "s33811500@reading.ac.uk"}]}
-    (sub_excluded / "submission_metadata.json").write_text(json.dumps(meta_excluded), encoding="utf-8")
-    (sub_excluded / "solution.py").write_text(f'print("SID:{STUDENT_ID_FALLBACK}")\n', encoding="utf-8")
+    (sub_excluded / "submission_metadata.json").write_text(
+        json.dumps(meta_excluded), encoding="utf-8"
+    )
+    (sub_excluded / "solution.py").write_text(
+        f'print("SID:{STUDENT_ID_FALLBACK}")\n', encoding="utf-8"
+    )
 
     runner = ag.AutograderRunner(cfg_file)
     res_excluded = runner.run_autograder_for_submission(sub_excluded)
@@ -897,7 +901,9 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
     sub_regular = tmp_path / "sub_regular"
     sub_regular.mkdir()
     meta_regular = {"users": [{"sid": "44556677", "email": "s44556677@reading.ac.uk"}]}
-    (sub_regular / "submission_metadata.json").write_text(json.dumps(meta_regular), encoding="utf-8")
+    (sub_regular / "submission_metadata.json").write_text(
+        json.dumps(meta_regular), encoding="utf-8"
+    )
     (sub_regular / "solution.py").write_text('print("SID:44556677")\n', encoding="utf-8")
 
     runner_regular = ag.AutograderRunner(cfg_file)
@@ -996,7 +1002,3 @@ def test_question_level_expected_output_script_execution(tmp_path: Path):
     res = runner.run_autograder_for_submission(sub_dir)
     assert res["tests"][0]["score"] == 5
     assert res["tests"][1]["score"] == 5
-
-
-
-

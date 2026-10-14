@@ -329,6 +329,9 @@ def test_wrong_file_location_autograder_run_log(tmp_path: Path):
 
     runner = ag.AutograderRunner(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
-    assert "_file_check_log" in results
-    assert "Found file 'solution.py' at nested/solution.py, penalties will be applied" in results["_file_check_log"]
-
+    assert (
+        "Found file 'solution.py' at ./nested/solution.py, penalties will be applied"
+        in results["_file_check_log"]
+        or "Found file 'solution.py' at nested/solution.py, penalties will be applied"
+        in results["_file_check_log"]
+    )

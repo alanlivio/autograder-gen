@@ -37,9 +37,7 @@ def test_web_api_validate_examples(client, example_name):
     assert response.status_code == 200
 
     data = response.get_json()
-    assert (
-        data["valid"] is True
-    ), f"Validation failed for {example_name}: {data.get('errors')}"
+    assert data["valid"] is True, f"Validation failed for {example_name}: {data.get('errors')}"
 
 
 @pytest.mark.parametrize("example_name", ["py_complete", "py_function", "py_simple", "java_simple"])
@@ -52,4 +50,3 @@ def test_web_export_bundle_examples(client, example_name):
     assert response.status_code == 200
     assert response.mimetype == "application/zip"
     assert response.data.startswith(b"PK\x03\x04")
-

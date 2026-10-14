@@ -434,4 +434,3 @@ def test_config_parse_rejects_yml(tmp_path):
     cfg_file.write_text(f"version: '{__version__}'\nlanguage: python\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Only YAML format \\(.yaml\\) is supported."):
         ag.Config.parse(cfg_file)
-

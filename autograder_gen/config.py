@@ -95,13 +95,10 @@ class MarkingItem(BaseModel):
 
     @model_validator(mode="after")
     def validate_type_fields(self) -> "MarkingItem":
-        if (
-            bool(self.expected_output and self.expected_output.strip())
-            and bool(self.expected_output_script and self.expected_output_script.strip())
+        if bool(self.expected_output and self.expected_output.strip()) and bool(
+            self.expected_output_script and self.expected_output_script.strip()
         ):
-            raise ValueError(
-                "expected_output and expected_output_script are mutually exclusive"
-            )
+            raise ValueError("expected_output and expected_output_script are mutually exclusive")
         if (
             self.type not in ("output_comparison", "function_test")
             and "time_limit" in self.model_fields_set
@@ -298,7 +295,6 @@ class Config(BaseModel):
                 "wrong_file_location_deduction is only supported when strict_file_location is False"
             )
         return self
-
 
     @property
     def total_score(self) -> float:
