@@ -10,8 +10,8 @@ import subprocess
 import sys
 import os
 import tempfile
-{% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_test', 'signature_check']) | list | length > 0 %}
-{% set needs_timeout = question.marking_items | selectattr('type', 'equalto', 'function_test') | list | length > 0 %}
+{% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_return_comparison', 'function_output_comparison', 'function_signature_check']) | list | length > 0 %}
+{% set needs_timeout = question.marking_items | selectattr('type', 'in', ['function_return_comparison', 'function_output_comparison']) | list | length > 0 %}
 {% if needs_imports %}
 import importlib.util
 import inspect
@@ -26,7 +26,7 @@ if str(Path(__file__).parent.parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent.parent))
 if str(Path(__file__).parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent))
-from grader_utils import StudentMessage, normalize_output, compare_outputs{% if config.language == 'java' and config.remove_use_of_java_package %}, remove_package_line{% endif %}{% if config.language == 'java' %}, call_java_function{% endif %}
+from grader_utils import StudentMessage, normalize_output, compare_outputs{% if config.language == 'java' and config.remove_use_of_java_package %}, remove_package_line{% endif %}{% if config.language == 'java' %}, call_java_function{% endif %}{% if config.language == 'python' %}, call_function_with_timeout, call_function_output_with_timeout, check_function_signature{% endif %}, format_function_call
 
 
 
@@ -89,6 +89,24 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
             except concurrent.futures.TimeoutError:
                 raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
 
+    def call_function_output_with_timeout(self, func, args, kwargs, timeout_seconds):
+        """Call a function capturing stdout with timeout using ThreadPoolExecutor."""
+        import io
+        from contextlib import redirect_stdout
+
+        def _wrapper():
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                func(*args, **kwargs)
+            return buf.getvalue()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(_wrapper)
+            try:
+                return future.result(timeout=timeout_seconds)
+            except concurrent.futures.TimeoutError:
+                raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+
 {% endif %}
 {% if needs_imports and config.language == 'python' %}
     def import_function_from_file(self, file_name, function_name):
@@ -129,7 +147,7 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
         remove_package_line(file_path)
 
 {% endif %}
-    def call_java_function(self, file_name, function_name, args, timeout_seconds):
+    def call_java_function(self, file_name, function_name, args, timeout_seconds, capture_output=False):
         """Compile Java file and execute specified function with args."""
         file_path = self.resolve_target(file_name)
         if not file_path.exists():
@@ -141,6 +159,7 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
             timeout_seconds,
             self.source_dir,
             remove_package={{ 'True' if config.remove_use_of_java_package else 'False' }},
+            capture_output=capture_output,
         )
 
 {% endif %}
@@ -155,9 +174,9 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 
 {% if item.type == "output_comparison" %}
     {% include 'subtemplates/output_comparison_method.j2' %}
-{% elif item.type == "signature_check" %}
+{% elif item.type == "function_signature_check" %}
     {% include 'subtemplates/signature_check_method.j2' %}
-{% elif item.type == "function_test" %}
+{% elif item.type in ["function_return_comparison", "function_output_comparison"] %}
     {% include 'subtemplates/function_test_method.j2' %}
 {% elif item.type == "gitlab_submission_exists" %}
     {% include 'subtemplates/gitlab_submission_exists.j2' %}

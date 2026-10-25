@@ -162,7 +162,7 @@ questions:
     marking_items:
       - name: Item 1
         total_mark: 10
-        type: function_test
+        type: function_return_comparison
         target_file: solution.py
         function_name: add
         test_cases:

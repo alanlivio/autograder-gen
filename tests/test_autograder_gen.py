@@ -79,7 +79,7 @@ def test_skeleton_generation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},
@@ -115,7 +115,7 @@ def test_skeleton_generation_java():
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},
@@ -176,7 +176,7 @@ def test_skeleton_generation_compiler_error():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},

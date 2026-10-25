@@ -77,7 +77,7 @@ def test_config_total_score_multiple_questions_and_items():
                     {
                         "target_file": "solution.py",
                         "total_mark": 15,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [{"args": [1, 2], "expected": "3"}],
                     },
@@ -111,14 +111,14 @@ questions:
     marking_items:
       - target_file: solution.py
         total_mark: 12
-        type: function_test
+        type: function_return_comparison
         function_name: add
         test_cases:
           - args: [1, 2]
             expected: '3'
       - target_file: solution.py
         total_mark: 8
-        type: function_test
+        type: function_return_comparison
         function_name: multiply
         test_cases:
           - args: [2, 3]
@@ -178,7 +178,63 @@ def test_file_exists_type_fails_validation():
     assert "type must be one of" in str(excinfo.value)
 
 
-def test_signature_check_with_time_limit_fails_validation():
+def test_legacy_type_names_rejected():
+    for legacy_type in ("function_test", "signature_check", "function_output_test"):
+        data = {
+            "version": __version__,
+            "language": "python",
+            "files_necessary": ["solution.py"],
+            "questions": [
+                {
+                    "name": "Q1",
+                    "marking_items": [
+                        {
+                            "target_file": "solution.py",
+                            "total_mark": 10,
+                            "type": legacy_type,
+                            "function_name": "add",
+                        },
+                    ],
+                }
+            ],
+        }
+        with pytest.raises(ValidationError) as excinfo:
+            ag.Config.model_validate(data)
+        assert "type must be one of" in str(excinfo.value)
+
+
+def test_function_return_comparison_and_function_signature_check_types():
+    data = {
+        "version": __version__,
+        "language": "python",
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "function_return_comparison",
+                        "function_name": "add",
+                        "test_cases": [{"args": [1, 2], "expected": "3"}],
+                    },
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "function_signature_check",
+                        "function_name": "add",
+                    },
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(data)
+    assert cfg.questions[0].marking_items[0].type == "function_return_comparison"
+    assert cfg.questions[0].marking_items[1].type == "function_signature_check"
+
+
+def test_function_signature_check_with_time_limit_fails_validation():
     data = {
         "version": __version__,
         "language": "python",
@@ -190,7 +246,7 @@ def test_signature_check_with_time_limit_fails_validation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 0,
-                        "type": "signature_check",
+                        "type": "function_signature_check",
                         "time_limit": 5,
                     }
                 ],
@@ -199,7 +255,76 @@ def test_signature_check_with_time_limit_fails_validation():
     }
     with pytest.raises(ValidationError) as excinfo:
         ag.Config.model_validate(data)
-    assert "time_limit is not allowed for type 'signature_check'" in str(excinfo.value)
+    assert "time_limit is not allowed for type 'function_signature_check'" in str(excinfo.value)
+
+
+def test_function_return_comparison_requires_function_name():
+    data = {
+        "version": __version__,
+        "language": "python",
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "function_return_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    with pytest.raises(ValidationError) as excinfo:
+        ag.Config.model_validate(data)
+    assert "function_name is required for function_return_comparison" in str(excinfo.value)
+
+
+def test_function_output_comparison_validation():
+    data = {
+        "version": __version__,
+        "language": "python",
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "function_output_comparison",
+                        "function_name": "display",
+                        "time_limit": 5,
+                        "test_cases": [{"args": [349], "expected": "foo"}],
+                    },
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(data)
+    assert cfg.questions[0].marking_items[0].type == "function_output_comparison"
+
+    missing_fn_data = {
+        "version": __version__,
+        "language": "python",
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "function_output_comparison",
+                    }
+                ],
+            }
+        ],
+    }
+    with pytest.raises(ValidationError) as excinfo:
+        ag.Config.model_validate(missing_fn_data)
+    assert "function_name is required for function_output_comparison" in str(excinfo.value)
 
 
 def test_strict_file_location_configuration():

@@ -85,6 +85,7 @@ class Validator:
                 # Custom check: output comparison warning
                 self._validate_output_comparison_warnings(item, q)
                 self._validate_signature_check_warnings(item)
+                self._validate_function_test(item)
 
         if total_marks <= 0:
             self.warnings.append(
@@ -127,9 +128,9 @@ class Validator:
                     )
 
     def _validate_signature_check_warnings(self, item: Dict[str, Any]):
-        """Check for signature_check item configurations."""
+        """Check for function_signature_check item configurations."""
         item_type = item.get("type", "")
-        if item_type == "signature_check":
+        if item_type == "function_signature_check":
             target_func = item.get("function_name") or item.get("target_function", "")
             if not target_func:
                 self.errors.append(
@@ -139,7 +140,10 @@ class Validator:
     def _validate_function_test(self, item: Dict[str, Any]):
         """Check function test specific fields."""
         item_type = item.get("type", "")
-        if item_type == "function_test":
+        if item_type in (
+            "function_return_comparison",
+            "function_output_comparison",
+        ):
             target_func = item.get("function_name") or item.get("target_function", "")
             test_cases = item.get("test_cases", [])
             if not target_func:

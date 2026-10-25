@@ -245,3 +245,38 @@ def test_question_level_expected_output_script_syntax_error():
     validator = ag.Validator()
     assert validator.validate_json(config_dict) is False
     assert any("invalid expected_output_script syntax" in err for err in validator.get_errors())
+
+
+def test_marking_item_function_return_comparison_and_signature_check():
+    item_fn = ag.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="function_return_comparison",
+        function_name="calc",
+    )
+    assert item_fn.type == "function_return_comparison"
+
+    item_sig = ag.MarkingItem(
+        target_file="solution.py",
+        total_mark=5,
+        type="function_signature_check",
+        function_name="calc",
+    )
+    assert item_sig.type == "function_signature_check"
+
+    item_out = ag.MarkingItem(
+        target_file="solution.py",
+        total_mark=10,
+        type="function_output_comparison",
+        function_name="display",
+    )
+    assert item_out.type == "function_output_comparison"
+
+    for legacy_type in ("function_test", "signature_check", "function_output_test"):
+        with pytest.raises(ValidationError):
+            ag.MarkingItem(
+                target_file="solution.py",
+                total_mark=10,
+                type=legacy_type,
+                function_name="calc",
+            )

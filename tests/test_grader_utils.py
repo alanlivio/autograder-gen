@@ -1,3 +1,4 @@
+import pytest
 from autograder_gen.grader_utils import (
     compare_outputs,
     normalize_output,
@@ -264,3 +265,143 @@ def test_javarunner_execution_failure_logged_and_hidden_from_student(tmp_path, c
     error_logs = [record for record in caplog.records if record.levelno == logging.ERROR]
     assert len(error_logs) > 0
     assert any("JavaRunner" in record.message for record in error_logs)
+
+
+def test_modular_run_shared_utilities(tmp_path):
+    from autograder_gen.run_shared import (
+        resolve_target,
+        apply_wrong_location_deduction,
+        eval_expected_output_script,
+    )
+
+    # Test eval_expected_output_script
+    out = eval_expected_output_script("print(f'Hello {STUDENT_ID}')", student_id="9999")
+    assert out.strip() == "Hello 9999"
+
+    # Test resolve_target
+    sub_dir = tmp_path / "subdir"
+    sub_dir.mkdir()
+    target = sub_dir / "mysolution.py"
+    target.write_text("x = 1\n", encoding="utf-8")
+
+    wrong_set = set()
+    found = resolve_target(tmp_path, "mysolution.py", strict_file_location=False, wrong_location_files=wrong_set)
+    assert found == target
+    assert "mysolution.py" in wrong_set
+
+    # Test apply_wrong_location_deduction
+    awarded = apply_wrong_location_deduction("mysolution.py", total_mark=10.0, deduction_rate=0.2, wrong_location_files=wrong_set)
+    assert awarded == 8.0
+
+
+def test_modular_run_python_utilities(tmp_path):
+    from autograder_gen.run_python import (
+        import_function_from_file,
+        call_function_with_timeout,
+        check_function_signature,
+    )
+
+    py_file = tmp_path / "my_module.py"
+    py_file.write_text(
+        "def compute(a: int, b: int = 10) -> int:\n"
+        "    return a + b\n\n"
+        "def slow_func():\n"
+        "    import time\n"
+        "    time.sleep(1)\n",
+        encoding="utf-8",
+    )
+
+    func = import_function_from_file(py_file, "compute")
+    assert callable(func)
+    assert func(2, 3) == 5
+
+    # Test timeout
+    slow = import_function_from_file(py_file, "slow_func")
+    with pytest.raises(TimeoutError):
+        call_function_with_timeout(slow, [], {}, timeout_seconds=0.05)
+
+    # Test signature check success
+    check_function_signature(func, "compute", expected_parameters="a: int, b: int = 10", expected_return_type="int")
+
+    # Test signature check failure parameter count
+    with pytest.raises(AssertionError) as exc_param:
+        check_function_signature(func, "compute", expected_parameters="a, b, c")
+    assert "expected 3" in str(exc_param.value)
+
+    # Test signature check failure return type
+    with pytest.raises(AssertionError) as exc_ret:
+        check_function_signature(func, "compute", expected_parameters="a: int, b: int = 10", expected_return_type="str")
+    assert "expected 'str'" in str(exc_ret.value)
+
+
+def test_format_function_call_and_student_messages():
+    from autograder_gen.run_shared import (
+        StudentMessage,
+        format_function_call,
+        format_function_arg,
+    )
+
+    assert StudentMessage.COMPARING_OUTPUT == "## Comparing output"
+    assert StudentMessage.COMPARING_RETURN == "## Comparing return"
+    assert StudentMessage.FUNCTION_CALL == "### Function call:"
+    assert StudentMessage.EXPECTED_RETURN == "### Expected return:"
+    assert StudentMessage.EXPECTED_OUTPUT == "### Expected output:"
+    assert StudentMessage.ACTUAL_RETURN == "### Actual return:"
+    assert StudentMessage.ACTUAL_OUTPUT == "### Actual output:"
+    assert (
+        StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name="calc")
+        == "[CORRECT_ANSWER] Return value matches expected for function 'calc'."
+    )
+    assert (
+        StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name="calc")
+        == "[WRONG_ANSWER] Return value mismatch for function 'calc'."
+    )
+    assert (
+        StudentMessage.CORRECT_ANSWER_FUNCTION_OUTPUT.format(function_name="display")
+        == "[CORRECT_ANSWER] Output matches expected for std output of function 'display'."
+    )
+    assert (
+        StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name="display")
+        == "[WRONG_ANSWER] Output mismatch for std output of function 'display'."
+    )
+
+    # Primitive numbers and empty args
+    assert format_function_call("display", [28]) == "display(28)"
+    assert format_function_call("display", []) == "display()"
+    assert format_function_call("display") == "display()"
+
+    # Java array expressions formatted without redundant surrounding quotes
+    assert (
+        format_function_call("longestPlateau", ["{1, 3, 3, 3, 2, 1}"])
+        == "longestPlateau({1, 3, 3, 3, 2, 1})"
+    )
+    assert (
+        format_function_call("countPeaks", ["{{1, 2, 1}, {2, 5, 2}, {1, 2, 1}}"])
+        == "countPeaks({{1, 2, 1}, {2, 5, 2}, {1, 2, 1}})"
+    )
+    assert (
+        format_function_call(
+            "average_grades", ["{{51, 83, 28}, {0, 38, 95}}", "{30, 40, 30}"]
+        )
+        == "average_grades({{51, 83, 28}, {0, 38, 95}}, {30, 40, 30})"
+    )
+
+    # String arguments formatted with quotes
+    assert format_function_call("isPalindrome", ["radar"]) == 'isPalindrome("radar")'
+    assert format_function_call("cardCompare", ["4H", "3S"]) == 'cardCompare("4H", "3S")'
+
+    # Python keyword arguments and lists
+    assert format_function_call("add", [1, 2]) == "add(1, 2)"
+    assert format_function_call("filter_items", [[1, 2, 3]], {"reverse": True}) == "filter_items([1, 2, 3], reverse=True)"
+
+
+def test_call_function_output_with_timeout():
+    from autograder_gen.run_python import call_function_output_with_timeout
+
+    def printer(msg):
+        print(f"Hello, {msg}!", end="")
+
+    out = call_function_output_with_timeout(printer, ["world"], {}, timeout_seconds=5)
+    assert out == "Hello, world!"
+
+

@@ -39,6 +39,9 @@ from autograder_gen.grader_utils import (
     ensure_java_runner,
     call_java_function,
     STUDENT_ID_FALLBACK,
+    format_function_call,
+    call_function_with_timeout,
+    call_function_output_with_timeout,
 )
 
 __all__ = [
@@ -73,4 +76,7 @@ __all__ = [
     "print_success",
     "print_warning",
     "STUDENT_ID_FALLBACK",
+    "format_function_call",
+    "call_function_with_timeout",
+    "call_function_output_with_timeout",
 ]

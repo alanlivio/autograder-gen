@@ -8,7 +8,7 @@ questions:
   marking_items:
   - target_file: Solution.java
     total_mark: 10
-    type: function_test
+    type: function_return_comparison
     function_name: add
     test_cases:
     - args:

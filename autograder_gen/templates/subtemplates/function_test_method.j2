@@ -32,6 +32,7 @@
         
         expected_output = None
         actual_output = None
+        call_info = None
         {% if item.test_cases %}
         {% for test_case in item.test_cases %}
         {% if test_case.args %}
@@ -44,18 +45,33 @@
         {% else %}
         kwargs = {}
         {% endif %}
+        call_str = format_function_call(function_name, args, kwargs)
         try:
+{% if item.type == 'function_output_comparison' %}
+            result = self.call_function_output_with_timeout(function, args, kwargs, {{ item.time_limit }})
+{% else %}
             result = self.call_function_with_timeout(function, args, kwargs, {{ item.time_limit }})
+{% endif %}
             expected_out = normalize_output({{ test_case.expected | string | tojson }})
             actual_out = normalize_output(str(result))
             if expected_output is None:
                 expected_output = expected_out
                 actual_output = actual_out
+                call_info = call_str
             if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
+{% if item.type == 'function_output_comparison' %}
                 print(StudentMessage.COMPARING_OUTPUT)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
                 print(f"{StudentMessage.EXPECTED_OUTPUT}\n{expected_out}")
                 print(f"{StudentMessage.ACTUAL_OUTPUT}\n{actual_out}")
-                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION.format(function_name=function_name))
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name))
+{% else %}
+                print(StudentMessage.COMPARING_RETURN)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_out}")
+                print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_out}")
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name))
+{% endif %}
         except AssertionError:
             raise
         except TimeoutError:
@@ -69,6 +85,7 @@
 {% elif config.language == 'java' %}
         expected_output = None
         actual_output = None
+        call_info = None
         {% if item.test_cases %}
         {% for test_case in item.test_cases %}
         {% if test_case.args %}
@@ -76,18 +93,33 @@
         {% else %}
         args = []
         {% endif %}
+        call_str = format_function_call(function_name, args)
         try:
+{% if item.type == 'function_output_comparison' %}
+            result = self.call_java_function(target_file, function_name, args, {{ item.time_limit }}, capture_output=True)
+{% else %}
             result = self.call_java_function(target_file, function_name, args, {{ item.time_limit }})
+{% endif %}
             expected_out = normalize_output({{ test_case.expected | string | tojson }})
             actual_out = normalize_output(str(result))
             if expected_output is None:
                 expected_output = expected_out
                 actual_output = actual_out
+                call_info = call_str
             if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
+{% if item.type == 'function_output_comparison' %}
                 print(StudentMessage.COMPARING_OUTPUT)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
                 print(f"{StudentMessage.EXPECTED_OUTPUT}\n{expected_out}")
                 print(f"{StudentMessage.ACTUAL_OUTPUT}\n{actual_out}")
-                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION.format(function_name=function_name))
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name))
+{% else %}
+                print(StudentMessage.COMPARING_RETURN)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_out}")
+                print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_out}")
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name))
+{% endif %}
         except AssertionError:
             raise
         except subprocess.TimeoutExpired:
@@ -101,8 +133,19 @@
 {% endif %}
         
         if expected_output is not None:
+{% if item.type == 'function_output_comparison' %}
             print(StudentMessage.COMPARING_OUTPUT)
+            if call_info is not None:
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_info}")
             print(f"{StudentMessage.EXPECTED_OUTPUT}\n{expected_output}")
             print(f"{StudentMessage.ACTUAL_OUTPUT}\n{actual_output}")
-        print(f"## Test Passed: {StudentMessage.CORRECT_ANSWER_FUNCTION.format(function_name=function_name)}")
+        print(f"## Test Passed: {StudentMessage.CORRECT_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)}")
+{% else %}
+            print(StudentMessage.COMPARING_RETURN)
+            if call_info is not None:
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_info}")
+            print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_output}")
+            print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_output}")
+        print(f"## Test Passed: {StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)}")
+{% endif %}
         self.apply_wrong_location_deduction(target_file, {{ item.total_mark }}) 

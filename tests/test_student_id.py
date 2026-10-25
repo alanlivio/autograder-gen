@@ -556,7 +556,7 @@ def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
                     {
                         "target_file": "CW1P3.java",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "display",
                         "test_cases": [{"args": [28], "expected": "28"}],
                     }

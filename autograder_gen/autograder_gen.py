@@ -227,11 +227,11 @@ class AutograderGen:
                         p = doc.add_paragraph()
                         run = p.add_run(exp_out)
                         run.font.name = "Courier New"
-                elif item.type == "signature_check":
+                elif item.type == "function_signature_check":
                     doc.add_paragraph(
                         f"Requirement: Function '{item.function_name}' in '{item.target_file}' must have correct signature."
                     )
-                elif item.type == "function_test":
+                elif item.type in ("function_return_comparison", "function_output_comparison"):
                     doc.add_paragraph(
                         f"Requirement: Function '{item.function_name}' in '{item.target_file}' must pass unit tests."
                     )
@@ -301,11 +301,11 @@ class AutograderGen:
                         lines.append("```")
                         lines.append(exp_out)
                         lines.append("```")
-                elif item.type == "signature_check":
+                elif item.type == "function_signature_check":
                     lines.append(
                         f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must have correct signature."
                     )
-                elif item.type == "function_test":
+                elif item.type in ("function_return_comparison", "function_output_comparison"):
                     lines.append(
                         f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must pass unit tests."
                     )
@@ -399,11 +399,11 @@ class AutograderGen:
                     if exp_out:
                         html_lines.append("      <p><strong>Expected Output:</strong></p>")
                         html_lines.append(f"      <pre>{html.escape(exp_out)}</pre>")
-                elif item.type == "signature_check":
+                elif item.type == "function_signature_check":
                     html_lines.append(
                         f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must match signature.</p>"
                     )
-                elif item.type == "function_test":
+                elif item.type in ("function_return_comparison", "function_output_comparison"):
                     html_lines.append(
                         f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must pass unit tests.</p>"
                     )
@@ -675,13 +675,13 @@ class AutograderGen:
                             if (
                                 item.target_file == target_file
                                 and getattr(item, "function_name", "") == func
-                                and item.type == "function_test"
+                                and item.type in ("function_return_comparison", "function_output_comparison")
                             ):
                                 if hasattr(item, "test_cases") and item.test_cases:
                                     for tc in item.test_cases:
-                                        cases.append(tc)
+                                        cases.append((tc, item))
                     if cases:
-                        for tc in cases:
+                        for tc, itm in cases:
                             conds = []
                             args_list = tc.get("args", []) or []
                             kwargs_dict = tc.get("kwargs", {}) or {}
@@ -689,9 +689,10 @@ class AutograderGen:
                                 for idx, arg_val in enumerate(args_list):
                                     if idx < len(param_names):
                                         conds.append(f"{param_names[idx]} == {repr(arg_val)}")
-                                for k, v in kwargs_dict.items():
-                                    if k in param_names:
-                                        conds.append(f"{k} == {repr(v)}")
+                                if kwargs_dict:
+                                    for k, v in kwargs_dict.items():
+                                        if k in param_names:
+                                            conds.append(f"{k} == {repr(v)}")
                             else:
                                 if args_list:
                                     conds.append(f"args == {tuple(args_list)}")
@@ -705,22 +706,30 @@ class AutograderGen:
                             expected_val = tc.get("expected", "")
                             expr = get_python_literal_str(expected_val)
                             lines.append(f"    if {cond_str}:")
-                            lines.append(f"        return {expr}")
+                            if getattr(itm, "type", "") == "function_output_comparison":
+                                lines.append(f"        print({expr}, end='')")
+                                lines.append("        return")
+                            else:
+                                lines.append(f"        return {expr}")
                         lines.append("    pass")
                     else:
                         lines.append("    pass")
                 else:
                     func_expected = []
+                    func_items = []
                     for q in self.config.questions:
                         for item in q.marking_items:
                             if (
                                 item.target_file == target_file
                                 and getattr(item, "function_name", "") == func
-                                and item.type == "function_test"
+                                and item.type in ("function_return_comparison", "function_output_comparison")
                             ):
+                                func_items.append(item)
                                 for tc in getattr(item, "test_cases", []) or []:
                                     func_expected.append(str(tc.get("expected", "")).strip())
-                    if any(exp in ("None", "none", "null") for exp in func_expected):
+                    if any(getattr(item, "type", "") == "function_output_comparison" for item in func_items):
+                        lines.append("    print('wrong_answer', end='')")
+                    elif any(exp in ("None", "none", "null") for exp in func_expected):
                         lines.append("    return 'wrong_answer'")
                     else:
                         lines.append("    return None")
@@ -928,7 +937,9 @@ class AutograderGen:
                 param_str = ", ".join(f"{pt} {pn}" for pt, pn in zip(param_types, param_names))
 
                 ret_type = "double"
-                if cases:
+                if any(getattr(item, "type", "") == "function_output_comparison" for item in func_items):
+                    ret_type = "void"
+                elif cases:
                     exp0 = str(cases[0].get("expected", ""))
                     if "\n" in exp0:
                         ret_type = "void"
@@ -1256,9 +1267,18 @@ class AutograderGen:
         with open(run_tests_file, "w", encoding="utf-8") as f:
             f.write(content)
 
-        grader_utils_src = Path(__file__).parent / "grader_utils.py"
-        if grader_utils_src.exists():
-            shutil.copy2(grader_utils_src, self.temp_dir / "grader_utils.py")
+        helpers = ["run_shared.py", "grader_utils.py"]
+        if self.config.language == "java":
+            helpers.append("run_java.py")
+        elif self.config.language == "python":
+            helpers.append("run_python.py")
+        else:
+            helpers.extend(["run_java.py", "run_python.py"])
+
+        for helper_name in helpers:
+            helper_src = Path(__file__).parent / helper_name
+            if helper_src.exists():
+                shutil.copy2(helper_src, self.temp_dir / helper_name)
 
         self._generate_question_test_files()
 
@@ -1381,8 +1401,9 @@ autograder.zip
 ## Test Types Supported
 
 - **output_comparison**: Compares program output with expected results (both actual and expected output are trimmed before comparison; single-line inputs terminate with a newline)
-- **signature_check**: Validates function signatures and parameters
-- **function_test**: Tests function behavior with specific inputs and expected outputs
+- **function_signature_check**: Validates function signatures and parameters
+- **function_return_comparison**: Tests function behavior with specific parameters (params, not inputs) and expected returns
+- **function_output_comparison**: Tests function standard output with specific parameters (params, not inputs) and expected outputs
 - **manual_review**: Qualitative manual review by instructor (e.g. written report, PDF)
 
 ## Questions"""
@@ -1412,13 +1433,13 @@ autograder.zip
                     }
                     readme_content += f"- **Visibility**: {visibility_map.get(item.visibility, item.visibility)}\n"
 
-                if item.type == "function_test":
+                if item.type in ("function_return_comparison", "function_output_comparison"):
                     if hasattr(item, "function_name") and item.function_name:
                         readme_content += f"- **Function**: `{item.function_name}()`\n"
                     if hasattr(item, "test_cases") and item.test_cases:
                         readme_content += f"- **Test Cases**: {len(item.test_cases)} case(s)\n"
 
-                elif item.type == "signature_check":
+                elif item.type == "function_signature_check":
                     if hasattr(item, "function_name") and item.function_name:
                         readme_content += f"- **Function**: `{item.function_name}()`\n"
                     if hasattr(item, "expected_parameters") and item.expected_parameters:

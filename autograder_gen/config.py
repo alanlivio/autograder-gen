@@ -17,8 +17,9 @@ class MarkingItem(BaseModel):
         json_schema_extra={
             "enum": [
                 "output_comparison",
-                "signature_check",
-                "function_test",
+                "function_signature_check",
+                "function_return_comparison",
+                "function_output_comparison",
                 "gitlab_submission_exists",
                 "github_submission_exists",
                 "manual_review",
@@ -70,13 +71,14 @@ class MarkingItem(BaseModel):
             return v + "\n"
         return v
 
-    @field_validator("type")
+    @field_validator("type", mode="before")
     @classmethod
     def check_type(cls, v: str) -> str:
         allowed = {
             "output_comparison",
-            "signature_check",
-            "function_test",
+            "function_signature_check",
+            "function_return_comparison",
+            "function_output_comparison",
             "gitlab_submission_exists",
             "github_submission_exists",
             "manual_review",
@@ -100,12 +102,15 @@ class MarkingItem(BaseModel):
         ):
             raise ValueError("expected_output and expected_output_script are mutually exclusive")
         if (
-            self.type not in ("output_comparison", "function_test")
+            self.type not in ("output_comparison", "function_return_comparison", "function_output_comparison")
             and "time_limit" in self.model_fields_set
         ):
             raise ValueError(f"time_limit is not allowed for type '{self.type}'")
-        if self.type == "function_test" and not self.function_name:
-            raise ValueError("function_name is required for function_test")
+        if (
+            self.type in ("function_return_comparison", "function_output_comparison")
+            and not self.function_name
+        ):
+            raise ValueError(f"function_name is required for {self.type}")
         if (
             self.type
             not in ("gitlab_submission_exists", "github_submission_exists", "manual_review")

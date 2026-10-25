@@ -152,7 +152,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},
@@ -178,11 +178,11 @@ def test_function_test_template_expected_actual_output(tmp_path):
             in test_content
         )
         assert (
-            "StudentMessage.WRONG_ANSWER_FUNCTION.format(function_name=function_name)"
+            "StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name)"
             in test_content
         )
         assert (
-            "StudentMessage.CORRECT_ANSWER_FUNCTION.format(function_name=function_name)"
+            "StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)"
             in test_content
         )
         assert "StudentMessage.TIME_LIMIT_EXCEEDED_FUNCTION.format(seconds=" in test_content
@@ -190,6 +190,11 @@ def test_function_test_template_expected_actual_output(tmp_path):
             "StudentMessage.ERROR_FUNCTION_NOT_CALLABLE.format(function_name=function_name)"
             in test_content
         )
+        assert "StudentMessage.COMPARING_RETURN" in test_content
+        assert "StudentMessage.FUNCTION_CALL" in test_content
+        assert "StudentMessage.EXPECTED_RETURN" in test_content
+        assert "StudentMessage.ACTUAL_RETURN" in test_content
+        assert "format_function_call(function_name, args, kwargs)" in test_content
 
 
 def test_run_autograder_logs_checking_required_files(tmp_path):
@@ -235,7 +240,7 @@ def test_java_remove_package_template(tmp_path):
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [{"args": [1.0, 2.0], "expected": "3.0"}],
                     }
@@ -272,7 +277,7 @@ def test_java_remove_package_execution(tmp_path):
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "add",
                         "test_cases": [{"args": [1.0, 2.0], "expected": "3.0"}],
                     }
@@ -311,7 +316,7 @@ def test_float_comparison_tolerance_non_strict(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "calc_volume",
                         "test_cases": [{"args": [20.24], "expected": "4341.40345"}],
                     }
@@ -350,7 +355,7 @@ def test_float_comparison_strict_fails(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_test",
+                        "type": "function_return_comparison",
                         "function_name": "calc_volume",
                         "test_cases": [{"args": [20.24], "expected": "4341.40345"}],
                     }
@@ -488,3 +493,85 @@ def test_run_autograder_found_file_penalties_message(temp_output_dir):
     with zipfile.ZipFile(zip_path, "r") as z:
         content = z.read("run_autograder").decode("utf-8")
         assert "Found file 'solution.py' at $FOUND_FILE, penalties will be applied" in content
+
+
+def test_function_return_comparison_and_signature_check_template_content(tmp_path):
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Functions Test",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "function_signature_check",
+                        "function_name": "add",
+                        "expected_parameters": "a, b",
+                    },
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "function_return_comparison",
+                        "function_name": "add",
+                        "test_cases": [{"args": [1, 2], "expected": "3"}],
+                    },
+                ],
+            }
+        ],
+    }
+    config = ag.Config.model_validate(config_dict)
+    generator = ag.Engine(config, config_dict)
+    output_dir = tmp_path / "output_new_types"
+    zip_path = generator.generate(str(output_dir))
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        test_content = z.read("question_1_test.py").decode("utf-8")
+        assert "import inspect" in test_content
+        assert "expected_out = normalize_output(\"3\")" in test_content
+        assert "actual_out = normalize_output(str(result))" in test_content
+        assert "StudentMessage.COMPARING_RETURN" in test_content
+        assert "StudentMessage.EXPECTED_RETURN" in test_content
+        assert "StudentMessage.ACTUAL_RETURN" in test_content
+        assert "StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)" in test_content
+        assert "StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name)" in test_content
+
+
+def test_function_output_comparison_template_content(tmp_path):
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "files_necessary": ["solution.py"],
+        "questions": [
+            {
+                "name": "Functions Output Test",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "function_output_comparison",
+                        "function_name": "display",
+                        "test_cases": [{"args": [349], "expected": "display 349 output"}],
+                    },
+                ],
+            }
+        ],
+    }
+    config = ag.Config.model_validate(config_dict)
+    generator = ag.Engine(config, config_dict)
+    output_dir = tmp_path / "output_fn_out"
+    zip_path = generator.generate(str(output_dir))
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        test_content = z.read("question_1_test.py").decode("utf-8")
+        assert "call_function_output_with_timeout" in test_content
+        assert "StudentMessage.COMPARING_OUTPUT" in test_content
+        assert "StudentMessage.EXPECTED_OUTPUT" in test_content
+        assert "StudentMessage.ACTUAL_OUTPUT" in test_content
+        assert "StudentMessage.CORRECT_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)" in test_content
+        assert "StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)" in test_content
+        assert "StudentMessage.EXPECTED_RETURN" not in test_content
+        assert "StudentMessage.COMPARING_RETURN" not in test_content
+
