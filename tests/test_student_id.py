@@ -23,7 +23,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -46,7 +46,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'Hello {STUDENT_ID}')",
                     }
                 ],
@@ -110,7 +110,7 @@ def test_stubs_submission_metadata_only_when_gitlab_or_github():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -166,7 +166,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(STUDENT_ID)",
                     }
                 ],
@@ -214,7 +214,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
                         "name": "Hello Output Check",
                         "target_file": "CW1P1.py",
                         "total_mark": 15,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "visibility": "visible",
                         "expected_input": "",
                         "expected_output_script": "print(f'Hello, student {STUDENT_ID}.')",
@@ -277,7 +277,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
                         "name": "Hello Output Check",
                         "target_file": "CW1P1.java",
                         "total_mark": 15,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "visibility": "visible",
                         "expected_input": "",
                         "expected_output_script": "print(f'Hello, student {STUDENT_ID}.')",
@@ -371,7 +371,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(STUDENT_ID)",
                     }
                 ],
@@ -409,7 +409,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -437,7 +437,7 @@ def test_expected_output_script_config_and_validation():
                     {
                         "target_file": "main.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'Hello {STUDENT_ID}')",
                     }
                 ],
@@ -462,7 +462,7 @@ def test_expected_output_script_config_and_validation():
                     {
                         "target_file": "main.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'Hello ",
                     }
                 ],
@@ -486,7 +486,7 @@ def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_ou
                     {
                         "target_file": "calc.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_input": "5\n",
                         "expected_output_script": "n = int(input().strip()); print(f'Ans: {int(STUDENT_ID) * n}')",
                     }
@@ -525,7 +525,7 @@ def test_expected_output_script_java_skeleton():
                     {
                         "target_file": "App.java",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'JAVA_SID_{STUDENT_ID}')",
                     }
                 ],
@@ -556,7 +556,7 @@ def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
                     {
                         "target_file": "CW1P3.java",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "display",
                         "test_cases": [{"args": [28], "expected": "28"}],
                     }
@@ -586,7 +586,7 @@ def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
                         "name": "Dynamic Output",
                         "target_file": "solution.py",
                         "total_mark": 20,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'Computed for {STUDENT_ID}: {int(STUDENT_ID) * 2}')",
                     }
                 ],
@@ -650,7 +650,7 @@ def test_expected_output_script_scope_only_has_uppercase_student_id(tmp_path: Pa
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(student_id)",
                     }
                 ],
@@ -685,7 +685,7 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_input": "hello_input\n",
                         "expected_output_script": "print(expected_input)",
                     }
@@ -733,7 +733,7 @@ def test_autograder_run_with_custom_student_id_no_stubs(tmp_path: Path):
                         "name": "Dynamic Output",
                         "target_file": "solution.py",
                         "total_mark": 25,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'CUSTOM_SID_{STUDENT_ID}')",
                     }
                 ],
@@ -777,7 +777,7 @@ def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
                         "name": "Output Item",
                         "target_file": "solution.py",
                         "total_mark": 20,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(STUDENT_ID)",
                     }
                 ],
@@ -810,7 +810,7 @@ def test_config_excluded_student_ids():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -873,7 +873,7 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
                         "name": "Dynamic Output",
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'SID:{STUDENT_ID}')",
                     }
                 ],
@@ -925,7 +925,7 @@ def test_config_file_has_excluded_student_ids(tmp_path: Path):
                         "name": "Item 1",
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "Hello\n",
                     }
                 ],
@@ -938,7 +938,7 @@ def test_config_file_has_excluded_student_ids(tmp_path: Path):
                         "name": "Item 2",
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             },
@@ -971,14 +971,14 @@ def test_question_level_expected_output_script_execution(tmp_path: Path):
                         "name": "Add 5",
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_input": "5",
                     },
                     {
                         "name": "Add 10",
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_input": "10",
                     },
                 ],

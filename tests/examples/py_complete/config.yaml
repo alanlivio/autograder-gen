@@ -15,7 +15,7 @@ questions:
   marking_items:
   - target_file: basic_operations.py
     total_mark: 5
-    type: output_comparison
+    type: program_output_test
     time_limit: 30
     visibility: visible
     expected_input: |-
@@ -28,7 +28,7 @@ questions:
       Float: 3.14
   - target_file: basic_operations.py
     total_mark: 5
-    type: output_comparison
+    type: program_output_test
     time_limit: 45
     visibility: after_due_date
     expected_input: |-
@@ -45,14 +45,14 @@ questions:
   - target_file: math_functions.py
     function_name: add_numbers
     total_mark: 4
-    type: function_signature_check
+    type: function_signature_test
     visibility: visible
     expected_parameters: 'a: int, b: int'
     expected_return_type: int
   - target_file: math_functions.py
     function_name: multiply
     total_mark: 4
-    type: function_signature_check
+    type: function_signature_test
     visibility: visible
     expected_parameters: 'x: float, y: float'
     expected_return_type: float
@@ -62,20 +62,20 @@ questions:
   - target_file: data_processing.py
     function_name: process_data
     total_mark: 5
-    type: function_signature_check
+    type: function_signature_test
     visibility: visible
     expected_parameters: 'data: list, threshold: float = 0.5, normalize: bool = True'
     expected_return_type: dict
   - target_file: data_processing.py
     function_name: filter_values
     total_mark: 5
-    type: function_signature_check
+    type: function_signature_test
     visibility: after_due_date
     expected_parameters: values, min_val=0, max_val=100, inclusive=True
   - target_file: advanced_algorithms.py
     function_name: complex_calculation
     total_mark: 5
-    type: function_signature_check
+    type: function_signature_test
     visibility: hidden
     expected_parameters: input_data, algorithm='default', precision=2, debug=False
 - name: Simple Function Testing
@@ -84,7 +84,7 @@ questions:
   - target_file: math_functions.py
     function_name: add_numbers
     total_mark: 6
-    type: function_return_comparison
+    type: function_return_test
     time_limit: 30
     visibility: visible
     test_cases:
@@ -95,7 +95,7 @@ questions:
   - target_file: math_functions.py
     function_name: multiply
     total_mark: 6
-    type: function_return_comparison
+    type: function_return_test
     time_limit: 25
     visibility: visible
     test_cases:
@@ -109,7 +109,7 @@ questions:
   - target_file: data_processing.py
     function_name: calculate_statistics
     total_mark: 9
-    type: function_return_comparison
+    type: function_return_test
     time_limit: 45
     visibility: after_due_date
     test_cases:
@@ -119,7 +119,7 @@ questions:
   - target_file: data_processing.py
     function_name: transform_data
     total_mark: 8
-    type: function_return_comparison
+    type: function_return_test
     time_limit: 60
     visibility: after_published
     test_cases:
@@ -133,7 +133,7 @@ questions:
   - target_file: advanced_algorithms.py
     function_name: handle_edge_cases
     total_mark: 12
-    type: function_return_comparison
+    type: function_return_test
     time_limit: 90
     visibility: hidden
     test_cases:
@@ -146,13 +146,13 @@ questions:
   - target_file: advanced_algorithms.py
     function_name: main_algorithm
     total_mark: 5
-    type: function_signature_check
+    type: function_signature_test
     visibility: visible
     expected_parameters: input_list, config=None, verbose=False
   - target_file: advanced_algorithms.py
     function_name: main_algorithm
     total_mark: 12
-    type: function_return_comparison
+    type: function_return_test
     time_limit: 120
     visibility: after_due_date
     test_cases:
@@ -161,7 +161,7 @@ questions:
       expected: '[1, 4, 9, 16, 25]'
   - target_file: advanced_algorithms.py
     total_mark: 9
-    type: output_comparison
+    type: program_output_test
     time_limit: 60
     visibility: after_published
     expected_input: '5'

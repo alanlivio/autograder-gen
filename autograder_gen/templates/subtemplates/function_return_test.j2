@@ -1,0 +1,108 @@
+    @weight({{ item.total_mark }})
+    @number({{ question.name | tojson }})
+    @visibility('{{ item.visibility }}')
+    def test_{{ test_name }}(self):
+        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
+        print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
+        target_file = "{{ item.target_file }}"
+        function_name = "{{ item.function_name }}"
+        file_path = self.resolve_target(target_file)
+        if not file_path.exists():
+            self.fail(StudentMessage.WRONG_FILE.format(file_name=target_file))
+{% if config.language == 'python' %}
+        try:
+            function = self.import_function_from_file(target_file, function_name)
+        except SyntaxError as e:
+            print(StudentMessage.COMPILING)
+            print(f"Error: {str(e)}")
+            self.fail(StudentMessage.COMPILATION_ERROR)
+        except ImportError as e:
+            print(StudentMessage.RUNNING)
+            print(f"Error: {str(e)}")
+            self.fail(StudentMessage.RUNTIME_ERROR)
+        except Exception as e:
+            print(StudentMessage.RUNNING)
+            print(f"Error: {str(e)}")
+            self.fail(StudentMessage.RUNTIME_ERROR)
+        
+        if not callable(function):
+            print(StudentMessage.RUNNING)
+            print(StudentMessage.ERROR_FUNCTION_NOT_CALLABLE.format(function_name=function_name))
+            self.fail(StudentMessage.RUNTIME_ERROR)
+        
+        evaluated_cases = []
+        {% if item.test_cases %}
+        {% for test_case in item.test_cases %}
+        {% if test_case.args %}
+        args = {{ test_case.args }}
+        {% else %}
+        args = []
+        {% endif %}
+        {% if test_case.kwargs %}
+        kwargs = {{ test_case.kwargs }}
+        {% else %}
+        kwargs = {}
+        {% endif %}
+        call_str = format_function_call(function_name, args, kwargs)
+        try:
+            result = self.call_function_with_timeout(function, args, kwargs, {{ item.time_limit }})
+            expected_out = normalize_output({{ test_case.expected | string | tojson }})
+            actual_out = normalize_output(str(result))
+            evaluated_cases.append((call_str, expected_out, actual_out))
+            if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
+                print(StudentMessage.COMPARING_RETURN)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_out}")
+                print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_out}")
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name))
+        except AssertionError:
+            raise
+        except TimeoutError:
+            self.fail(StudentMessage.TIME_LIMIT_EXCEEDED_FUNCTION.format(seconds={{ item.time_limit }}, function_name=function_name))
+        except Exception as e:
+            print(StudentMessage.RUNNING)
+            print(f"Error: {str(e)}")
+            self.fail(StudentMessage.RUNTIME_ERROR)
+        {% endfor %}
+        {% endif %}
+{% elif config.language == 'java' %}
+        evaluated_cases = []
+        {% if item.test_cases %}
+        {% for test_case in item.test_cases %}
+        {% if test_case.args %}
+        args = {{ test_case.args }}
+        {% else %}
+        args = []
+        {% endif %}
+        call_str = format_function_call(function_name, args)
+        try:
+            result = self.call_java_function(target_file, function_name, args, {{ item.time_limit }})
+            expected_out = normalize_output({{ test_case.expected | string | tojson }})
+            actual_out = normalize_output(str(result))
+            evaluated_cases.append((call_str, expected_out, actual_out))
+            if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
+                print(StudentMessage.COMPARING_RETURN)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_out}")
+                print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_out}")
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name))
+        except AssertionError:
+            raise
+        except subprocess.TimeoutExpired:
+            self.fail(StudentMessage.TIME_LIMIT_EXCEEDED_FUNCTION.format(seconds={{ item.time_limit }}, function_name=function_name))
+        except Exception as e:
+            print(StudentMessage.RUNNING)
+            print(f"Error: {str(e)}")
+            self.fail(StudentMessage.RUNTIME_ERROR)
+        {% endfor %}
+        {% endif %}
+{% endif %}
+        
+        if evaluated_cases:
+            print(StudentMessage.COMPARING_RETURN)
+            for call_info, expected_output, actual_output in evaluated_cases:
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_info}")
+                print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_output}")
+                print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_output}")
+        print(f"## Test Passed: {StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)}")
+        self.apply_wrong_location_deduction(target_file, {{ item.total_mark }})

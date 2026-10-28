@@ -23,7 +23,7 @@ def test_config_wrong_file_location_deduction_default():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -46,7 +46,7 @@ def test_config_wrong_file_location_deduction_custom():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -70,7 +70,7 @@ def test_config_wrong_file_location_deduction_requires_strict_false():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -96,7 +96,7 @@ def test_config_wrong_file_location_deduction_out_of_bounds_fails():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -125,7 +125,7 @@ def test_wrong_file_location_deduction_execution(tmp_path: Path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -183,7 +183,7 @@ def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_pat
                     {
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -240,7 +240,7 @@ def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -251,7 +251,7 @@ def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 20.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -312,7 +312,7 @@ def test_wrong_file_location_autograder_run_log(tmp_path: Path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],

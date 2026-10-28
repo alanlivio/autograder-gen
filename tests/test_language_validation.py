@@ -16,7 +16,7 @@ def test_language_validation():
                 {
                     "name": "Q1",
                     "marking_items": [
-                        {"target_file": "t.py", "total_mark": 1, "type": "output_comparison"}
+                        {"target_file": "t.py", "total_mark": 1, "type": "program_output_test"}
                     ],
                 }
             ],
@@ -31,7 +31,7 @@ def test_language_validation():
                 {
                     "name": "Q1",
                     "marking_items": [
-                        {"target_file": "t.py", "total_mark": 1, "type": "output_comparison"}
+                        {"target_file": "t.py", "total_mark": 1, "type": "program_output_test"}
                     ],
                 }
             ],
@@ -52,7 +52,7 @@ def test_language_validation():
                             {
                                 "target_file": "t.py",
                                 "total_mark": 1,
-                                "type": "output_comparison",
+                                "type": "program_output_test",
                             }
                         ],
                     }

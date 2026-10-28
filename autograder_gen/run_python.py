@@ -49,21 +49,28 @@ def import_function_from_file(file_path: Union[str, Path], function_name: str) -
         raise FileNotFoundError(f"File not found: {p}")
 
     module_name = p.stem
-    spec = importlib.util.spec_from_file_location(module_name, p)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Could not load module from {p}")
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, p)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not load module from {p}")
 
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+    except SyntaxError:
+        raise
+    except ImportError:
+        raise
+    except Exception as e:
+        raise ImportError(f"Failed to import {function_name} from {p.name}: {str(e)}")
 
     if not hasattr(module, function_name):
-        raise AttributeError(f"Function '{function_name}' not found in {p.name}")
+        raise ImportError(f"Function '{function_name}' not found in {p.name}")
 
     return getattr(module, function_name)
 
 
-def check_function_signature(
+def assert_python_function_signature(
     function: Any,
     function_name: str,
     expected_parameters: Optional[str] = None,
@@ -106,13 +113,19 @@ def check_function_signature(
         actual_params = dict(sig.parameters.items())
         if len(actual_params) != len(expected_params):
             raise AssertionError(
-                f"FAILED: Function '{function_name}' has {len(actual_params)} parameters, expected {len(expected_params)}"
+                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                    function_name=function_name,
+                    reason=f"has {len(actual_params)} parameters, expected {len(expected_params)}",
+                )
             )
 
         for expected_name, expected_type, expected_default in expected_params:
             if expected_name not in actual_params:
                 raise AssertionError(
-                    f"FAILED: Function '{function_name}' missing parameter '{expected_name}'"
+                    StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                        function_name=function_name,
+                        reason=f"missing parameter '{expected_name}'",
+                    )
                 )
 
             actual_param = actual_params[expected_name]
@@ -120,7 +133,10 @@ def check_function_signature(
                 actual_annotation = actual_param.annotation
                 if actual_annotation == inspect.Parameter.empty:
                     raise AssertionError(
-                        f"FAILED: Parameter '{expected_name}' should have type annotation '{expected_type}'"
+                        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                            function_name=function_name,
+                            reason=f"parameter '{expected_name}' should have type annotation '{expected_type}'",
+                        )
                     )
                 else:
                     actual_type_str = str(actual_annotation)
@@ -142,13 +158,19 @@ def check_function_signature(
                         ]
                         if not any(type_matches):
                             raise AssertionError(
-                                f"FAILED: Parameter '{expected_name}' has type '{actual_type_str}', expected '{expected_type}'"
+                                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                                    function_name=function_name,
+                                    reason=f"parameter '{expected_name}' has type '{actual_type_str}', expected '{expected_type}'",
+                                )
                             )
 
             if expected_default is not None:
                 if actual_param.default == inspect.Parameter.empty:
                     raise AssertionError(
-                        f"FAILED: Parameter '{expected_name}' should have default value '{expected_default}'"
+                        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                            function_name=function_name,
+                            reason=f"parameter '{expected_name}' should have default value '{expected_default}'",
+                        )
                     )
                 else:
                     try:
@@ -158,15 +180,24 @@ def check_function_signature(
                                 converted_actual = type(expected_val)(actual_param.default)
                                 if converted_actual != expected_val:
                                     raise AssertionError(
-                                        f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}' ({type(actual_param.default).__name__}), expected '{expected_val}' ({type(expected_val).__name__})"
+                                        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                                            function_name=function_name,
+                                            reason=f"parameter '{expected_name}' has default '{actual_param.default}' ({type(actual_param.default).__name__}), expected '{expected_val}' ({type(expected_val).__name__})",
+                                        )
                                     )
                             except (ValueError, TypeError):
                                 raise AssertionError(
-                                    f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}' ({type(actual_param.default).__name__}), expected '{expected_val}' ({type(expected_val).__name__})"
+                                    StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                                        function_name=function_name,
+                                        reason=f"parameter '{expected_name}' has default '{actual_param.default}' ({type(actual_param.default).__name__}), expected '{expected_val}' ({type(expected_val).__name__})",
+                                    )
                                 )
                         elif actual_param.default != expected_val:
                             raise AssertionError(
-                                f"FAILED: Parameter '{expected_name}' has default '{actual_param.default}', expected '{expected_val}'"
+                                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                                    function_name=function_name,
+                                    reason=f"parameter '{expected_name}' has default '{actual_param.default}', expected '{expected_val}'",
+                                )
                             )
                     except (ValueError, SyntaxError):
                         actual_str = str(actual_param.default)
@@ -189,13 +220,19 @@ def check_function_signature(
                                 or (expected_default.strip("'\"") == actual_str.strip("'\""))
                             ):
                                 raise AssertionError(
-                                    f"FAILED: Parameter '{expected_name}' has default '{actual_str}', expected '{expected_default}'"
+                                    StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                                        function_name=function_name,
+                                        reason=f"parameter '{expected_name}' has default '{actual_str}', expected '{expected_default}'",
+                                    )
                                 )
 
     if expected_return_type and expected_return_type.strip():
         if sig.return_annotation == inspect.Signature.empty:
             raise AssertionError(
-                f"FAILED: Function '{function_name}' should have return type annotation '{expected_return_type}'"
+                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                    function_name=function_name,
+                    reason=f"should have return type annotation '{expected_return_type}'",
+                )
             )
         else:
             actual_return_str = str(sig.return_annotation)
@@ -214,5 +251,15 @@ def check_function_signature(
             ]
             if not any(type_matches):
                 raise AssertionError(
-                    f"FAILED: Function '{function_name}' has return type '{actual_return_str}', expected '{expected_return_type}'"
+                    StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                        function_name=function_name,
+                        reason=f"has return type '{actual_return_str}', expected '{expected_return_type}'",
+                    )
                 )
+
+
+check_function_signature = assert_python_function_signature
+check_python_function_signature = assert_python_function_signature
+call_python_function = call_function_with_timeout
+call_python_function_output = call_function_output_with_timeout
+

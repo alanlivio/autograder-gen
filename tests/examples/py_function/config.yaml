@@ -8,12 +8,12 @@ questions:
   marking_items:
   - target_file: solution.py
     total_mark: 5
-    type: function_signature_check
+    type: function_signature_test
     function_name: multiply
     expected_parameters: a, b
   - target_file: solution.py
     total_mark: 5
-    type: function_return_comparison
+    type: function_return_test
     function_name: multiply
     test_cases:
     - args:

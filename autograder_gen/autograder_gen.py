@@ -203,7 +203,7 @@ class AutograderGen:
                 item_name = getattr(item, "name", "") or f"Marking Item {visible_item_idx}"
                 doc.add_heading(f"{visible_item_idx}. {item_name}", level=3)
                 doc.add_paragraph(f"Points: {item.total_mark}")
-                if item.type == "output_comparison":
+                if item.type == "program_output_test":
                     doc.add_paragraph(
                         f"Requirement: Program must produce specific output for given input in '{item.target_file}' (output and expected output are trimmed before comparison)."
                     )
@@ -227,19 +227,29 @@ class AutograderGen:
                         p = doc.add_paragraph()
                         run = p.add_run(exp_out)
                         run.font.name = "Courier New"
-                elif item.type == "function_signature_check":
+                elif item.type == "function_signature_test":
+                    sig_details = []
+                    if getattr(item, "expected_parameters", ""):
+                        sig_details.append(f"parameters ({item.expected_parameters})")
+                    if getattr(item, "expected_return_type", ""):
+                        sig_details.append(f"return type {item.expected_return_type}")
+                    detail_suffix = f" with {', '.join(sig_details)}" if sig_details else ""
                     doc.add_paragraph(
-                        f"Requirement: Function '{item.function_name}' in '{item.target_file}' must have correct signature."
+                        f"Requirement: Function '{item.function_name}' in '{item.target_file}' must have correct signature{detail_suffix}."
                     )
-                elif item.type in ("function_return_comparison", "function_output_comparison"):
+                elif item.type == "function_return_test":
                     doc.add_paragraph(
-                        f"Requirement: Function '{item.function_name}' in '{item.target_file}' must pass unit tests."
+                        f"Requirement: Function '{item.function_name}' in '{item.target_file}' must return expected values for given arguments."
                     )
-                elif item.type == "gitlab_submission_exists":
+                elif item.type == "function_output_test":
+                    doc.add_paragraph(
+                        f"Requirement: Function '{item.function_name}' in '{item.target_file}' must print expected standard output for given arguments."
+                    )
+                elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     doc.add_paragraph(
                         "Requirement: Submission must be made via a GitLab repository."
                     )
-                elif item.type == "github_submission_exists":
+                elif item.type in ("github_submission_test", "github_submission_exists"):
                     doc.add_paragraph(
                         "Requirement: Submission must be made via a GitHub repository."
                     )
@@ -275,7 +285,7 @@ class AutograderGen:
                 lines.append(f"#### {visible_item_idx}. {item_name}")
                 lines.append("")
                 lines.append(f"- **Points:** {item.total_mark}")
-                if item.type == "output_comparison":
+                if item.type == "program_output_test":
                     lines.append(
                         f"- **Requirement:** Program must produce specific output for given input in `{item.target_file}` (output and expected output are trimmed before comparison)."
                     )
@@ -301,19 +311,29 @@ class AutograderGen:
                         lines.append("```")
                         lines.append(exp_out)
                         lines.append("```")
-                elif item.type == "function_signature_check":
+                elif item.type == "function_signature_test":
+                    sig_details = []
+                    if getattr(item, "expected_parameters", ""):
+                        sig_details.append(f"parameters `{item.expected_parameters}`")
+                    if getattr(item, "expected_return_type", ""):
+                        sig_details.append(f"return type `{item.expected_return_type}`")
+                    detail_suffix = f" with {', '.join(sig_details)}" if sig_details else ""
                     lines.append(
-                        f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must have correct signature."
+                        f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must have correct signature{detail_suffix}."
                     )
-                elif item.type in ("function_return_comparison", "function_output_comparison"):
+                elif item.type == "function_return_test":
                     lines.append(
-                        f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must pass unit tests."
+                        f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must return expected values for given arguments."
                     )
-                elif item.type == "gitlab_submission_exists":
+                elif item.type == "function_output_test":
+                    lines.append(
+                        f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must print expected standard output for given arguments."
+                    )
+                elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     lines.append(
                         "- **Requirement:** Submission must be made via a GitLab repository."
                     )
-                elif item.type == "github_submission_exists":
+                elif item.type in ("github_submission_test", "github_submission_exists"):
                     lines.append(
                         "- **Requirement:** Submission must be made via a GitHub repository."
                     )
@@ -379,7 +399,7 @@ class AutograderGen:
                 html_lines.append(
                     f"      <h4>{visible_item_idx}. {item_name} ({item.total_mark} pts)</h4>"
                 )
-                if item.type == "output_comparison":
+                if item.type == "program_output_test":
                     html_lines.append(
                         f"      <p><strong>Requirement:</strong> Program must produce specific output for target file <code>{item.target_file}</code> (output and expected output are trimmed before comparison).</p>"
                     )
@@ -399,19 +419,29 @@ class AutograderGen:
                     if exp_out:
                         html_lines.append("      <p><strong>Expected Output:</strong></p>")
                         html_lines.append(f"      <pre>{html.escape(exp_out)}</pre>")
-                elif item.type == "function_signature_check":
+                elif item.type == "function_signature_test":
+                    sig_details = []
+                    if getattr(item, "expected_parameters", ""):
+                        sig_details.append(f"parameters <code>{html.escape(item.expected_parameters)}</code>")
+                    if getattr(item, "expected_return_type", ""):
+                        sig_details.append(f"return type <code>{html.escape(item.expected_return_type)}</code>")
+                    detail_suffix = f" with {', '.join(sig_details)}" if sig_details else ""
                     html_lines.append(
-                        f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must match signature.</p>"
+                        f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must match signature{detail_suffix}.</p>"
                     )
-                elif item.type in ("function_return_comparison", "function_output_comparison"):
+                elif item.type == "function_return_test":
                     html_lines.append(
-                        f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must pass unit tests.</p>"
+                        f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must return expected values for given arguments.</p>"
                     )
-                elif item.type == "gitlab_submission_exists":
+                elif item.type == "function_output_test":
+                    html_lines.append(
+                        f"      <p><strong>Requirement:</strong> Function <code>{item.function_name}</code> in <code>{item.target_file}</code> must print expected standard output for given arguments.</p>"
+                    )
+                elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     html_lines.append(
                         "      <p><strong>Requirement:</strong> Submission must be made via a GitLab repository.</p>"
                     )
-                elif item.type == "github_submission_exists":
+                elif item.type in ("github_submission_test", "github_submission_exists"):
                     html_lines.append(
                         "      <p><strong>Requirement:</strong> Submission must be made via a GitHub repository.</p>"
                     )
@@ -444,12 +474,12 @@ class AutograderGen:
                 zipf.writestr(filename, content)
 
             has_gitlab = any(
-                item.type == "gitlab_submission_exists"
+                item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
             has_github = any(
-                item.type == "github_submission_exists"
+                item.type in ("github_submission_test", "github_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
@@ -479,12 +509,12 @@ class AutograderGen:
                 content = self._generate_skeleton_content(filename, correct=False)
                 zipf.writestr(filename, content)
             has_gitlab = any(
-                item.type == "gitlab_submission_exists"
+                item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
             has_github = any(
-                item.type == "github_submission_exists"
+                item.type in ("github_submission_test", "github_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
@@ -515,12 +545,12 @@ class AutograderGen:
                 )
                 zipf.writestr(filename, content)
             has_gitlab = any(
-                item.type == "gitlab_submission_exists"
+                item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
             has_github = any(
-                item.type == "github_submission_exists"
+                item.type in ("github_submission_test", "github_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
@@ -557,12 +587,12 @@ class AutograderGen:
                 zipf.writestr(nested_filename, content)
 
             has_gitlab = any(
-                item.type == "gitlab_submission_exists"
+                item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
             has_github = any(
-                item.type == "github_submission_exists"
+                item.type in ("github_submission_test", "github_submission_exists")
                 for q in self.config.questions
                 for item in q.marking_items
             )
@@ -675,7 +705,7 @@ class AutograderGen:
                             if (
                                 item.target_file == target_file
                                 and getattr(item, "function_name", "") == func
-                                and item.type in ("function_return_comparison", "function_output_comparison")
+                                and item.type in ("function_return_test", "function_output_test")
                             ):
                                 if hasattr(item, "test_cases") and item.test_cases:
                                     for tc in item.test_cases:
@@ -706,7 +736,7 @@ class AutograderGen:
                             expected_val = tc.get("expected", "")
                             expr = get_python_literal_str(expected_val)
                             lines.append(f"    if {cond_str}:")
-                            if getattr(itm, "type", "") == "function_output_comparison":
+                            if getattr(itm, "type", "") == "function_output_test":
                                 lines.append(f"        print({expr}, end='')")
                                 lines.append("        return")
                             else:
@@ -722,12 +752,12 @@ class AutograderGen:
                             if (
                                 item.target_file == target_file
                                 and getattr(item, "function_name", "") == func
-                                and item.type in ("function_return_comparison", "function_output_comparison")
+                                and item.type in ("function_return_test", "function_output_test")
                             ):
                                 func_items.append(item)
                                 for tc in getattr(item, "test_cases", []) or []:
                                     func_expected.append(str(tc.get("expected", "")).strip())
-                    if any(getattr(item, "type", "") == "function_output_comparison" for item in func_items):
+                    if any(getattr(item, "type", "") == "function_output_test" for item in func_items):
                         lines.append("    print('wrong_answer', end='')")
                     elif any(exp in ("None", "none", "null") for exp in func_expected):
                         lines.append("    return 'wrong_answer'")
@@ -742,7 +772,7 @@ class AutograderGen:
                 )
                 for q in self.config.questions
                 for item in q.marking_items
-                if item.target_file == target_file and item.type == "output_comparison"
+                if item.target_file == target_file and item.type == "program_output_test"
             ]
 
             if output_items:
@@ -937,7 +967,7 @@ class AutograderGen:
                 param_str = ", ".join(f"{pt} {pn}" for pt, pn in zip(param_types, param_names))
 
                 ret_type = "double"
-                if any(getattr(item, "type", "") == "function_output_comparison" for item in func_items):
+                if any(getattr(item, "type", "") == "function_output_test" for item in func_items):
                     ret_type = "void"
                 elif cases:
                     exp0 = str(cases[0].get("expected", ""))
@@ -1151,7 +1181,7 @@ class AutograderGen:
                 )
                 for q in self.config.questions
                 for item in q.marking_items
-                if item.target_file == target_file and item.type == "output_comparison"
+                if item.target_file == target_file and item.type == "program_output_test"
             ]
             if output_items:
                 lines.append("    public static void main(String[] args) {")
@@ -1321,7 +1351,7 @@ class AutograderGen:
             if (
                 self.config.language == "python"
                 and hasattr(processed_item, "type")
-                and processed_item.type == "output_comparison"
+                and processed_item.type == "program_output_test"
                 and hasattr(processed_item, "expected_output")
                 and processed_item.expected_output
                 and not processed_item.expected_output.endswith("\n")
@@ -1400,10 +1430,10 @@ autograder.zip
 
 ## Test Types Supported
 
-- **output_comparison**: Compares program output with expected results (both actual and expected output are trimmed before comparison; single-line inputs terminate with a newline)
-- **function_signature_check**: Validates function signatures and parameters
-- **function_return_comparison**: Tests function behavior with specific parameters (params, not inputs) and expected returns
-- **function_output_comparison**: Tests function standard output with specific parameters (params, not inputs) and expected outputs
+- **program_output_test**: Compares program output with expected results (both actual and expected output are trimmed before comparison; single-line inputs terminate with a newline)
+- **function_signature_test**: Validates function signatures and parameters
+- **function_return_test**: Tests function behavior with specific parameters (params, not inputs) and expected returns
+- **function_output_test**: Tests function standard output with specific parameters (params, not inputs) and expected outputs
 - **manual_review**: Qualitative manual review by instructor (e.g. written report, PDF)
 
 ## Questions"""
@@ -1433,13 +1463,13 @@ autograder.zip
                     }
                     readme_content += f"- **Visibility**: {visibility_map.get(item.visibility, item.visibility)}\n"
 
-                if item.type in ("function_return_comparison", "function_output_comparison"):
+                if item.type in ("function_return_test", "function_output_test"):
                     if hasattr(item, "function_name") and item.function_name:
                         readme_content += f"- **Function**: `{item.function_name}()`\n"
                     if hasattr(item, "test_cases") and item.test_cases:
                         readme_content += f"- **Test Cases**: {len(item.test_cases)} case(s)\n"
 
-                elif item.type == "function_signature_check":
+                elif item.type == "function_signature_test":
                     if hasattr(item, "function_name") and item.function_name:
                         readme_content += f"- **Function**: `{item.function_name}()`\n"
                     if hasattr(item, "expected_parameters") and item.expected_parameters:
@@ -1447,7 +1477,7 @@ autograder.zip
                             f"- **Expected Parameters**: `{item.expected_parameters}`\n"
                         )
 
-                elif item.type == "output_comparison":
+                elif item.type == "program_output_test":
                     readme_content += "- **Output Matching**: Output and expected output are trimmed before comparison\n"
                     if hasattr(item, "expected_input") and item.expected_input:
                         input_lines = len(item.expected_input.splitlines())
@@ -1456,11 +1486,11 @@ autograder.zip
                         output_lines = len(item.expected_output.splitlines())
                         readme_content += f"- **Expected Output Lines**: {output_lines}\n"
 
-                elif item.type == "gitlab_submission_exists":
+                elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     readme_content += (
                         "- **Requirement**: Submission must be made via a GitLab repository\n"
                     )
-                elif item.type == "github_submission_exists":
+                elif item.type in ("github_submission_test", "github_submission_exists"):
                     readme_content += (
                         "- **Requirement**: Submission must be made via a GitHub repository\n"
                     )

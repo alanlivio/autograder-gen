@@ -15,44 +15,24 @@
             
 {% if config.language == 'python' %}
             function = self.import_function_from_file(target_file, function_name)
-            check_function_signature(
+            print(StudentMessage.CHECKING_FUNCTION_SIGNATURE)
+            assert_python_function_signature(
                 function,
                 function_name,
                 expected_parameters={{ item.expected_parameters | tojson if item.expected_parameters is defined and item.expected_parameters else 'None' }},
                 expected_return_type={{ item.expected_return_type | tojson if item.expected_return_type is defined and item.expected_return_type else 'None' }},
             )
 {% elif config.language == 'java' %}
-            class_name = file_path.stem
-            target_dir = file_path.parent
-            classpath = f"{target_dir}{os.pathsep}{self.source_dir}{os.pathsep}."
-{% if config.remove_use_of_java_package %}
-            remove_package_line(file_path)
-{% endif %}
-            compile_res = subprocess.run(
-                ['javac', '-cp', classpath, str(file_path)],
-                capture_output=True,
-                text=True,
-                cwd=self.source_dir
+            print(StudentMessage.CHECKING_FUNCTION_SIGNATURE)
+            self.assert_java_function_signature(
+                target_file,
+                function_name,
+                expected_parameters={{ item.expected_parameters | tojson if item.expected_parameters is defined and item.expected_parameters else 'None' }},
+                expected_return_type={{ item.expected_return_type | tojson if item.expected_return_type is defined and item.expected_return_type else 'None' }},
             )
-            if compile_res.returncode != 0:
-                err = compile_res.stderr or compile_res.stdout
-                if err:
-                    print(StudentMessage.COMPILING)
-                    print(err.strip())
-                self.fail(StudentMessage.COMPILATION_ERROR)
-            javap_res = subprocess.run(
-                ['javap', '-cp', classpath, '-public', class_name],
-                capture_output=True,
-                text=True,
-                cwd=self.source_dir
-            )
-            if javap_res.returncode != 0:
-                self.fail(f"FAILED: Could not inspect Java class '{class_name}'")
-            if function_name not in javap_res.stdout:
-                self.fail(f"FAILED: Function/method '{function_name}' not found in class '{class_name}'")
 {% endif %}
             
-            print(f"## Test Passed: {StudentMessage.CORRECT_SIGNATURE.format(function_name=function_name)}")
+            print(f"## Test Passed: {StudentMessage.CORRECT_FUNCTION_SIGNATURE.format(function_name=function_name)}")
             self.apply_wrong_location_deduction(target_file, {{ item.total_mark }})
             
         except AssertionError:

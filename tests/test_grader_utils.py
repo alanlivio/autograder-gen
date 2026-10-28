@@ -405,3 +405,139 @@ def test_call_function_output_with_timeout():
     assert out == "Hello, world!"
 
 
+def test_signature_student_messages_and_java_signature_check(tmp_path):
+    from autograder_gen.run_shared import StudentMessage
+    from autograder_gen.grader_utils import check_java_function_signature
+
+    assert StudentMessage.CHECKING_FUNCTION_SIGNATURE == "## Checking signature"
+    assert (
+        StudentMessage.CORRECT_FUNCTION_SIGNATURE.format(function_name="calc")
+        == "[CORRECT_ANSWER] Function 'calc' signature is correct"
+    )
+    assert (
+        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(function_name="calc", reason="expected 2 parameters")
+        == "[WRONG_ANSWER] Function 'calc' signature mismatch: expected 2 parameters."
+    )
+
+    java_file = tmp_path / "Solution.java"
+    java_file.write_text(
+        "public class Solution {\n"
+        "    public static int add(int a, int b) {\n"
+        "        return a + b;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    assert check_java_function_signature(
+        file_path=java_file,
+        function_name="add",
+        source_dir=tmp_path,
+        expected_parameters="int a, int b",
+        expected_return_type="int",
+    ) is True
+
+    with pytest.raises(AssertionError) as exc_missing:
+        check_java_function_signature(
+            file_path=java_file,
+            function_name="missingMethod",
+            source_dir=tmp_path,
+        )
+    assert "[WRONG_ANSWER] Function 'missingMethod' signature mismatch:" in str(exc_missing.value)
+
+    with pytest.raises(AssertionError) as exc_params:
+        check_java_function_signature(
+            file_path=java_file,
+            function_name="add",
+            source_dir=tmp_path,
+            expected_parameters="int a, int b, int c",
+        )
+    assert "[WRONG_ANSWER] Function 'add' signature mismatch:" in str(exc_params.value)
+
+    with pytest.raises(AssertionError) as exc_ret:
+        check_java_function_signature(
+            file_path=java_file,
+            function_name="add",
+            source_dir=tmp_path,
+            expected_parameters="int a, int b",
+            expected_return_type="String",
+        )
+    assert "[WRONG_ANSWER] Function 'add' signature mismatch:" in str(exc_ret.value)
+
+    # Test assert_java_function_signature directly
+    from autograder_gen.grader_utils import assert_java_function_signature
+
+    assert (
+        assert_java_function_signature(
+            file_path=java_file,
+            function_name="add",
+            source_dir=tmp_path,
+            expected_parameters="int a, int b",
+            expected_return_type="int",
+        )
+        is True
+    )
+
+
+def test_assert_python_function_signature():
+    from autograder_gen.grader_utils import (
+        assert_python_function_signature,
+        check_python_function_signature,
+        call_python_function,
+        call_python_function_output,
+    )
+
+    def sample_func(x: int, y: str = "hello") -> bool:
+        print(f"printing {y}")
+        return x > 0
+
+    assert_python_function_signature(
+        sample_func,
+        "sample_func",
+        expected_parameters="x: int, y: str = 'hello'",
+        expected_return_type="bool",
+    )
+    check_python_function_signature(
+        sample_func,
+        "sample_func",
+        expected_parameters="x: int, y: str = 'hello'",
+        expected_return_type="bool",
+    )
+
+    # Test execution callers
+    ret = call_python_function(sample_func, [5], {}, timeout_seconds=5)
+    assert ret is True
+
+    out = call_python_function_output(sample_func, [5], {}, timeout_seconds=5)
+    assert "printing hello" in out
+
+
+def test_comparison_assertion_helpers(tmp_path):
+    from autograder_gen.grader_utils import (
+        assert_file_exists,
+        assert_output_matches,
+        assert_function_return_matches,
+        assert_function_output_matches,
+    )
+
+    dummy_file = tmp_path / "solution.py"
+    dummy_file.write_text("print('hello')", encoding="utf-8")
+
+    assert_file_exists(dummy_file, "solution.py")
+    with pytest.raises(AssertionError):
+        assert_file_exists(tmp_path / "missing.py", "missing.py")
+
+    assert_output_matches("hello\n", "hello", "solution.py")
+    with pytest.raises(AssertionError):
+        assert_output_matches("wrong", "hello", "solution.py")
+
+    assert_function_return_matches("42", "42", "my_func")
+    with pytest.raises(AssertionError):
+        assert_function_return_matches("0", "42", "my_func")
+
+    assert_function_output_matches("result", "result", "my_func")
+    with pytest.raises(AssertionError):
+        assert_function_output_matches("bad", "result", "my_func")
+
+
+
+

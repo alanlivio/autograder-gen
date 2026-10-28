@@ -20,7 +20,7 @@ SAMPLE_CONFIG_DICT = {
                 {
                     "target_file": "solution.py",
                     "total_mark": 10,
-                    "type": "output_comparison",
+                    "type": "program_output_test",
                     "name": "check_solution_py_exists",
                 }
             ],
@@ -79,7 +79,7 @@ def test_skeleton_generation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},
@@ -115,7 +115,7 @@ def test_skeleton_generation_java():
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},
@@ -176,7 +176,7 @@ def test_skeleton_generation_compiler_error():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},

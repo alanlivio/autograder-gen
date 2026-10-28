@@ -8,7 +8,7 @@ questions:
   marking_items:
   - target_file: solution.py
     total_mark: 10
-    type: function_return_comparison
+    type: function_return_test
     function_name: add
     test_cases:
     - args:

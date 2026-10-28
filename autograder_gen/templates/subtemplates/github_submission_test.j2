@@ -1,0 +1,12 @@
+    @weight({{ item.total_mark }})
+    @number({{ question.name | tojson }})
+    @visibility('{{ item.visibility }}')
+    def test_{{ test_name }}(self):
+        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
+        print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
+        try:
+            assert_github_submission_test(self.source_dir)
+        except AssertionError:
+            raise
+        except Exception as e:
+            self.fail(f"{StudentMessage.RUNTIME_ERROR} Error reading submission metadata: {str(e)}")

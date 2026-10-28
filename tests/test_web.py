@@ -90,7 +90,7 @@ def test_web_validate_and_export_with_expected_output_script(client):
                         "name": "Check",
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output_script": "print(f'hello {STUDENT_ID}')",
                     }
                 ],
@@ -121,7 +121,7 @@ def test_web_validate_and_export_with_wrong_file_location_deduction(client):
                         "name": "Check",
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -210,7 +210,7 @@ def test_web_validate_and_export_with_strict_file_location(client):
                         "name": "Check",
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -241,7 +241,7 @@ def test_web_validate_and_export_with_remove_use_of_java_package(client):
                         "name": "Check",
                         "target_file": "Solution.java",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -273,7 +273,7 @@ def test_web_validate_rejects_strict_file_location_with_deduction(client):
                         "name": "Check",
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],
@@ -330,7 +330,7 @@ def test_web_validate_rejects_out_of_bounds_deduction(client):
                         "name": "Check",
                         "target_file": "solution.py",
                         "total_mark": 10.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "hello",
                     }
                 ],

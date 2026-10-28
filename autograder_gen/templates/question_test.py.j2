@@ -10,8 +10,8 @@ import subprocess
 import sys
 import os
 import tempfile
-{% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_return_comparison', 'function_output_comparison', 'function_signature_check']) | list | length > 0 %}
-{% set needs_timeout = question.marking_items | selectattr('type', 'in', ['function_return_comparison', 'function_output_comparison']) | list | length > 0 %}
+{% set needs_imports = question.marking_items | selectattr('type', 'in', ['function_return_test', 'function_output_test', 'function_signature_test']) | list | length > 0 %}
+{% set needs_timeout = question.marking_items | selectattr('type', 'in', ['function_return_test', 'function_output_test']) | list | length > 0 %}
 {% if needs_imports %}
 import importlib.util
 import inspect
@@ -26,7 +26,7 @@ if str(Path(__file__).parent.parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent.parent))
 if str(Path(__file__).parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent))
-from grader_utils import StudentMessage, normalize_output, compare_outputs{% if config.language == 'java' and config.remove_use_of_java_package %}, remove_package_line{% endif %}{% if config.language == 'java' %}, call_java_function{% endif %}{% if config.language == 'python' %}, call_function_with_timeout, call_function_output_with_timeout, check_function_signature{% endif %}, format_function_call
+from grader_utils import StudentMessage, normalize_output, compare_outputs{% if config.language == 'java' and config.remove_use_of_java_package %}, remove_package_line{% endif %}{% if config.language == 'java' %}, call_java_function, assert_java_function_signature, check_java_function_signature{% endif %}{% if config.language == 'python' %}, call_function_with_timeout, call_function_output_with_timeout, call_python_function, call_python_function_output, import_function_from_file, assert_python_function_signature, check_function_signature{% endif %}, format_function_call, assert_gitlab_submission_test, assert_github_submission_test
 
 
 
@@ -79,66 +79,29 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 {% endif %}
         pass
 
-{% if needs_timeout %}
+{% if needs_timeout and config.language == 'python' %}
     def call_function_with_timeout(self, func, args, kwargs, timeout_seconds):
-        """Call a function with timeout using ThreadPoolExecutor."""
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(func, *args, **kwargs)
-            try:
-                return future.result(timeout=timeout_seconds)
-            except concurrent.futures.TimeoutError:
-                raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+        """Call a function with timeout using run_python helper."""
+        return call_function_with_timeout(func, args, kwargs, timeout_seconds)
 
     def call_function_output_with_timeout(self, func, args, kwargs, timeout_seconds):
-        """Call a function capturing stdout with timeout using ThreadPoolExecutor."""
-        import io
-        from contextlib import redirect_stdout
+        """Call a function capturing stdout with timeout using run_python helper."""
+        return call_function_output_with_timeout(func, args, kwargs, timeout_seconds)
 
-        def _wrapper():
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                func(*args, **kwargs)
-            return buf.getvalue()
+    def call_python_function(self, func, args, kwargs, timeout_seconds):
+        return self.call_function_with_timeout(func, args, kwargs, timeout_seconds)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(_wrapper)
-            try:
-                return future.result(timeout=timeout_seconds)
-            except concurrent.futures.TimeoutError:
-                raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+    def call_python_function_output(self, func, args, kwargs, timeout_seconds):
+        return self.call_function_output_with_timeout(func, args, kwargs, timeout_seconds)
 
 {% endif %}
 {% if needs_imports and config.language == 'python' %}
     def import_function_from_file(self, file_name, function_name):
-        """Import a specific function from a student file."""
-        try:
-            file_path = self.resolve_target(file_name)
-            
-            # Check if file exists
-            if not file_path.exists():
-                raise ImportError(f"Failed to import {function_name} from {file_name}: File {file_name} not found")
-            
-            # Load the module
-            spec = importlib.util.spec_from_file_location("student_module", file_path)
-            if spec is None:
-                raise ImportError(f"Could not create module spec for {file_path}")
-            module = importlib.util.module_from_spec(spec)
-            if spec.loader is None:
-                raise ImportError(f"Could not load module from {file_path}")
-            spec.loader.exec_module(module)
-            
-            # Get the function
-            if not hasattr(module, function_name):
-                raise ImportError(f"Function {function_name} not found in {file_name}")
-            
-            return getattr(module, function_name)
-            
-        except SyntaxError:
-            raise
-        except ImportError:
-            raise
-        except Exception as e:
-            raise ImportError(f"Failed to import {function_name} from {file_name}: {str(e)}")
+        """Import a specific function from a student file using run_python helper."""
+        file_path = self.resolve_target(file_name)
+        if not file_path.exists():
+            raise ImportError(f"Failed to import {function_name} from {file_name}: File {file_name} not found")
+        return import_function_from_file(file_path, function_name)
 
 {% endif %}
 {% if config.language == 'java' %}
@@ -162,6 +125,23 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
             capture_output=capture_output,
         )
 
+    def assert_java_function_signature(self, file_name, function_name, expected_parameters=None, expected_return_type=None):
+        """Compile Java file and validate specified method signature."""
+        file_path = self.resolve_target(file_name)
+        if not file_path.exists():
+            raise AssertionError(StudentMessage.WRONG_FILE.format(file_name=file_name))
+        return assert_java_function_signature(
+            file_path,
+            function_name,
+            self.source_dir,
+            expected_parameters=expected_parameters,
+            expected_return_type=expected_return_type,
+            remove_package={{ 'True' if config.remove_use_of_java_package else 'False' }},
+        )
+
+    def check_java_function_signature(self, file_name, function_name, expected_parameters=None, expected_return_type=None):
+        return self.assert_java_function_signature(file_name, function_name, expected_parameters, expected_return_type)
+
 {% endif %}
 
 {% for item in question.marking_items %}
@@ -172,18 +152,20 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 {% set test_name = ('item_' + loop.index|string)|lower %}
 {% endif %}
 
-{% if item.type == "output_comparison" %}
-    {% include 'subtemplates/output_comparison_method.j2' %}
-{% elif item.type == "function_signature_check" %}
-    {% include 'subtemplates/signature_check_method.j2' %}
-{% elif item.type in ["function_return_comparison", "function_output_comparison"] %}
-    {% include 'subtemplates/function_test_method.j2' %}
-{% elif item.type == "gitlab_submission_exists" %}
-    {% include 'subtemplates/gitlab_submission_exists.j2' %}
-{% elif item.type == "github_submission_exists" %}
-    {% include 'subtemplates/github_submission_exists.j2' %}
+{% if item.type == "program_output_test" %}
+    {% include 'subtemplates/program_output_test.j2' %}
+{% elif item.type == "function_signature_test" %}
+    {% include 'subtemplates/function_signature_test.j2' %}
+{% elif item.type == "function_return_test" %}
+    {% include 'subtemplates/function_return_test.j2' %}
+{% elif item.type == "function_output_test" %}
+    {% include 'subtemplates/function_output_test.j2' %}
+{% elif item.type in ["gitlab_submission_test", "gitlab_submission_exists"] %}
+    {% include 'subtemplates/gitlab_submission_test.j2' %}
+{% elif item.type in ["github_submission_test", "github_submission_exists"] %}
+    {% include 'subtemplates/github_submission_test.j2' %}
 {% elif item.type == "manual_review" %}
-    {% include 'subtemplates/manual_review_method.j2' %}
+    {% include 'subtemplates/manual_review.j2' %}
 {% endif %}
 
 {% endfor %}

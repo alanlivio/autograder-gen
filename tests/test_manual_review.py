@@ -243,7 +243,7 @@ def test_manual_review_generation_and_inspection(tmp_path: Path):
                         "name": "Main.java Output Check",
                         "target_file": "Main.java",
                         "total_mark": 0.0,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     },
                     {
                         "name": "report.pdf File Exists",

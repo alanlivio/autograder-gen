@@ -82,9 +82,9 @@ class Validator:
             for item in marking_items:
                 total_marks += float(item.get("total_mark", 0))
 
-                # Custom check: output comparison warning
-                self._validate_output_comparison_warnings(item, q)
-                self._validate_signature_check_warnings(item)
+                # Custom check: program output test warning
+                self._validate_program_output_test_warnings(item, q)
+                self._validate_function_signature_test_warnings(item)
                 self._validate_function_test(item)
 
         if total_marks <= 0:
@@ -96,12 +96,12 @@ class Validator:
         if len(q_names) != len(set(q_names)):
             self.warnings.append("Duplicate question names found.")
 
-    def _validate_output_comparison_warnings(
+    def _validate_program_output_test_warnings(
         self, item: Dict[str, Any], question: Optional[Dict[str, Any]] = None
     ):
-        """Check for potentially problematic output comparison configurations."""
+        """Check for potentially problematic program_output_test configurations."""
         item_type = item.get("type", "")
-        if item_type == "output_comparison":
+        if item_type == "program_output_test":
             expected = item.get("expected_output")
             expected_script = item.get("expected_output_script")
             q_script = question.get("expected_output_script") if question else None
@@ -127,10 +127,10 @@ class Validator:
                         f"Output comparison item '{item.get('name', 'unnamed')}' has invalid expected_output_script syntax: {e}"
                     )
 
-    def _validate_signature_check_warnings(self, item: Dict[str, Any]):
-        """Check for function_signature_check item configurations."""
+    def _validate_function_signature_test_warnings(self, item: Dict[str, Any]):
+        """Check for function_signature_test item configurations."""
         item_type = item.get("type", "")
-        if item_type == "function_signature_check":
+        if item_type == "function_signature_test":
             target_func = item.get("function_name") or item.get("target_function", "")
             if not target_func:
                 self.errors.append(
@@ -141,8 +141,8 @@ class Validator:
         """Check function test specific fields."""
         item_type = item.get("type", "")
         if item_type in (
-            "function_return_comparison",
-            "function_output_comparison",
+            "function_return_test",
+            "function_output_test",
         ):
             target_func = item.get("function_name") or item.get("target_function", "")
             test_cases = item.get("test_cases", [])

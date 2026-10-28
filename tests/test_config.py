@@ -19,7 +19,7 @@ def test_config_total_score_single_question():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -41,12 +41,12 @@ def test_config_total_score_float_marks():
                     {
                         "target_file": "solution.py",
                         "total_mark": 2.5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     },
                     {
                         "target_file": "solution.py",
                         "total_mark": 7.5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     },
                 ],
             }
@@ -72,12 +72,12 @@ def test_config_total_score_multiple_questions_and_items():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     },
                     {
                         "target_file": "solution.py",
                         "total_mark": 15,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [{"args": [1, 2], "expected": "3"}],
                     },
@@ -89,7 +89,7 @@ def test_config_total_score_multiple_questions_and_items():
                     {
                         "target_file": "helper.py",
                         "total_mark": 25,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             },
@@ -111,14 +111,14 @@ questions:
     marking_items:
       - target_file: solution.py
         total_mark: 12
-        type: function_return_comparison
+        type: function_return_test
         function_name: add
         test_cases:
           - args: [1, 2]
             expected: '3'
       - target_file: solution.py
         total_mark: 8
-        type: function_return_comparison
+        type: function_return_test
         function_name: multiply
         test_cases:
           - args: [2, 3]
@@ -145,7 +145,7 @@ def test_config_missing_target_file_in_files_necessary():
                     {
                         "target_file": "missing.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -179,7 +179,14 @@ def test_file_exists_type_fails_validation():
 
 
 def test_legacy_type_names_rejected():
-    for legacy_type in ("function_test", "signature_check", "function_output_test"):
+    for legacy_type in (
+        "output_comparison",
+        "function_test",
+        "signature_check",
+        "function_return_comparison",
+        "function_output_comparison",
+        "function_signature_check",
+    ):
         data = {
             "version": __version__,
             "language": "python",
@@ -203,7 +210,7 @@ def test_legacy_type_names_rejected():
         assert "type must be one of" in str(excinfo.value)
 
 
-def test_function_return_comparison_and_function_signature_check_types():
+def test_function_return_test_and_function_signature_test_types():
     data = {
         "version": __version__,
         "language": "python",
@@ -215,14 +222,14 @@ def test_function_return_comparison_and_function_signature_check_types():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [{"args": [1, 2], "expected": "3"}],
                     },
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "function_signature_check",
+                        "type": "function_signature_test",
                         "function_name": "add",
                     },
                 ],
@@ -230,11 +237,11 @@ def test_function_return_comparison_and_function_signature_check_types():
         ],
     }
     cfg = ag.Config.model_validate(data)
-    assert cfg.questions[0].marking_items[0].type == "function_return_comparison"
-    assert cfg.questions[0].marking_items[1].type == "function_signature_check"
+    assert cfg.questions[0].marking_items[0].type == "function_return_test"
+    assert cfg.questions[0].marking_items[1].type == "function_signature_test"
 
 
-def test_function_signature_check_with_time_limit_fails_validation():
+def test_function_signature_test_with_time_limit_fails_validation():
     data = {
         "version": __version__,
         "language": "python",
@@ -246,7 +253,7 @@ def test_function_signature_check_with_time_limit_fails_validation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 0,
-                        "type": "function_signature_check",
+                        "type": "function_signature_test",
                         "time_limit": 5,
                     }
                 ],
@@ -255,10 +262,10 @@ def test_function_signature_check_with_time_limit_fails_validation():
     }
     with pytest.raises(ValidationError) as excinfo:
         ag.Config.model_validate(data)
-    assert "time_limit is not allowed for type 'function_signature_check'" in str(excinfo.value)
+    assert "time_limit is not allowed for type 'function_signature_test'" in str(excinfo.value)
 
 
-def test_function_return_comparison_requires_function_name():
+def test_function_return_test_requires_function_name():
     data = {
         "version": __version__,
         "language": "python",
@@ -270,7 +277,7 @@ def test_function_return_comparison_requires_function_name():
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                     }
                 ],
             }
@@ -278,10 +285,10 @@ def test_function_return_comparison_requires_function_name():
     }
     with pytest.raises(ValidationError) as excinfo:
         ag.Config.model_validate(data)
-    assert "function_name is required for function_return_comparison" in str(excinfo.value)
+    assert "function_name is required for function_return_test" in str(excinfo.value)
 
 
-def test_function_output_comparison_validation():
+def test_function_output_test_validation():
     data = {
         "version": __version__,
         "language": "python",
@@ -293,7 +300,7 @@ def test_function_output_comparison_validation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_output_comparison",
+                        "type": "function_output_test",
                         "function_name": "display",
                         "time_limit": 5,
                         "test_cases": [{"args": [349], "expected": "foo"}],
@@ -303,7 +310,7 @@ def test_function_output_comparison_validation():
         ],
     }
     cfg = ag.Config.model_validate(data)
-    assert cfg.questions[0].marking_items[0].type == "function_output_comparison"
+    assert cfg.questions[0].marking_items[0].type == "function_output_test"
 
     missing_fn_data = {
         "version": __version__,
@@ -316,7 +323,7 @@ def test_function_output_comparison_validation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "function_output_comparison",
+                        "type": "function_output_test",
                     }
                 ],
             }
@@ -324,7 +331,7 @@ def test_function_output_comparison_validation():
     }
     with pytest.raises(ValidationError) as excinfo:
         ag.Config.model_validate(missing_fn_data)
-    assert "function_name is required for function_output_comparison" in str(excinfo.value)
+    assert "function_name is required for function_output_test" in str(excinfo.value)
 
 
 def test_strict_file_location_configuration():
@@ -339,7 +346,7 @@ def test_strict_file_location_configuration():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -364,7 +371,7 @@ def test_remove_use_of_java_package_configuration():
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -389,7 +396,7 @@ def test_required_files_and_backwards_compatibility():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -415,7 +422,7 @@ def test_required_files_and_backwards_compatibility():
                     {
                         "target_file": "main.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -437,7 +444,7 @@ def test_required_files_and_backwards_compatibility():
                     {
                         "target_file": "app.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -465,7 +472,7 @@ def test_question_strict_float_configuration():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             },
@@ -476,7 +483,7 @@ def test_question_strict_float_configuration():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             },
@@ -491,7 +498,7 @@ def test_marking_item_expected_input_single_line_appends_newline():
     item = ag.config.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="output_comparison",
+        type="program_output_test",
         expected_input="5",
     )
     assert item.expected_input == "5\n"
@@ -501,7 +508,7 @@ def test_marking_item_expected_input_single_line_already_has_newline():
     item = ag.config.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="output_comparison",
+        type="program_output_test",
         expected_input="5\n",
     )
     assert item.expected_input == "5\n"
@@ -511,7 +518,7 @@ def test_marking_item_expected_input_empty():
     item = ag.config.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="output_comparison",
+        type="program_output_test",
         expected_input="",
     )
     assert item.expected_input == ""
@@ -521,7 +528,7 @@ def test_marking_item_expected_input_multiline_unchanged():
     item1 = ag.config.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="output_comparison",
+        type="program_output_test",
         expected_input="line1\nline2",
     )
     assert item1.expected_input == "line1\nline2"
@@ -529,7 +536,7 @@ def test_marking_item_expected_input_multiline_unchanged():
     item2 = ag.config.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="output_comparison",
+        type="program_output_test",
         expected_input="line1\nline2\n",
     )
     assert item2.expected_input == "line1\nline2\n"
@@ -545,7 +552,7 @@ questions:
     marking_items:
       - target_file: solution.py
         total_mark: 10
-        type: output_comparison
+        type: program_output_test
         expected_input: '42'
 """
     cfg_file = tmp_path / "config.yaml"

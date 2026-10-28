@@ -5,11 +5,11 @@ import autograder_gen as ag
 
 
 def test_marking_item_schema_valid():
-    data = {"target_file": "solution.py", "total_mark": 10, "type": "output_comparison"}
+    data = {"target_file": "solution.py", "total_mark": 10, "type": "program_output_test"}
     result = ag.MarkingItem(**data)
     assert result.target_file == "solution.py"
     assert result.total_mark == 10
-    assert result.type == "output_comparison"
+    assert result.type == "program_output_test"
     assert result.time_limit == 30
 
 
@@ -20,7 +20,7 @@ def test_marking_item_file_exists_type_invalid():
 
 
 def test_marking_item_schema_float_total_mark():
-    data = {"target_file": "solution.py", "total_mark": 7.5, "type": "output_comparison"}
+    data = {"target_file": "solution.py", "total_mark": 7.5, "type": "program_output_test"}
     result = ag.MarkingItem(**data)
     assert result.total_mark == 7.5
     assert isinstance(result.total_mark, float)
@@ -30,7 +30,6 @@ def test_marking_item_schema_invalid_type():
     data = {"target_file": "solution.py", "total_mark": 10, "type": "invalid_type"}
     with pytest.raises(ValidationError) as excinfo:
         ag.MarkingItem(**data)
-    # Check that the invalid_type triggered the validation error for 'type'
     errors = excinfo.value.errors()
     assert any(error["loc"] == ("type",) for error in errors)
 
@@ -39,7 +38,7 @@ def test_question_schema_valid():
     data = {
         "name": "Q1",
         "marking_items": [
-            {"target_file": "solution.py", "total_mark": 10, "type": "output_comparison"}
+            {"target_file": "solution.py", "total_mark": 10, "type": "program_output_test"}
         ],
     }
     result = ag.Question(**data)
@@ -59,7 +58,7 @@ def test_autograder_config_schema_full():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -93,7 +92,7 @@ def test_validator_and_utility_functions():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "name": "check_exists",
                         "expected_output": "expected",
                     }
@@ -110,7 +109,7 @@ def test_validator_and_utility_functions():
     assert lint_res["quality_score"] == 100
 
 
-def test_validator_output_comparison_no_command_warning():
+def test_validator_program_output_test_no_command_warning():
     data = {
         "version": __version__,
         "language": "python",
@@ -122,7 +121,7 @@ def test_validator_output_comparison_no_command_warning():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "name": "Hello Output Check",
                         "expected_output": "Hello World\n",
                     }
@@ -152,7 +151,7 @@ def test_marking_item_mutual_exclusion_validation():
         ag.MarkingItem(
             target_file="solution.py",
             total_mark=10,
-            type="output_comparison",
+            type="program_output_test",
             expected_output="Hello",
             expected_output_script="print('Hello')",
         )
@@ -171,7 +170,7 @@ def test_validator_mutual_exclusion_validation():
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "expected_output": "Hello",
                         "expected_output_script": "print('Hello')",
                     }
@@ -202,13 +201,13 @@ def test_question_level_expected_output_script():
                         "name": "Item 1",
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     },
                     {
                         "name": "Item 2",
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     },
                 ],
             }
@@ -236,7 +235,7 @@ def test_question_level_expected_output_script_syntax_error():
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -247,32 +246,39 @@ def test_question_level_expected_output_script_syntax_error():
     assert any("invalid expected_output_script syntax" in err for err in validator.get_errors())
 
 
-def test_marking_item_function_return_comparison_and_signature_check():
+def test_marking_item_function_types_and_signature_test():
     item_fn = ag.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="function_return_comparison",
+        type="function_return_test",
         function_name="calc",
     )
-    assert item_fn.type == "function_return_comparison"
+    assert item_fn.type == "function_return_test"
 
     item_sig = ag.MarkingItem(
         target_file="solution.py",
         total_mark=5,
-        type="function_signature_check",
+        type="function_signature_test",
         function_name="calc",
     )
-    assert item_sig.type == "function_signature_check"
+    assert item_sig.type == "function_signature_test"
 
     item_out = ag.MarkingItem(
         target_file="solution.py",
         total_mark=10,
-        type="function_output_comparison",
+        type="function_output_test",
         function_name="display",
     )
-    assert item_out.type == "function_output_comparison"
+    assert item_out.type == "function_output_test"
 
-    for legacy_type in ("function_test", "signature_check", "function_output_test"):
+    for legacy_type in (
+        "output_comparison",
+        "function_test",
+        "signature_check",
+        "function_return_comparison",
+        "function_output_comparison",
+        "function_signature_check",
+    ):
         with pytest.raises(ValidationError):
             ag.MarkingItem(
                 target_file="solution.py",

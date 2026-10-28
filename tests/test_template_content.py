@@ -19,13 +19,13 @@ CONFIG_FOR_TEMPLATES = {
                 {
                     "target_file": "solution.py",
                     "total_mark": 10,
-                    "type": "output_comparison",
+                    "type": "program_output_test",
                     "name": "check_solution_py_exists",
                 },
                 {
                     "target_file": "solution.py",
                     "total_mark": 5,
-                    "type": "output_comparison",
+                    "type": "program_output_test",
                     "name": "basic_addition_test",
                     "expected_output": "test",
                 },
@@ -61,7 +61,6 @@ def test_run_autograder_copies_files(temp_output_dir):
         with z.open("run_autograder") as f:
             content = f.read().decode()
             assert "Copying required submission files to source directory" in content
-            # Check for files in files_necessary
             for fname in CONFIG_FOR_TEMPLATES["files_necessary"]:
                 assert fname in content
 
@@ -71,14 +70,11 @@ def test_per_question_test_file_content(temp_output_dir):
     generator = ag.Engine(config, CONFIG_FOR_TEMPLATES)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
-        # The first question should now be question_1_test.py
         test_file = "question_1_test.py"
         assert test_file in z.namelist()
         with z.open(test_file) as f:
             content = f.read().decode()
-            # Check for the new test class name
             assert "class TestQuestion1" in content
-            # Check for test methods generated from the sample config names
             assert "def test_check_solution_py_exists" in content
             assert "def test_basic_addition_test" in content
 
@@ -96,7 +92,7 @@ def test_java_setup_sh_contains_openjdk_25(temp_output_dir):
             assert "Setup completed successfully" in content
 
 
-def test_output_comparison_template(tmp_path):
+def test_program_output_test_template(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
@@ -108,7 +104,7 @@ def test_output_comparison_template(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "name": "output_test",
                         "expected_output": "42",
                     },
@@ -152,7 +148,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [
                             {"args": [1, 2], "expected": "3"},
@@ -209,7 +205,7 @@ def test_run_autograder_logs_checking_required_files(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -240,7 +236,7 @@ def test_java_remove_package_template(tmp_path):
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [{"args": [1.0, 2.0], "expected": "3.0"}],
                     }
@@ -277,7 +273,7 @@ def test_java_remove_package_execution(tmp_path):
                     {
                         "target_file": "Solution.java",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [{"args": [1.0, 2.0], "expected": "3.0"}],
                     }
@@ -316,7 +312,7 @@ def test_float_comparison_tolerance_non_strict(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "calc_volume",
                         "test_cases": [{"args": [20.24], "expected": "4341.40345"}],
                     }
@@ -355,7 +351,7 @@ def test_float_comparison_strict_fails(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "calc_volume",
                         "test_cases": [{"args": [20.24], "expected": "4341.40345"}],
                     }
@@ -436,7 +432,7 @@ def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "visibility": "visible",
                     }
                 ],
@@ -447,13 +443,13 @@ def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "visibility": "after_due_date",
                     },
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                         "visibility": "after_published",
                     },
                 ],
@@ -482,7 +478,7 @@ def test_run_autograder_found_file_penalties_message(temp_output_dir):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "output_comparison",
+                        "type": "program_output_test",
                     }
                 ],
             }
@@ -495,7 +491,7 @@ def test_run_autograder_found_file_penalties_message(temp_output_dir):
         assert "Found file 'solution.py' at $FOUND_FILE, penalties will be applied" in content
 
 
-def test_function_return_comparison_and_signature_check_template_content(tmp_path):
+def test_function_return_test_and_signature_test_template_content(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
@@ -507,14 +503,14 @@ def test_function_return_comparison_and_signature_check_template_content(tmp_pat
                     {
                         "target_file": "solution.py",
                         "total_mark": 5,
-                        "type": "function_signature_check",
+                        "type": "function_signature_test",
                         "function_name": "add",
                         "expected_parameters": "a, b",
                     },
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [{"args": [1, 2], "expected": "3"}],
                     },
@@ -529,17 +525,25 @@ def test_function_return_comparison_and_signature_check_template_content(tmp_pat
 
     with zipfile.ZipFile(zip_path, "r") as z:
         test_content = z.read("question_1_test.py").decode("utf-8")
-        assert "import inspect" in test_content
-        assert "expected_out = normalize_output(\"3\")" in test_content
+        assert "check_function_signature" in test_content
+        assert "StudentMessage.CHECKING_FUNCTION_SIGNATURE" in test_content
+        assert "StudentMessage.CORRECT_FUNCTION_SIGNATURE" in test_content
+        assert 'expected_out = normalize_output("3")' in test_content
         assert "actual_out = normalize_output(str(result))" in test_content
         assert "StudentMessage.COMPARING_RETURN" in test_content
         assert "StudentMessage.EXPECTED_RETURN" in test_content
         assert "StudentMessage.ACTUAL_RETURN" in test_content
-        assert "StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)" in test_content
-        assert "StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name)" in test_content
+        assert (
+            "StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)"
+            in test_content
+        )
+        assert (
+            "StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name)"
+            in test_content
+        )
 
 
-def test_function_output_comparison_template_content(tmp_path):
+def test_function_output_test_template_content(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
@@ -551,7 +555,7 @@ def test_function_output_comparison_template_content(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_output_comparison",
+                        "type": "function_output_test",
                         "function_name": "display",
                         "test_cases": [{"args": [349], "expected": "display 349 output"}],
                     },
@@ -570,8 +574,56 @@ def test_function_output_comparison_template_content(tmp_path):
         assert "StudentMessage.COMPARING_OUTPUT" in test_content
         assert "StudentMessage.EXPECTED_OUTPUT" in test_content
         assert "StudentMessage.ACTUAL_OUTPUT" in test_content
-        assert "StudentMessage.CORRECT_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)" in test_content
-        assert "StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)" in test_content
+        assert (
+            "StudentMessage.CORRECT_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)"
+            in test_content
+        )
+        assert (
+            "StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name)"
+            in test_content
+        )
         assert "StudentMessage.EXPECTED_RETURN" not in test_content
         assert "StudentMessage.COMPARING_RETURN" not in test_content
 
+
+def test_function_multi_test_case_output_execution(tmp_path):
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "required_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Multi Case Test",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "function_return_test",
+                        "function_name": "add",
+                        "test_cases": [
+                            {"args": [1, 2], "expected": "3"},
+                            {"args": [10, 20], "expected": "30"},
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    with open(cfg_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_dict, f)
+
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    (sub_dir / "solution.py").write_text(
+        "def add(a, b):\n    return a + b\n",
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRunner(cfg_file)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert "tests" in results
+    test_out = results["tests"][0]["output"]
+    assert "add(1, 2)" in test_out
+    assert "add(10, 20)" in test_out
+    assert "30" in test_out

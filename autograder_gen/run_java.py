@@ -290,3 +290,127 @@ def call_java_function(
             raise RuntimeError("Internal runner error")
         raise RuntimeError(f"Error executing {function_name}: {res.stderr}")
     return res.stdout
+
+
+def _normalize_java_type(type_str: str) -> str:
+    t = type_str.strip()
+    t = re.sub(r"\bjava\.lang\.", "", t)
+    t = re.sub(r"\bjava\.util\.", "", t)
+    return t
+
+
+def assert_java_function_signature(
+    file_path: Union[str, Path],
+    function_name: str,
+    source_dir: Union[str, Path],
+    expected_parameters: Optional[str] = None,
+    expected_return_type: Optional[str] = None,
+    remove_package: bool = False,
+) -> None:
+    path = Path(file_path)
+    s_dir = Path(source_dir)
+    if not path.exists():
+        raise AssertionError(StudentMessage.WRONG_FILE.format(file_name=path.name))
+    if remove_package:
+        remove_package_line(path)
+
+    class_name = path.stem
+    target_dir = path.parent
+    classpath = f"{target_dir}{os.pathsep}{s_dir}{os.pathsep}."
+    compile_res = subprocess.run(
+        ["javac", "-cp", classpath, str(path)],
+        capture_output=True,
+        text=True,
+        cwd=s_dir,
+    )
+    if compile_res.returncode != 0:
+        err = compile_res.stderr or compile_res.stdout
+        if err:
+            print(StudentMessage.COMPILING)
+            print(err.strip())
+        raise AssertionError(StudentMessage.COMPILATION_ERROR)
+
+    javap_res = subprocess.run(
+        ["javap", "-cp", classpath, "-public", class_name],
+        capture_output=True,
+        text=True,
+        cwd=s_dir,
+    )
+    if javap_res.returncode != 0:
+        raise AssertionError(
+            StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                function_name=function_name,
+                reason=f"could not inspect Java class '{class_name}'",
+            )
+        )
+
+    pattern = re.compile(
+        rf"^\s*(?:public\s+)?(?:static\s+)?(?:final\s+)?([\w.<>\[\]]+)\s+{re.escape(function_name)}\s*\(([^)]*)\)"
+    )
+    matched_methods = []
+    for line in javap_res.stdout.splitlines():
+        m = pattern.search(line)
+        if m:
+            ret_type = _normalize_java_type(m.group(1))
+            raw_params = m.group(2).strip()
+            param_types = (
+                [_normalize_java_type(p) for p in raw_params.split(",") if p.strip()]
+                if raw_params
+                else []
+            )
+            matched_methods.append((ret_type, param_types))
+
+    if not matched_methods:
+        if function_name not in javap_res.stdout:
+            raise AssertionError(
+                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                    function_name=function_name,
+                    reason=f"method '{function_name}' not found in class '{class_name}'",
+                )
+            )
+        return True
+
+    actual_ret_type, actual_param_types = matched_methods[0]
+
+    if expected_parameters and expected_parameters.strip():
+        expected_parts = [p.strip() for p in expected_parameters.split(",") if p.strip()]
+        if len(actual_param_types) != len(expected_parts):
+            raise AssertionError(
+                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                    function_name=function_name,
+                    reason=f"has {len(actual_param_types)} parameters, expected {len(expected_parts)}",
+                )
+            )
+        for idx, part in enumerate(expected_parts):
+            exp_type = None
+            if ":" in part:
+                _, t_part = part.split(":", 1)
+                exp_type = _normalize_java_type(t_part.split("=", 1)[0])
+            else:
+                tokens = part.split()
+                if len(tokens) >= 2:
+                    exp_type = _normalize_java_type(tokens[0])
+            if exp_type:
+                act_type = actual_param_types[idx]
+                if act_type.lower() != exp_type.lower():
+                    raise AssertionError(
+                        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                            function_name=function_name,
+                            reason=f"parameter {idx + 1} has type '{act_type}', expected '{exp_type}'",
+                        )
+                    )
+
+    if expected_return_type and expected_return_type.strip():
+        exp_ret = _normalize_java_type(expected_return_type)
+        if actual_ret_type.lower() != exp_ret.lower():
+            raise AssertionError(
+                StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+                    function_name=function_name,
+                    reason=f"has return type '{actual_ret_type}', expected '{exp_ret}'",
+                )
+            )
+    return True
+
+
+check_java_function_signature = assert_java_function_signature
+

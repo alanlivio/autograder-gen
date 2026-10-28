@@ -12,16 +12,16 @@ class MarkingItem(BaseModel):
         ge=0, title="Points", description="Score awarded for this marking item."
     )
     type: str = Field(
-        default="output_comparison",
+        default="program_output_test",
         title="Test Type",
         json_schema_extra={
             "enum": [
-                "output_comparison",
-                "function_signature_check",
-                "function_return_comparison",
-                "function_output_comparison",
-                "gitlab_submission_exists",
-                "github_submission_exists",
+                "program_output_test",
+                "function_signature_test",
+                "function_return_test",
+                "function_output_test",
+                "gitlab_submission_test",
+                "github_submission_test",
                 "manual_review",
             ]
         },
@@ -74,13 +74,18 @@ class MarkingItem(BaseModel):
     @field_validator("type", mode="before")
     @classmethod
     def check_type(cls, v: str) -> str:
+        legacy_aliases = {
+            "gitlab_submission_exists": "gitlab_submission_test",
+            "github_submission_exists": "github_submission_test",
+        }
+        v = legacy_aliases.get(v, v)
         allowed = {
-            "output_comparison",
-            "function_signature_check",
-            "function_return_comparison",
-            "function_output_comparison",
-            "gitlab_submission_exists",
-            "github_submission_exists",
+            "program_output_test",
+            "function_signature_test",
+            "function_return_test",
+            "function_output_test",
+            "gitlab_submission_test",
+            "github_submission_test",
             "manual_review",
         }
         if v not in allowed:
@@ -102,18 +107,24 @@ class MarkingItem(BaseModel):
         ):
             raise ValueError("expected_output and expected_output_script are mutually exclusive")
         if (
-            self.type not in ("output_comparison", "function_return_comparison", "function_output_comparison")
+            self.type not in ("program_output_test", "function_return_test", "function_output_test")
             and "time_limit" in self.model_fields_set
         ):
             raise ValueError(f"time_limit is not allowed for type '{self.type}'")
         if (
-            self.type in ("function_return_comparison", "function_output_comparison")
+            self.type in ("function_return_test", "function_output_test")
             and not self.function_name
         ):
             raise ValueError(f"function_name is required for {self.type}")
         if (
             self.type
-            not in ("gitlab_submission_exists", "github_submission_exists", "manual_review")
+            not in (
+                "gitlab_submission_test",
+                "github_submission_test",
+                "gitlab_submission_exists",
+                "github_submission_exists",
+                "manual_review",
+            )
             and not self.target_file
         ):
             raise ValueError(f"target_file is required for type '{self.type}'")
@@ -130,7 +141,7 @@ class Question(BaseModel):
     expected_output_script: Optional[str] = Field(
         default=None,
         title="Expected Output Script",
-        description="Python script to dynamically generate expected standard output for output_comparison marking items in this question. The script writes to stdout (via print), accesses expected input using input(), and has access to STUDENT_ID.",
+        description="Python script to dynamically generate expected standard output for program_output_test marking items in this question. The script writes to stdout (via print), accesses expected input using input(), and has access to STUDENT_ID.",
     )
     marking_items: List[MarkingItem] = Field(min_length=1, title="Marking Items")
 

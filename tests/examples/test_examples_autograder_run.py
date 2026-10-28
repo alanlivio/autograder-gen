@@ -81,7 +81,7 @@ def test_autograder_runner_config_obj(tmp_path):
                     {
                         "target_file": "solution.py",
                         "total_mark": 10,
-                        "type": "function_return_comparison",
+                        "type": "function_return_test",
                         "function_name": "add",
                         "test_cases": [{"args": [1, 2], "expected": "3"}],
                     }

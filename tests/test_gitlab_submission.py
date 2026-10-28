@@ -14,31 +14,39 @@ from autograder_gen.grader_utils import StudentMessage
 def test_marking_item_gitlab_submission_exists_without_target_file():
     data = {
         "total_mark": 5,
-        "type": "gitlab_submission_exists",
+        "type": "gitlab_submission_test",
         "name": "Check GitLab Submission",
     }
     item = ag.MarkingItem(**data)
-    assert item.type == "gitlab_submission_exists"
+    assert item.type == "gitlab_submission_test"
     assert item.target_file == ""
     assert item.total_mark == 5
+
+    # Test legacy alias normalization
+    item_legacy = ag.MarkingItem(total_mark=5, type="gitlab_submission_exists")
+    assert item_legacy.type == "gitlab_submission_test"
 
 
 def test_marking_item_github_submission_exists_without_target_file():
     data = {
         "total_mark": 5,
-        "type": "github_submission_exists",
+        "type": "github_submission_test",
         "name": "Check GitHub Submission",
     }
     item = ag.MarkingItem(**data)
-    assert item.type == "github_submission_exists"
+    assert item.type == "github_submission_test"
     assert item.target_file == ""
     assert item.total_mark == 5
+
+    # Test legacy alias normalization
+    item_legacy = ag.MarkingItem(total_mark=5, type="github_submission_exists")
+    assert item_legacy.type == "github_submission_test"
 
 
 def test_marking_item_target_file_required_for_other_types():
     data = {
         "total_mark": 5,
-        "type": "output_comparison",
+        "type": "program_output_test",
     }
     with pytest.raises(ValidationError) as excinfo:
         ag.MarkingItem(**data)
@@ -57,12 +65,12 @@ def test_config_with_gitlab_submission_exists_yaml(tmp_path):
                 "marking_items": [
                     {
                         "total_mark": 5,
-                        "type": "gitlab_submission_exists",
+                        "type": "gitlab_submission_test",
                         "name": "verify_gitlab_repo",
                     },
                     {
                         "total_mark": 5,
-                        "type": "github_submission_exists",
+                        "type": "github_submission_test",
                         "name": "verify_github_repo",
                     },
                 ],
@@ -75,8 +83,8 @@ def test_config_with_gitlab_submission_exists_yaml(tmp_path):
     config = ag.Config.parse(yaml_path)
     assert config.language == "python"
     assert len(config.questions) == 1
-    assert config.questions[0].marking_items[0].type == "gitlab_submission_exists"
-    assert config.questions[0].marking_items[1].type == "github_submission_exists"
+    assert config.questions[0].marking_items[0].type == "gitlab_submission_test"
+    assert config.questions[0].marking_items[1].type == "github_submission_test"
     assert config.total_score == 10
 
     validator = ag.Validator()
@@ -93,7 +101,7 @@ def test_template_generation_gitlab(tmp_path):
                 "marking_items": [
                     {
                         "total_mark": 5,
-                        "type": "gitlab_submission_exists",
+                        "type": "gitlab_submission_test",
                         "name": "verify_git_submission",
                     },
                 ],
@@ -111,25 +119,36 @@ def test_template_generation_gitlab(tmp_path):
 
         assert "def test_verify_git_submission(self):" in test_content
         assert 'print(f"# Question 1) verify_git_submission")' in test_content
-        assert "submission_metadata.json" in test_content
-        assert "StudentMessage.WRONG_GITLAB_NOT_USED" in test_content
-        assert "GitLab" in test_content
+        assert "assert_gitlab_submission_test" in test_content
 
 
 def test_gitlab_submission_execution_logic(tmp_path):
+    from autograder_gen.grader_utils import (
+        assert_gitlab_submission_test,
+        assert_github_submission_test,
+    )
+
     metadata_file = tmp_path / "submission_metadata.json"
 
+    # GitLab success
     metadata_file.write_text(json.dumps({"submission_method": "GitLab"}), encoding="utf-8")
-    with metadata_file.open(encoding="utf-8") as f:
-        metadata = json.load(f)
-    assert metadata.get("submission_method") == "GitLab"
+    assert_gitlab_submission_test(tmp_path)
 
+    # GitHub failure when GitLab expected
     metadata_file.write_text(json.dumps({"submission_method": "GitHub"}), encoding="utf-8")
-    with metadata_file.open(encoding="utf-8") as f:
-        metadata = json.load(f)
-    assert metadata.get("submission_method") == "GitHub"
+    with pytest.raises(AssertionError):
+        assert_gitlab_submission_test(tmp_path)
+    assert_github_submission_test(tmp_path)
 
+    # Upload failure
     metadata_file.write_text(json.dumps({"submission_method": "Upload"}), encoding="utf-8")
-    with metadata_file.open(encoding="utf-8") as f:
-        metadata = json.load(f)
-    assert metadata.get("submission_method") not in ("GitLab", "GitHub")
+    with pytest.raises(AssertionError):
+        assert_gitlab_submission_test(tmp_path)
+    with pytest.raises(AssertionError):
+        assert_github_submission_test(tmp_path)
+
+    # Missing metadata file
+    metadata_file.unlink()
+    with pytest.raises(AssertionError):
+        assert_gitlab_submission_test(tmp_path)
+
