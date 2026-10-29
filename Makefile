@@ -2,7 +2,7 @@ MAKEFLAGS += -s --no-print-directory
 .DEFAULT_GOAL := help
 $(if $(filter Windows_NT,$(OS)),$(if $(shell where printf 2>nul),,$(error coreutils is not installed. Please run: winget install coreutils)))
 
-.PHONY: help deps wheel install-global publish-pypi test run-examples format serve clean schema
+.PHONY: help deps wheel install-global publish-pypi pypi-version test run-examples format serve clean schema
 
 help:
 	@printf "%s\n" \
@@ -14,6 +14,7 @@ help:
 		"  wheel           Build wheel distribution and check with twine" \
 		"  install-global  Build wheel and install globally" \
 		"  publish-pypi    Build wheel and upload to PyPI" \
+		"  pypi-version    Show local version and latest version on PyPI" \
 		"  run-examples    Run examples autograders and log student view results" \
 		"  format          Format Python code using black" \
 		"  serve           Start Flask web server" \
@@ -35,11 +36,14 @@ install-global: wheel
 publish-pypi: wheel
 	python -m twine upload dist/*
 
+pypi-version:
+	python -c "import json, urllib.request; from autograder_gen.version import __version__ as v; p = json.load(urllib.request.urlopen('https://pypi.org/pypi/autograder_gen/json'))['info']['version']; print('local:', v); print('pypi: ', p)"
+
 test:
 	python -m pytest
 
 run-examples:
-	PYTHONPATH=. python -m autograder_gen.cli_run tests/examples --stubs
+	PYTHONPATH=. python -m autograder_gen.cli_run tests/examples
 
 format:
 	python -m black .
