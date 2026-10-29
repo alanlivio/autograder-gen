@@ -19,6 +19,8 @@ try:
         assert_gitlab_submission_exists,
         assert_github_submission_test,
         assert_github_submission_exists,
+        assert_git_submission_test,
+        assert_git_submission_exists,
     )
 except ImportError:
     from autograder_gen.run_shared import (
@@ -41,6 +43,8 @@ except ImportError:
         assert_gitlab_submission_exists,
         assert_github_submission_test,
         assert_github_submission_exists,
+        assert_git_submission_test,
+        assert_git_submission_exists,
     )
 
 try:
@@ -125,5 +129,7 @@ __all__ = [
     "assert_gitlab_submission_exists",
     "assert_github_submission_test",
     "assert_github_submission_exists",
+    "assert_git_submission_test",
+    "assert_git_submission_exists",
 ]
 

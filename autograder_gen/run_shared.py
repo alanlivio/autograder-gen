@@ -258,6 +258,8 @@ class StudentMessage:
     WRONG_FUNCTION_SIGNATURE = StudentMessageStr(
         "[WRONG_ANSWER] Function '{function_name}' signature mismatch: {reason}."
     )
+    CORRECT_GIT_SUBMISSION = "[CORRECT_ANSWER] Git repository was found."
+    WRONG_GIT_NOT_USED = "[WRONG_ANSWER] Git repository was not found."
     CORRECT_GITLAB_SUBMISSION = "[CORRECT_ANSWER] GitLab repository was found."
     WRONG_GITLAB_NOT_USED = "[WRONG_ANSWER] GitLab repository was not found."
     CORRECT_GITHUB_SUBMISSION = "[CORRECT_ANSWER] GitHub repository was found."
@@ -390,4 +392,43 @@ def assert_github_submission_test(
 
 
 assert_github_submission_exists = assert_github_submission_test
+
+
+def assert_git_submission_test(
+    source_dir: Union[str, Path],
+    autograder_root: Union[str, Path, None] = None,
+) -> None:
+    s_dir = Path(source_dir)
+    ag_root = (
+        Path(autograder_root)
+        if autograder_root
+        else Path(os.environ.get("AUTOGRADER_ROOT", "/autograder"))
+    )
+    metadata_paths = [
+        ag_root / "submission_metadata.json",
+        ag_root / "submission" / "submission_metadata.json",
+        s_dir.parent / "submission_metadata.json",
+        s_dir.parent / "submission" / "submission_metadata.json",
+        s_dir / "submission_metadata.json",
+        Path("submission_metadata.json"),
+    ]
+    metadata_path = None
+    for p in metadata_paths:
+        if p.exists():
+            metadata_path = p
+            break
+
+    if metadata_path is None:
+        raise AssertionError(StudentMessage.WRONG_GIT_NOT_USED)
+
+    with metadata_path.open(encoding="utf-8") as f:
+        metadata = json.load(f)
+    method = metadata.get("submission_method")
+    if method and method in ("GitLab", "GitHub"):
+        print(f"## Test Passed: {StudentMessage.CORRECT_GIT_SUBMISSION}")
+        return
+    raise AssertionError(StudentMessage.WRONG_GIT_NOT_USED)
+
+
+assert_git_submission_exists = assert_git_submission_test
 

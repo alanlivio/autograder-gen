@@ -245,6 +245,10 @@ class AutograderGen:
                     doc.add_paragraph(
                         f"Requirement: Function '{item.function_name}' in '{item.target_file}' must print expected standard output for given arguments."
                     )
+                elif item.type in ("git_submission_test", "git_submission_exists"):
+                    doc.add_paragraph(
+                        "Requirement: Submission must be made via a Git repository (GitLab or GitHub)."
+                    )
                 elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     doc.add_paragraph(
                         "Requirement: Submission must be made via a GitLab repository."
@@ -328,6 +332,10 @@ class AutograderGen:
                 elif item.type == "function_output_test":
                     lines.append(
                         f"- **Requirement:** Function `{item.function_name}` in `{item.target_file}` must print expected standard output for given arguments."
+                    )
+                elif item.type in ("git_submission_test", "git_submission_exists"):
+                    lines.append(
+                        "- **Requirement:** Submission must be made via a Git repository (GitLab or GitHub)."
                     )
                 elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     lines.append(
@@ -473,6 +481,11 @@ class AutograderGen:
                 content = self._generate_skeleton_content(filename, correct=True)
                 zipf.writestr(filename, content)
 
+            has_git = any(
+                item.type in ("git_submission_test", "git_submission_exists")
+                for q in self.config.questions
+                for item in q.marking_items
+            )
             has_gitlab = any(
                 item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
@@ -483,7 +496,7 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if has_gitlab:
+            if has_git or has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -508,6 +521,11 @@ class AutograderGen:
                     zipf.writestr(f"{parent}/", "")
                 content = self._generate_skeleton_content(filename, correct=False)
                 zipf.writestr(filename, content)
+            has_git = any(
+                item.type in ("git_submission_test", "git_submission_exists")
+                for q in self.config.questions
+                for item in q.marking_items
+            )
             has_gitlab = any(
                 item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
@@ -518,7 +536,7 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if has_gitlab:
+            if has_git or has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -544,6 +562,11 @@ class AutograderGen:
                     filename, correct=False, compiler_error=True
                 )
                 zipf.writestr(filename, content)
+            has_git = any(
+                item.type in ("git_submission_test", "git_submission_exists")
+                for q in self.config.questions
+                for item in q.marking_items
+            )
             has_gitlab = any(
                 item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
@@ -554,7 +577,7 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if has_gitlab:
+            if has_git or has_gitlab:
                 zipf.writestr(
                     "submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -586,6 +609,11 @@ class AutograderGen:
                 content = self._generate_skeleton_content(filename, correct=True)
                 zipf.writestr(nested_filename, content)
 
+            has_git = any(
+                item.type in ("git_submission_test", "git_submission_exists")
+                for q in self.config.questions
+                for item in q.marking_items
+            )
             has_gitlab = any(
                 item.type in ("gitlab_submission_test", "gitlab_submission_exists")
                 for q in self.config.questions
@@ -596,7 +624,7 @@ class AutograderGen:
                 for q in self.config.questions
                 for item in q.marking_items
             )
-            if has_gitlab:
+            if has_git or has_gitlab:
                 zipf.writestr(
                     "src/submission_metadata.json",
                     json.dumps({"submission_method": "GitLab"}),
@@ -1486,6 +1514,10 @@ autograder.zip
                         output_lines = len(item.expected_output.splitlines())
                         readme_content += f"- **Expected Output Lines**: {output_lines}\n"
 
+                elif item.type in ("git_submission_test", "git_submission_exists"):
+                    readme_content += (
+                        "- **Requirement**: Submission must be made via a Git repository (GitLab or GitHub)\n"
+                    )
                 elif item.type in ("gitlab_submission_test", "gitlab_submission_exists"):
                     readme_content += (
                         "- **Requirement**: Submission must be made via a GitLab repository\n"

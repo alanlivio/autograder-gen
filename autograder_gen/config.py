@@ -20,6 +20,7 @@ class MarkingItem(BaseModel):
                 "function_signature_test",
                 "function_return_test",
                 "function_output_test",
+                "git_submission_test",
                 "gitlab_submission_test",
                 "github_submission_test",
                 "manual_review",
@@ -75,6 +76,7 @@ class MarkingItem(BaseModel):
     @classmethod
     def check_type(cls, v: str) -> str:
         legacy_aliases = {
+            "git_submission_exists": "git_submission_test",
             "gitlab_submission_exists": "gitlab_submission_test",
             "github_submission_exists": "github_submission_test",
         }
@@ -84,6 +86,7 @@ class MarkingItem(BaseModel):
             "function_signature_test",
             "function_return_test",
             "function_output_test",
+            "git_submission_test",
             "gitlab_submission_test",
             "github_submission_test",
             "manual_review",
@@ -119,6 +122,8 @@ class MarkingItem(BaseModel):
         if (
             self.type
             not in (
+                "git_submission_test",
+                "git_submission_exists",
                 "gitlab_submission_test",
                 "github_submission_test",
                 "gitlab_submission_exists",
