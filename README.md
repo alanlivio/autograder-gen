@@ -18,7 +18,7 @@ pip install autograder-gen
 The package provides two command-line tools:
 
 - `autograder-gen`: Generates Gradescope autograders and test stub packages from configuration files.
-- `autograder-run`: Runs student submissions or test stubs against an autograder.
+- `autograder-run`: Runs the `solution/` folder and test stubs against an autograder.
 
 ### Generating Autograders (`autograder-gen`)
 
@@ -61,22 +61,30 @@ autograder-gen lab1/ lab2/
 autograder-gen path/to/assignments/
 ```
 
-### Running Submissions (`autograder-run`)
+### Running Autograders (`autograder-run`)
 
-Use `autograder-run` to execute submissions or stubs against an autograder configuration:
+```text
+autograder-run
+usage: autograder-run [TARGET ...] [-h] [--version]
 
-```bash
-autograder-run config.yaml student_submission.zip
-# OR (in directory with config.yaml)
-autograder-run student_submission.zip
+Run Gradescope autograder.zip at a folder against solution/ folder and stub submissions.
+
+positional arguments:
+  TARGET      Configuration YAML file(s) or directory with autograder.zip
+
+options:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit
 ```
 
-Run autograder against generated stub submissions:
+#### Examples
 
 ```bash
-autograder-run config.yaml --stubs
+autograder-run week_05_arrays
+# OR
+autograder-run week_05_arrays/config.yaml
 # OR directory containing subfolders with config.yaml
-autograder-run path/to/assignments/ --stubs
+autograder-run path/to/assignments/
 ```
 
 ## Web Interface

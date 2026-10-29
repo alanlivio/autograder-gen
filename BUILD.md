@@ -44,16 +44,10 @@ python autograder_gen/cli_gen.py tests/examples/py_simple/config.yaml --descript
 
 Run `autograder_gen/cli_run.py` directly using Python:
 
-- Run a submission against an autograder configuration:
+- Run autograder against the `solution/` folder (if present) and generated stub submissions:
 
 ```bash
-python autograder_gen/cli_run.py tests/examples/py_simple/config.yaml submission.zip
-```
-
-- Run autograder against generated stub submissions:
-
-```bash
-python autograder_gen/cli_run.py tests/examples/py_simple/config.yaml --stubs
+python autograder_gen/cli_run.py tests/examples/py_simple/config.yaml
 ```
 
 ### Batch Processing
@@ -64,10 +58,10 @@ Generate autograders for all configurations in a directory:
 python autograder_gen/cli_gen.py tests/examples
 ```
 
-Run stub submissions for all configurations in a directory:
+Run solution and stub submissions for all configurations in a directory:
 
 ```bash
-python autograder_gen/cli_run.py tests/examples --stubs
+python autograder_gen/cli_run.py tests/examples
 ```
 
 ### Web Interface

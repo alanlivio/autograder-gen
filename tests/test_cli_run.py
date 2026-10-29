@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import subprocess
 import sys
-import zipfile
 from pathlib import Path
 
-import pytest
-
-from autograder_gen.cli_run import find_configs, main, resolve_config
+from autograder_gen.cli_run import main
 from autograder_gen.version import __version__
 
 
@@ -19,7 +16,7 @@ def test_cli_run_help():
     )
     assert result.returncode == 0
     assert "usage: autograder-run" in result.stdout
-    assert "--stubs" in result.stdout
+    assert "--stubs" not in result.stdout
     assert "--verbose" not in result.stdout
     assert " -v" not in result.stdout
     assert "-v," not in result.stdout
@@ -60,71 +57,7 @@ def test_cli_run_rejects_verbose():
     assert "unrecognized arguments: --verbose" in result.stderr
 
 
-def test_cli_run_missing_submission_error():
-    result = subprocess.run(
-        [
-            sys.executable,
-            "autograder_gen/cli_run.py",
-            "tests/examples/py_simple/config.yaml",
-        ],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 2
-    assert "submission file or directory is required" in result.stderr
-
-
-def test_cli_run_submission_explicit(tmp_path: Path):
-    cfg_src = Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8")
-    (tmp_path / "config.yaml").write_text(cfg_src, encoding="utf-8")
-    sub_zip = tmp_path / "custom_submission.zip"
-    with zipfile.ZipFile(sub_zip, "w") as z:
-        for f in Path("tests/examples/py_simple/correct_answer").iterdir():
-            z.write(f, f.name)
-
-    result = subprocess.run(
-        [
-            sys.executable,
-            "autograder_gen/cli_run.py",
-            str(tmp_path / "config.yaml"),
-            str(sub_zip),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0
-    assert "submission.log" in result.stdout
-    log_path = tmp_path / "submission.log"
-    assert log_path.exists()
-    content = log_path.read_text(encoding="utf-8")
-    assert "Summary per Question:" in content
-    assert "# Total Score = 10, Actual Score = 10" in content
-
-
-def test_cli_run_submission_implicit_config(tmp_path: Path, monkeypatch):
-    cfg_src = Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8")
-    (tmp_path / "config.yaml").write_text(cfg_src, encoding="utf-8")
-    sub_zip = tmp_path / "student.zip"
-    with zipfile.ZipFile(sub_zip, "w") as z:
-        for f in Path("tests/examples/py_simple/correct_answer").iterdir():
-            z.write(f, f.name)
-
-    monkeypatch.chdir(tmp_path)
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(Path(__file__).resolve().parent.parent / "autograder_gen" / "cli_run.py"),
-            str(sub_zip),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0
-    assert "submission.log" in result.stdout
-    assert (tmp_path / "submission.log").exists()
-
-
-def test_cli_run_stubs():
+def test_cli_run_stubs_flag_removed():
     result = subprocess.run(
         [
             sys.executable,
@@ -135,8 +68,23 @@ def test_cli_run_stubs():
         capture_output=True,
         text=True,
     )
+    assert result.returncode == 2
+    assert "unrecognized arguments: --stubs" in result.stderr
+
+
+def test_cli_run_stubs():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "autograder_gen/cli_run.py",
+            "tests/examples/py_simple/config.yaml",
+        ],
+        capture_output=True,
+        text=True,
+    )
     assert result.returncode == 0
-    assert "# log stubs for tests/examples/py_simple/config.yaml" in result.stdout
+    assert "# log tests/examples/py_simple/config.yaml" in result.stdout
+    assert "solution.log" not in result.stdout
     assert "stub_correct_answer.log" in result.stdout
     assert "stub_wrong_answer.log" in result.stdout
     assert "stub_compiler_error.log" in result.stdout
@@ -171,12 +119,13 @@ questions:
 """
     cfg_path.write_text(cfg_content, encoding="utf-8")
 
-    monkeypatch.setattr(sys, "argv", ["autograder-run", str(tmp_path), "--stubs"])
+    monkeypatch.setattr(sys, "argv", ["autograder-run", str(tmp_path)])
     ret = main()
     assert ret == 0
 
     captured = capsys.readouterr()
-    assert "# log stubs for" in captured.out
+    assert "# log" in captured.out
+    assert "solution.log" not in captured.out
     for log_name in [
         "stub_correct_answer.log",
         "stub_wrong_answer.log",
@@ -189,28 +138,39 @@ questions:
         assert "Summary per Question:" in log_text
 
 
-def test_cli_run_submission_not_found(tmp_path: Path):
-    cfg = tmp_path / "config.yaml"
-    cfg.write_text(
-        Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+def test_cli_run_solution_and_stubs(tmp_path: Path, monkeypatch, capsys):
+    assignment = tmp_path / "week_05_arrays"
+    assignment.mkdir()
+    (assignment / "config.yaml").write_text(
+        Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
+    solution = assignment / "solution"
+    solution.mkdir()
+    for f in Path("tests/examples/py_simple/correct_answer").iterdir():
+        (solution / f.name).write_bytes(f.read_bytes())
+
+    monkeypatch.chdir(tmp_path)
+    ret = main(["week_05_arrays"])
+    assert ret == 0
+
+    captured = capsys.readouterr()
+    assert "# log week_05_arrays/config.yaml" in captured.out
+    assert "week_05_arrays/solution.log" in captured.out
+    assert "week_05_arrays/stub_correct_answer.log" in captured.out
+    solution_log = (assignment / "solution.log").read_text(encoding="utf-8")
+    assert "# Total Score = 10, Actual Score = 10" in solution_log
+
+
+def test_cli_run_target_without_config(tmp_path: Path):
     result = subprocess.run(
         [
             sys.executable,
             "autograder_gen/cli_run.py",
-            str(cfg),
             str(tmp_path / "nonexistent.zip"),
         ],
         capture_output=True,
         text=True,
     )
-    assert result.returncode != 0
-    assert "Submission not found" in result.stderr
-
-
-def test_resolve_config(tmp_path: Path):
-    cfg = tmp_path / "config.yaml"
-    cfg.write_text("language: python\n", encoding="utf-8")
-    assert resolve_config(cfg) == cfg
-    assert resolve_config(tmp_path) == cfg
-    assert resolve_config(tmp_path / "missing") is None
+    assert result.returncode == 1
+    assert "config.yaml not found" in result.stderr

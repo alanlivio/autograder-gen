@@ -17,19 +17,46 @@ from autograder_gen.logger import (
 )
 
 
-def resolve_config(target: Path) -> Path | None:
-    if target.is_file() and target.name == "config.yaml":
-        return target
-    if target.is_dir() and (target / "config.yaml").is_file():
-        return target / "config.yaml"
-    return None
+def display(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
+def java_unavailable(runner: ag.AutograderRun) -> bool:
+    cfg_obj = runner.config_obj
+    return (
+        cfg_obj is not None
+        and getattr(cfg_obj, "language", "").lower() == "java"
+        and shutil.which("javac") is None
+    )
+
+
+def run_configs(configs: list[Path]) -> int:
+    for config_path in sorted(set(configs), key=lambda p: str(p)):
+        runner = ag.AutograderRun(config_path)
+        if java_unavailable(runner):
+            print(f"[SKIPPED] {display(config_path)}: javac is not installed")
+            continue
+
+        print(f"# log {display(config_path)}")
+        solution_dir = config_path.parent / "solution"
+        if solution_dir.is_dir():
+            res = runner.run_autograder_for_submission(
+                solution_dir, log_path=config_path.parent / "solution.log"
+            )
+            if "log_path" in res:
+                print(display(Path(res["log_path"])))
+        runner.run_autograder_for_generated_submissions()
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="autograder-run",
-        usage="%(prog)s [TARGET] SUBMISSION [-h] [--version] [--stubs]",
-        description="Run Gradescope autograder against submissions or stubs.",
+        usage="%(prog)s [TARGET ...] [-h] [--version]",
+        description="Run Gradescope autograder.zip at a folder against solution/ folder and stub submissions.",
         allow_abbrev=False,
     )
     parser.add_argument(
@@ -38,16 +65,10 @@ def main(argv: list[str] | None = None) -> int:
         version=f"%(prog)s {ag.__version__}",
     )
     parser.add_argument(
-        "args",
+        "targets",
         nargs="*",
-        metavar="PATH",
-        help="Target configuration/directory and/or submission file/directory",
-    )
-    parser.add_argument(
-        "--stubs",
-        action="store_true",
-        default=False,
-        help="Run autograder against stub submissions",
+        metavar="TARGET",
+        help="Configuration YAML file(s) or directory with autograder.zip",
     )
     if argv is None:
         argv = sys.argv[1:]
@@ -57,110 +78,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     setup_logging()
 
-    if args.stubs:
-        targets = list(args.args)
-        if not targets:
-            if Path("config.yaml").is_file():
-                targets = ["config.yaml"]
-            elif find_configs(Path(".")):
-                targets = ["."]
-
-        all_configs: list[Path] = []
-        for t in targets:
-            all_configs.extend(find_configs(Path(t).resolve()))
-        all_configs = sorted(set(all_configs), key=lambda p: str(p))
-
-        if not all_configs:
-            print_error("Error: target configuration file or directory is required")
-            return 2
-
-        for config_path in all_configs:
-            runner = ag.AutograderRun(config_path)
-            cfg_obj = runner.config_obj
-            if (
-                cfg_obj is not None
-                and getattr(cfg_obj, "language", "").lower() == "java"
-                and shutil.which("javac") is None
-            ):
-                print(f"[SKIPPED] {config_path}: javac is not installed")
-                continue
-
-            try:
-                display_path = str(config_path.resolve().relative_to(Path.cwd().resolve()))
-            except ValueError:
-                display_path = str(config_path)
-            print(f"# log stubs for {display_path}")
-            runner.run_autograder_for_generated_submissions()
-        return 0
-
-    raw_args = list(args.args)
-    if len(raw_args) == 0:
-        print_error("Error: submission file or directory is required")
+    if not args.targets:
+        print_error("Error: target configuration file or directory is required")
         return 2
 
-    if len(raw_args) == 1:
-        p0 = Path(raw_args[0])
-        cfg0 = resolve_config(p0)
-        if cfg0 is not None:
-            print_error("Error: submission file or directory is required")
-            return 2
-        local_cfg = resolve_config(Path("."))
-        if local_cfg is None:
-            print_error("Error: config.yaml not found in current directory")
+    configs: list[Path] = []
+    for target in args.targets:
+        found = find_configs(Path(target).resolve())
+        if not found:
+            print_error(f"Error: config.yaml not found in {target}")
             return 1
-        target_config = local_cfg
-        submission = p0
-    elif len(raw_args) == 2:
-        p0 = Path(raw_args[0])
-        p1 = Path(raw_args[1])
-        cfg0 = resolve_config(p0)
-        cfg1 = resolve_config(p1)
-        if cfg0 is not None and cfg1 is None:
-            target_config = cfg0
-            submission = p1
-        elif cfg1 is not None and cfg0 is None:
-            target_config = cfg1
-            submission = p0
-        elif cfg0 is not None and cfg1 is not None:
-            target_config = cfg0
-            submission = p1
-        else:
-            target_config = p0
-            submission = p1
-    else:
-        print_error("Error: too many arguments")
-        return 2
+        configs.extend(found)
 
-    cfg_path = resolve_config(target_config)
-    if cfg_path is None or not cfg_path.exists():
-        print_error(f"Configuration file not found: {target_config}")
-        return 1
-
-    if not submission.exists():
-        print_error(f"Submission not found: {submission}")
-        return 1
-
-    runner = ag.AutograderRun(cfg_path)
-    cfg_obj = runner.config_obj
-    if (
-        cfg_obj is not None
-        and getattr(cfg_obj, "language", "").lower() == "java"
-        and shutil.which("javac") is None
-    ):
-        print(f"[SKIPPED] {cfg_path}: javac is not installed")
-        return 0
-
-    log_file = cfg_path.parent / "submission.log"
-    res = runner.run_autograder_for_submission(submission, log_path=log_file)
-    if "log_path" in res:
-        log_p = Path(res["log_path"])
-        try:
-            display_path = str(log_p.resolve().relative_to(Path.cwd().resolve()))
-        except ValueError:
-            display_path = str(log_p)
-        print(display_path)
-
-    return 0
+    return run_configs(configs)
 
 
 if __name__ == "__main__":
