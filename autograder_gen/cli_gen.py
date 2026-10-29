@@ -67,12 +67,7 @@ def run_batch(
             out_dir / "stub_correct_answer_wrong_location.zip",
         ]
         if description:
-            generated_assets.extend(
-                [
-                    out_dir / "description.docx",
-                    out_dir / "description.md",
-                ]
-            )
+            generated_assets.append(out_dir / "description.docx")
         for asset in generated_assets:
             if asset.exists():
                 try:
@@ -105,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         "--description",
         action="store_true",
         default=False,
-        help="Generate description.docx and description.md for the assessment",
+        help="Generate description.docx for the assessment",
     )
     if argv is None:
         argv = sys.argv[1:]
@@ -191,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
         generator = ag.AutograderGen(config, original_config_dict, base_dir=path.parent)
         generator.generate(str(output_dir), description=args.description)
         print_success(f"Autograder package generated successfully at: {output_dir}")
-        assets_desc = "description.docx, description.md, " if args.description else ""
+        assets_desc = "description.docx, " if args.description else ""
         print_success(
             f"Generated assets: autograder.zip, {assets_desc}"
             "stub submissions for testing (stub_correct_answer.zip, stub_wrong_answer.zip, stub_compiler_error.zip, stub_correct_answer_wrong_location.zip)"

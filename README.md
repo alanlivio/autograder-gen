@@ -35,8 +35,7 @@ positional arguments:
 options:
   -h, --help      show this help message and exit
   --version       show program's version number and exit
-  --description   Generate description.docx and description.md for the
-                  assessment
+  --description   Generate description.docx for the assessment
 ```
 
 #### Examples

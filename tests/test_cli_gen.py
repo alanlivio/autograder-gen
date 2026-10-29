@@ -102,7 +102,7 @@ def test_cli_generates_description(tmp_path, flag):
     assert result.returncode == 0, f"CLI failed: {result.stderr}"
     assert (tmp_path / "autograder.zip").exists()
     assert (tmp_path / "description.docx").exists()
-    assert (tmp_path / "description.md").exists()
+    assert not (tmp_path / "description.md").exists()
 
 
 def test_cli_no_args_shows_help():
@@ -436,10 +436,10 @@ questions:
         "stub_compiler_error.zip",
         "stub_correct_answer_wrong_location.zip",
         "description.docx",
-        "description.md",
     ]:
         assert asset_name in captured.out
         assert (tmp_path / asset_name).exists()
+    assert not (tmp_path / "description.md").exists()
 
 
 def test_cli_batch_logs_found_configs_first(tmp_path):
