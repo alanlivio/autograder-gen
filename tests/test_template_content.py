@@ -44,7 +44,7 @@ def temp_output_dir():
 
 def test_setup_sh_contains_setup_commands(temp_output_dir):
     config = ag.Config.model_validate(CONFIG_FOR_TEMPLATES)
-    generator = ag.Engine(config, CONFIG_FOR_TEMPLATES)
+    generator = ag.AutograderGen(config, CONFIG_FOR_TEMPLATES)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         with z.open("setup.sh") as f:
@@ -55,7 +55,7 @@ def test_setup_sh_contains_setup_commands(temp_output_dir):
 
 def test_run_autograder_copies_files(temp_output_dir):
     config = ag.Config.model_validate(CONFIG_FOR_TEMPLATES)
-    generator = ag.Engine(config, CONFIG_FOR_TEMPLATES)
+    generator = ag.AutograderGen(config, CONFIG_FOR_TEMPLATES)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         with z.open("run_autograder") as f:
@@ -67,7 +67,7 @@ def test_run_autograder_copies_files(temp_output_dir):
 
 def test_per_question_test_file_content(temp_output_dir):
     config = ag.Config.model_validate(CONFIG_FOR_TEMPLATES)
-    generator = ag.Engine(config, CONFIG_FOR_TEMPLATES)
+    generator = ag.AutograderGen(config, CONFIG_FOR_TEMPLATES)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         test_file = "question_1_test.py"
@@ -83,7 +83,7 @@ def test_java_setup_sh_contains_openjdk_25(temp_output_dir):
     java_config = CONFIG_FOR_TEMPLATES.copy()
     java_config["language"] = "java"
     config = ag.Config.model_validate(java_config)
-    generator = ag.Engine(config, java_config)
+    generator = ag.AutograderGen(config, java_config)
     zip_path = generator.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         with z.open("setup.sh") as f:
@@ -113,7 +113,7 @@ def test_program_output_test_template(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_oc"
     zip_path = generator.generate(str(output_dir))
 
@@ -159,7 +159,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_fn"
     zip_path = generator.generate(str(output_dir))
 
@@ -212,7 +212,7 @@ def test_run_autograder_logs_checking_required_files(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_log"
     zip_path = generator.generate(str(output_dir))
 
@@ -245,7 +245,7 @@ def test_java_remove_package_template(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_java_pkg"
     zip_path = generator.generate(str(output_dir))
 
@@ -391,7 +391,7 @@ def test_shell_scripts_bash_syntax_validation(temp_output_dir):
         cfg_dict = CONFIG_FOR_TEMPLATES.copy()
         cfg_dict["language"] = lang
         config = ag.Config.model_validate(cfg_dict)
-        generator = ag.Engine(config, cfg_dict)
+        generator = ag.AutograderGen(config, cfg_dict)
         zip_path = generator.generate(temp_output_dir)
         with zipfile.ZipFile(zip_path, "r") as z:
             for script_name in ["setup.sh", "run_autograder"]:
@@ -409,13 +409,13 @@ def test_shell_scripts_bash_syntax_validation(temp_output_dir):
 def test_environment_in_description_md_and_docx(temp_output_dir):
     cfg_python = CONFIG_FOR_TEMPLATES.copy()
     cfg_python["language"] = "python"
-    gen_python = ag.Engine(ag.Config.model_validate(cfg_python), cfg_python)
+    gen_python = ag.AutograderGen(ag.Config.model_validate(cfg_python), cfg_python)
     md_py = gen_python.generate_description_md().getvalue()
     assert b"**Environment:** Python 3.10" in md_py
 
     cfg_java = CONFIG_FOR_TEMPLATES.copy()
     cfg_java["language"] = "java"
-    gen_java = ag.Engine(ag.Config.model_validate(cfg_java), cfg_java)
+    gen_java = ag.AutograderGen(ag.Config.model_validate(cfg_java), cfg_java)
     md_java = gen_java.generate_description_md().getvalue()
     assert b"**Environment:** OpenJDK 25" in md_java
 
@@ -456,7 +456,7 @@ def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
             },
         ],
     }
-    gen = ag.Engine(ag.Config.model_validate(cfg_data), cfg_data)
+    gen = ag.AutograderGen(ag.Config.model_validate(cfg_data), cfg_data)
     zip_path = gen.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         content = z.read("run_autograder").decode("utf-8")
@@ -484,7 +484,7 @@ def test_run_autograder_found_file_penalties_message(temp_output_dir):
             }
         ],
     }
-    gen = ag.Engine(ag.Config.model_validate(cfg_data), cfg_data)
+    gen = ag.AutograderGen(ag.Config.model_validate(cfg_data), cfg_data)
     zip_path = gen.generate(temp_output_dir)
     with zipfile.ZipFile(zip_path, "r") as z:
         content = z.read("run_autograder").decode("utf-8")
@@ -519,7 +519,7 @@ def test_function_return_test_and_signature_test_template_content(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_new_types"
     zip_path = generator.generate(str(output_dir))
 
@@ -564,7 +564,7 @@ def test_function_output_test_template_content(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_fn_out"
     zip_path = generator.generate(str(output_dir))
 

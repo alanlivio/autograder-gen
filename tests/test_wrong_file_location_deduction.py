@@ -133,7 +133,7 @@ def test_wrong_file_location_deduction_execution(tmp_path: Path):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 
@@ -191,7 +191,7 @@ def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_pat
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 
@@ -259,7 +259,7 @@ def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 

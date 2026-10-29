@@ -41,7 +41,7 @@ def run_autograder_scenario(
             else:
                 original_config = json.load(f)
 
-        generator = ag.Engine(config, original_config)
+        generator = ag.AutograderGen(config, original_config)
         gen_dir = tmp_dir / "generated"
         output_zip = generator.generate(str(gen_dir))
 
@@ -174,7 +174,7 @@ def test_autograder_integration_java_simple():
         original_config = yaml.safe_load(f)
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
-        generator = ag.Engine(config, original_config)
+        generator = ag.AutograderGen(config, original_config)
         gen_dir = tmp_dir / "generated"
         output_zip = generator.generate(str(gen_dir))
         assert Path(output_zip).exists()
@@ -215,7 +215,7 @@ def test_strict_file_location_true_fails_wrong_location(tmp_path):
     data["strict_file_location"] = True
     config = ag.Config.model_validate(data)
 
-    generator = ag.Engine(config, data)
+    generator = ag.AutograderGen(config, data)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 

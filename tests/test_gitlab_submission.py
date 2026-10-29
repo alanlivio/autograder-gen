@@ -124,7 +124,7 @@ def test_template_generation_gitlab(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output"
     zip_path = generator.generate(str(output_dir))
 
@@ -162,6 +162,7 @@ def test_gitlab_submission_execution_logic(tmp_path):
     with pytest.raises(AssertionError):
         assert_github_submission_test(tmp_path)
 
+
 def test_template_generation_git(tmp_path):
     config_dict = {
         "version": __version__,
@@ -180,7 +181,7 @@ def test_template_generation_git(tmp_path):
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     output_dir = tmp_path / "output_git"
     zip_path = generator.generate(str(output_dir))
 
@@ -215,4 +216,3 @@ def test_git_submission_execution_logic(tmp_path):
     metadata_file.unlink()
     with pytest.raises(AssertionError):
         assert_git_submission_test(tmp_path)
-

@@ -13,7 +13,6 @@ from autograder_gen.config import (
 )
 from autograder_gen.autograder_gen import (
     AutograderGen,
-    Engine,
     validate_file_path,
     validate_directory_path,
     create_directory,
@@ -53,7 +52,6 @@ __all__ = [
     "DEFAULT_RUNTIME_SUMMARY",
     "DEFAULT_RUNTIME_TIP",
     "AutograderGen",
-    "Engine",
     "Validator",
     "AutograderRun",
     "AutograderRunner",

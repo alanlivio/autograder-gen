@@ -32,7 +32,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
     cfg1 = ag.Config.model_validate(data_without_script)
     assert "retrieve_student_id" not in cfg1.get_config_summary()
     assert not hasattr(cfg1, "retrieve_student_id")
-    engine1 = ag.Engine(cfg1, data_without_script)
+    engine1 = ag.AutograderGen(cfg1, data_without_script)
     assert engine1.retrieve_student_id is False
 
     data_with_script = {
@@ -56,7 +56,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
     cfg2 = ag.Config.model_validate(data_with_script)
     assert "retrieve_student_id" not in cfg2.get_config_summary()
     assert not hasattr(cfg2, "retrieve_student_id")
-    engine2 = ag.Engine(cfg2, data_with_script)
+    engine2 = ag.AutograderGen(cfg2, data_with_script)
     assert engine2.retrieve_student_id is True
 
 
@@ -117,7 +117,7 @@ def test_stubs_submission_metadata_only_when_gitlab_or_github():
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
         assert "submission_metadata.json" not in zf.namelist()
@@ -129,7 +129,7 @@ def test_stubs_submission_metadata_only_when_gitlab_or_github():
         }
     )
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     buf_gl = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf_gl, "r") as zf:
         assert "submission_metadata.json" in zf.namelist()
@@ -174,7 +174,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     assert engine.retrieve_student_id is True
     out_dir = tmp_path / "out"
     zip_path = engine.generate(str(out_dir))
@@ -379,7 +379,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     assert engine.retrieve_student_id is True
     engine.generate(str(tmp_path / "out_warn"))
     captured = capsys.readouterr().out
@@ -416,7 +416,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
         ],
     }
     cfg_no_script = ag.Config.model_validate(config_no_script)
-    engine_no_script = ag.Engine(cfg_no_script, config_no_script)
+    engine_no_script = ag.AutograderGen(cfg_no_script, config_no_script)
     assert engine_no_script.retrieve_student_id is False
     engine_no_script.generate(str(tmp_path / "out_nowarn"))
     captured_no_script = capsys.readouterr().out
@@ -445,7 +445,7 @@ def test_expected_output_script_config_and_validation():
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     assert engine.retrieve_student_id is True
     validator = Validator()
     assert validator.validate_json(config_dict) is True
@@ -495,7 +495,7 @@ def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_ou
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     assert engine.retrieve_student_id is True
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
@@ -533,7 +533,7 @@ def test_expected_output_script_java_skeleton():
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
         assert "submission_metadata.json" not in zf.namelist()
@@ -565,7 +565,7 @@ def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    engine = ag.Engine(cfg, config_dict)
+    engine = ag.AutograderGen(cfg, config_dict)
     buf = engine.generate_correct_answer_zip()
     with zipfile.ZipFile(buf, "r") as zf:
         content = zf.read("CW1P3.java").decode("utf-8")

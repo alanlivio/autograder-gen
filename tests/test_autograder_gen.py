@@ -39,7 +39,7 @@ def temp_output_dir():
 def test_autograder_zip_contains_expected_files(temp_output_dir):
     config = ag.Config.model_validate(SAMPLE_CONFIG_DICT)
 
-    generator = ag.Engine(config, SAMPLE_CONFIG_DICT)
+    generator = ag.AutograderGen(config, SAMPLE_CONFIG_DICT)
     zip_path = generator.generate(temp_output_dir)
 
     assert os.path.exists(zip_path)
@@ -91,7 +91,7 @@ def test_skeleton_generation():
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     zip_bytes = generator.generate_correct_answer_zip()
     with zipfile.ZipFile(zip_bytes, "r") as z:
         assert "solution.py" in z.namelist()
@@ -127,7 +127,7 @@ def test_skeleton_generation_java():
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     zip_bytes = generator.generate_correct_answer_zip()
     with zipfile.ZipFile(zip_bytes, "r") as z:
         assert "Solution.java" in z.namelist()
@@ -139,7 +139,7 @@ def test_skeleton_generation_java():
 
 def test_generator_essential_exports():
     config = ag.Config.model_validate(SAMPLE_CONFIG_DICT)
-    generator = ag.Engine(config)
+    generator = ag.AutograderGen(config)
 
     docx_buf = generator.generate_description_docx()
     assert len(docx_buf.getvalue()) > 0
@@ -187,7 +187,7 @@ def test_skeleton_generation_compiler_error():
         ],
     }
     config = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(config, config_dict)
+    generator = ag.AutograderGen(config, config_dict)
     zip_bytes = generator.generate_compiler_error_zip()
     with zipfile.ZipFile(zip_bytes, "r") as z:
         assert "solution.py" in z.namelist()
@@ -195,8 +195,7 @@ def test_skeleton_generation_compiler_error():
         assert "def add(*args, **kwargs)" in content
 
 
-def test_autograder_gen_class_alias():
-    assert ag.AutograderGen is ag.Engine
+def test_autograder_gen_class():
     config = ag.Config.model_validate(SAMPLE_CONFIG_DICT)
     generator = ag.AutograderGen(config, SAMPLE_CONFIG_DICT)
     assert isinstance(generator, ag.AutograderGen)

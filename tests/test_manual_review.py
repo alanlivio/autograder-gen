@@ -78,7 +78,7 @@ def test_manual_review_execution_file_present(tmp_path: Path):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 
@@ -135,7 +135,7 @@ def test_manual_review_execution_file_missing(tmp_path: Path):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 
@@ -189,7 +189,7 @@ def test_manual_review_execution_no_target_file(tmp_path: Path):
         ],
     }
     cfg = ag.Config.model_validate(config_dict)
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 
@@ -260,7 +260,7 @@ def test_manual_review_generation_and_inspection(tmp_path: Path):
     assert cfg.questions[0].marking_items[2].type == "manual_review"
     assert cfg.questions[0].marking_items[2].total_mark == 15.0
 
-    generator = ag.Engine(cfg, config_dict)
+    generator = ag.AutograderGen(cfg, config_dict)
     gen_dir = tmp_path / "generated"
     output_zip = generator.generate(str(gen_dir))
 
