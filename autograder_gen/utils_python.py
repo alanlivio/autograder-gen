@@ -1,20 +1,31 @@
-from pathlib import Path
-from typing import Union, Optional, Any
+from __future__ import annotations
+
+import ast
+import concurrent.futures
 import importlib.util
 import inspect
-import ast
 import sys
-import concurrent.futures
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 try:
-    from run_shared import StudentMessage
+    from utils_submission import (
+        STUDENT_ID_FALLBACK,
+        StudentMessage,
+        eval_expected_output_script,
+    )
 except ImportError:
-    from autograder_gen.run_shared import StudentMessage
+    from autograder_gen.utils_submission import (
+        STUDENT_ID_FALLBACK,
+        StudentMessage,
+        eval_expected_output_script,
+    )
+
+if TYPE_CHECKING:
+    from autograder_gen.config import Config
 
 
-def call_function_with_timeout(
-    func: Any, args: list, kwargs: dict, timeout_seconds: int
-) -> Any:
+def call_function_with_timeout(func: Any, args: list, kwargs: dict, timeout_seconds: int) -> Any:
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future = executor.submit(func, *args, **kwargs)
         try:
@@ -263,3 +274,199 @@ check_python_function_signature = assert_python_function_signature
 call_python_function = call_function_with_timeout
 call_python_function_output = call_function_output_with_timeout
 
+
+def get_python_literal_str(expected_str: str) -> str:
+    try:
+        val = ast.literal_eval(expected_str)
+        return repr(val)
+    except Exception:
+        return repr(expected_str)
+
+
+def python_compiler_error_content(config: Config, target_file: str) -> str:
+    functions = set()
+    for q in config.questions:
+        for item in q.marking_items:
+            if item.target_file == target_file and getattr(item, "function_name", ""):
+                functions.add(item.function_name)
+    if functions:
+        func = sorted(functions)[0]
+        return f"def {func}(*args, **kwargs)\n    pass\n"
+    return "def syntax_error(\n    pass\n"
+
+
+def generate_python_skeleton(config: Config, target_file: str, correct: bool = True) -> str:
+    lines = ["# Skeleton for " + target_file, ""]
+    functions = set()
+    for q in config.questions:
+        for item in q.marking_items:
+            if item.target_file == target_file:
+                if hasattr(item, "function_name") and item.function_name:
+                    functions.add(item.function_name)
+    for func in sorted(functions):
+        expected_params = ""
+        expected_return = ""
+        for q in config.questions:
+            for item in q.marking_items:
+                if item.target_file == target_file and getattr(item, "function_name", "") == func:
+                    if getattr(item, "expected_parameters", "") and not expected_params:
+                        expected_params = item.expected_parameters.strip()
+                    if getattr(item, "expected_return_type", "") and not expected_return:
+                        expected_return = item.expected_return_type.strip()
+
+        param_names = []
+        if expected_params:
+            for part in expected_params.split(","):
+                name = part.split(":")[0].split("=")[0].strip()
+                if name:
+                    param_names.append(name)
+
+        if correct and expected_params:
+            ret_anno = f" -> {expected_return}" if expected_return else ""
+            lines.append(f"def {func}({expected_params}){ret_anno}:")
+        else:
+            lines.append(f"def {func}(*args, **kwargs):")
+
+        if correct:
+            cases = []
+            for q in config.questions:
+                for item in q.marking_items:
+                    if (
+                        item.target_file == target_file
+                        and getattr(item, "function_name", "") == func
+                        and item.type in ("function_return_test", "function_output_test")
+                    ):
+                        if hasattr(item, "test_cases") and item.test_cases:
+                            for tc in item.test_cases:
+                                cases.append((tc, item))
+            if cases:
+                for tc, itm in cases:
+                    conds = []
+                    args_list = tc.get("args", []) or []
+                    kwargs_dict = tc.get("kwargs", {}) or {}
+                    if expected_params and param_names:
+                        for idx, arg_val in enumerate(args_list):
+                            if idx < len(param_names):
+                                conds.append(f"{param_names[idx]} == {repr(arg_val)}")
+                        if kwargs_dict:
+                            for k, v in kwargs_dict.items():
+                                if k in param_names:
+                                    conds.append(f"{k} == {repr(v)}")
+                    else:
+                        if args_list:
+                            conds.append(f"args == {tuple(args_list)}")
+                        else:
+                            conds.append("not args")
+                        if kwargs_dict:
+                            conds.append(f"kwargs == {kwargs_dict}")
+                        else:
+                            conds.append("not kwargs")
+                    cond_str = " and ".join(conds) if conds else "True"
+                    expected_val = tc.get("expected", "")
+                    expr = get_python_literal_str(expected_val)
+                    lines.append(f"    if {cond_str}:")
+                    if getattr(itm, "type", "") == "function_output_test":
+                        lines.append(f"        print({expr}, end='')")
+                        lines.append("        return")
+                    else:
+                        lines.append(f"        return {expr}")
+                lines.append("    pass")
+            else:
+                lines.append("    pass")
+        else:
+            func_expected = []
+            func_items = []
+            for q in config.questions:
+                for item in q.marking_items:
+                    if (
+                        item.target_file == target_file
+                        and getattr(item, "function_name", "") == func
+                        and item.type in ("function_return_test", "function_output_test")
+                    ):
+                        func_items.append(item)
+                        for tc in getattr(item, "test_cases", []) or []:
+                            func_expected.append(str(tc.get("expected", "")).strip())
+            if any(getattr(item, "type", "") == "function_output_test" for item in func_items):
+                lines.append("    print('wrong_answer', end='')")
+            elif any(exp in ("None", "none", "null") for exp in func_expected):
+                lines.append("    return 'wrong_answer'")
+            else:
+                lines.append("    return None")
+        lines.append("")
+    output_items = [
+        (
+            item,
+            getattr(item, "expected_output_script", None)
+            or getattr(q, "expected_output_script", None),
+        )
+        for q in config.questions
+        for item in q.marking_items
+        if item.target_file == target_file and item.type == "program_output_test"
+    ]
+
+    if output_items:
+        lines.append('if __name__ == "__main__":')
+        if correct:
+            if len(output_items) == 1 and not output_items[0][0].expected_input.strip():
+                single_item, single_script = output_items[0]
+                has_item_script = bool(single_script)
+                if has_item_script:
+                    out_val = eval_expected_output_script(
+                        single_script,
+                        student_id=str(STUDENT_ID_FALLBACK),
+                        expected_input=single_item.expected_input,
+                    )
+                else:
+                    out_val = single_item.expected_output
+                lines.append("    import sys")
+                if has_item_script:
+                    lines.append(f"    # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                lines.append(f"    sys.stdout.write({repr(out_val)})")
+            else:
+                lines.append("    import sys, os")
+                lines.append("    _raw_in = sys.stdin.read()")
+                lines.append("    _in = _raw_in.strip()")
+                for idx, (item, item_script) in enumerate(output_items):
+                    cond = f"_in == {repr(item.expected_input.strip())}"
+                    has_item_script = bool(item_script)
+                    if has_item_script:
+                        out_val = eval_expected_output_script(
+                            item_script,
+                            student_id=str(STUDENT_ID_FALLBACK),
+                            expected_input=item.expected_input,
+                        )
+                    else:
+                        out_val = item.expected_output
+                    branch = "if" if idx == 0 else "elif"
+                    lines.append(f"    {branch} {cond}:")
+                    if has_item_script:
+                        lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                    lines.append(f"        sys.stdout.write({repr(out_val)})")
+                    lines.append("        sys.exit(0)")
+                if len(output_items) > 1:
+                    first_item, first_script = output_items[0]
+                    if first_script:
+                        default_out = eval_expected_output_script(
+                            first_script,
+                            student_id=str(STUDENT_ID_FALLBACK),
+                            expected_input=first_item.expected_input,
+                        )
+                        lines.append("    else:")
+                        lines.append(f"        # Fallback student ID: {STUDENT_ID_FALLBACK}")
+                        lines.append(f"        sys.stdout.write({repr(default_out)})")
+                    else:
+                        default_out = first_item.expected_output
+                        lines.append("    else:")
+                        lines.append(f"        sys.stdout.write({repr(default_out)})")
+        else:
+            lines.append("    import sys")
+            lines.append('    sys.stdout.write("wrong_output\\n")')
+        lines.append("")
+
+    if not functions and not output_items:
+        lines.append("# No specific functions defined for this file.")
+        if not correct:
+            lines.append("# This file might be intentionally wrong or missing logic.")
+    if any(item_script for _, item_script in output_items):
+        lines.insert(0, f"# Fallback student ID: {STUDENT_ID_FALLBACK}")
+    return "\n".join(lines)

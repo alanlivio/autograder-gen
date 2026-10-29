@@ -28,11 +28,11 @@ elif [ -f "submission_metadata.json" ]; then
 fi
 
 {% if retrieve_student_id %}
-if [ -f "$SOURCE_DIR/grader_utils.py" ]; then
+if [ -f "$SOURCE_DIR/utils_submission.py" ]; then
     STUDENT_ID_OUTPUT=$("$PYTHON" -c '
 import sys, json
 sys.path.insert(0, sys.argv[1])
-from grader_utils import get_student_id
+from utils_submission import get_student_id
 get_student_id(sys.argv[2], excluded_ids=json.loads(sys.argv[3]))
 ' "$SOURCE_DIR" "$AUTOGRADER_ROOT" '{{ config.excluded_student_ids | tojson }}' 2>&1)
     echo "$STUDENT_ID_OUTPUT" | tee -a "$FILE_CHECK_LOG"

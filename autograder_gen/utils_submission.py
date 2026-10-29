@@ -165,7 +165,11 @@ def apply_wrong_location_deduction(
 def format_function_arg(arg: Any) -> str:
     if isinstance(arg, str):
         s = arg.strip()
-        if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")) or s.startswith("new "):
+        if (
+            (s.startswith("{") and s.endswith("}"))
+            or (s.startswith("[") and s.endswith("]"))
+            or s.startswith("new ")
+        ):
             return s
         if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
             inner = s[1:-1]
@@ -352,9 +356,6 @@ def assert_gitlab_submission_test(
     raise AssertionError(StudentMessage.WRONG_GITLAB_NOT_USED)
 
 
-assert_gitlab_submission_exists = assert_gitlab_submission_test
-
-
 def assert_github_submission_test(
     source_dir: Union[str, Path],
     autograder_root: Union[str, Path, None] = None,
@@ -391,9 +392,6 @@ def assert_github_submission_test(
     raise AssertionError(StudentMessage.ERROR_GITHUB_NOT_USED)
 
 
-assert_github_submission_exists = assert_github_submission_test
-
-
 def assert_git_submission_test(
     source_dir: Union[str, Path],
     autograder_root: Union[str, Path, None] = None,
@@ -428,7 +426,3 @@ def assert_git_submission_test(
         print(f"## Test Passed: {StudentMessage.CORRECT_GIT_SUBMISSION}")
         return
     raise AssertionError(StudentMessage.WRONG_GIT_NOT_USED)
-
-
-assert_git_submission_exists = assert_git_submission_test
-

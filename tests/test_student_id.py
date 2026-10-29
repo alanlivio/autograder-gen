@@ -5,7 +5,7 @@ import pytest
 import yaml
 import autograder_gen as ag
 from autograder_gen.version import __version__
-from autograder_gen.grader_utils import get_student_id, STUDENT_ID_FALLBACK
+from autograder_gen.utils_submission import get_student_id, STUDENT_ID_FALLBACK
 
 
 def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen():

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 import autograder_gen as ag
 from autograder_gen.version import __version__
-from autograder_gen.grader_utils import StudentMessage
+from autograder_gen.utils_submission import StudentMessage
 
 
 def test_marking_item_gitlab_submission_exists_without_target_file():
@@ -129,7 +129,7 @@ def test_template_generation_gitlab(tmp_path):
     zip_path = generator.generate(str(output_dir))
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        assert "grader_utils.py" in z.namelist()
+        assert "utils_submission.py" in z.namelist()
         test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_verify_git_submission(self):" in test_content
@@ -138,7 +138,7 @@ def test_template_generation_gitlab(tmp_path):
 
 
 def test_gitlab_submission_execution_logic(tmp_path):
-    from autograder_gen.grader_utils import (
+    from autograder_gen.utils_submission import (
         assert_gitlab_submission_test,
         assert_github_submission_test,
     )
@@ -186,7 +186,7 @@ def test_template_generation_git(tmp_path):
     zip_path = generator.generate(str(output_dir))
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        assert "grader_utils.py" in z.namelist()
+        assert "utils_submission.py" in z.namelist()
         test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_verify_git_repo(self):" in test_content
@@ -195,7 +195,7 @@ def test_template_generation_git(tmp_path):
 
 
 def test_git_submission_execution_logic(tmp_path):
-    from autograder_gen.grader_utils import assert_git_submission_test
+    from autograder_gen.utils_submission import assert_git_submission_test
 
     metadata_file = tmp_path / "submission_metadata.json"
 

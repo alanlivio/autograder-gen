@@ -1,9 +1,6 @@
 import pytest
-from autograder_gen.grader_utils import (
-    compare_outputs,
-    normalize_output,
-    remove_package_line,
-)
+from autograder_gen.utils_submission import compare_outputs, normalize_output
+from autograder_gen.utils_java import remove_package_line
 
 
 def test_normalize_function():
@@ -107,14 +104,14 @@ def test_compare_outputs_non_numeric_fallback():
 
 
 def test_java_runner_code_defined():
-    from autograder_gen.grader_utils import JAVA_RUNNER_CODE
+    from autograder_gen.utils_java import JAVA_RUNNER_CODE
 
     assert "public class JavaRunner" in JAVA_RUNNER_CODE
     assert "convertArg" in JAVA_RUNNER_CODE
 
 
 def test_call_java_function_execution(tmp_path):
-    from autograder_gen.grader_utils import call_java_function
+    from autograder_gen.utils_java import call_java_function
 
     java_file = tmp_path / "Calculator.java"
     java_file.write_text(
@@ -136,7 +133,7 @@ def test_call_java_function_execution(tmp_path):
 
 
 def test_call_java_function_arrays_and_objects(tmp_path):
-    from autograder_gen.grader_utils import call_java_function
+    from autograder_gen.utils_java import call_java_function
 
     java_file = tmp_path / "Solution.java"
     java_file.write_text(
@@ -186,7 +183,7 @@ def test_call_java_function_arrays_and_objects(tmp_path):
 def test_javarunner_compilation_failure_logged_and_hidden_from_student(tmp_path, capsys, caplog):
     import logging
     import pytest
-    from autograder_gen.grader_utils import call_java_function
+    from autograder_gen.utils_java import call_java_function
 
     java_file = tmp_path / "Solution.java"
     java_file.write_text(
@@ -225,7 +222,7 @@ def test_javarunner_execution_failure_logged_and_hidden_from_student(tmp_path, c
     import logging
     import pytest
     import subprocess
-    from autograder_gen.grader_utils import call_java_function
+    from autograder_gen.utils_java import call_java_function
 
     java_file = tmp_path / "Solution.java"
     java_file.write_text(
@@ -267,8 +264,8 @@ def test_javarunner_execution_failure_logged_and_hidden_from_student(tmp_path, c
     assert any("JavaRunner" in record.message for record in error_logs)
 
 
-def test_modular_run_shared_utilities(tmp_path):
-    from autograder_gen.run_shared import (
+def test_modular_utils_submission_utilities(tmp_path):
+    from autograder_gen.utils_submission import (
         resolve_target,
         apply_wrong_location_deduction,
         eval_expected_output_script,
@@ -294,8 +291,8 @@ def test_modular_run_shared_utilities(tmp_path):
     assert awarded == 8.0
 
 
-def test_modular_run_python_utilities(tmp_path):
-    from autograder_gen.run_python import (
+def test_modular_utils_python_utilities(tmp_path):
+    from autograder_gen.utils_python import (
         import_function_from_file,
         call_function_with_timeout,
         check_function_signature,
@@ -335,7 +332,7 @@ def test_modular_run_python_utilities(tmp_path):
 
 
 def test_format_function_call_and_student_messages():
-    from autograder_gen.run_shared import (
+    from autograder_gen.utils_submission import (
         StudentMessage,
         format_function_call,
         format_function_arg,
@@ -396,7 +393,7 @@ def test_format_function_call_and_student_messages():
 
 
 def test_call_function_output_with_timeout():
-    from autograder_gen.run_python import call_function_output_with_timeout
+    from autograder_gen.utils_python import call_function_output_with_timeout
 
     def printer(msg):
         print(f"Hello, {msg}!", end="")
@@ -406,8 +403,8 @@ def test_call_function_output_with_timeout():
 
 
 def test_signature_student_messages_and_java_signature_check(tmp_path):
-    from autograder_gen.run_shared import StudentMessage
-    from autograder_gen.grader_utils import check_java_function_signature
+    from autograder_gen.utils_submission import StudentMessage
+    from autograder_gen.utils_java import check_java_function_signature
 
     assert StudentMessage.CHECKING_FUNCTION_SIGNATURE == "## Checking signature"
     assert (
@@ -464,7 +461,7 @@ def test_signature_student_messages_and_java_signature_check(tmp_path):
     assert "[WRONG_ANSWER] Function 'add' signature mismatch:" in str(exc_ret.value)
 
     # Test assert_java_function_signature directly
-    from autograder_gen.grader_utils import assert_java_function_signature
+    from autograder_gen.utils_java import assert_java_function_signature
 
     assert (
         assert_java_function_signature(
@@ -479,7 +476,7 @@ def test_signature_student_messages_and_java_signature_check(tmp_path):
 
 
 def test_assert_python_function_signature():
-    from autograder_gen.grader_utils import (
+    from autograder_gen.utils_python import (
         assert_python_function_signature,
         check_python_function_signature,
         call_python_function,
@@ -512,7 +509,7 @@ def test_assert_python_function_signature():
 
 
 def test_comparison_assertion_helpers(tmp_path):
-    from autograder_gen.grader_utils import (
+    from autograder_gen.utils_submission import (
         assert_file_exists,
         assert_output_matches,
         assert_function_return_matches,

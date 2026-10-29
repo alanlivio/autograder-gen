@@ -30,15 +30,19 @@ from autograder_gen.logger import (
 )
 from autograder_gen.validator import Validator
 from autograder_gen.autograder_run import AutograderRun, AutograderRunner
-from autograder_gen.grader_utils import (
+from autograder_gen.utils_submission import (
     StudentMessage,
     normalize_output,
+    STUDENT_ID_FALLBACK,
+    format_function_call,
+)
+from autograder_gen.utils_java import (
     remove_package_line,
     JAVA_RUNNER_CODE,
     ensure_java_runner,
     call_java_function,
-    STUDENT_ID_FALLBACK,
-    format_function_call,
+)
+from autograder_gen.utils_python import (
     call_function_with_timeout,
     call_function_output_with_timeout,
 )

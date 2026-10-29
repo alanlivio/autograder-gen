@@ -5,7 +5,7 @@ import yaml
 import pytest
 import autograder_gen as ag
 from autograder_gen.version import __version__
-from autograder_gen.grader_utils import StudentMessage
+from autograder_gen.utils_submission import StudentMessage
 
 CONFIG_FOR_TEMPLATES = {
     "version": __version__,
@@ -118,13 +118,13 @@ def test_program_output_test_template(tmp_path):
     zip_path = generator.generate(str(output_dir))
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        assert "grader_utils.py" in z.namelist()
+        assert "utils_submission.py" in z.namelist()
         test_content = z.read("question_1_test.py").decode("utf-8")
 
         assert "def test_output_test(self):" in test_content
         assert 'print(f"# Question 1) output_test")' in test_content
         assert (
-            "from grader_utils import StudentMessage, normalize_output, compare_outputs"
+            "from utils_submission import StudentMessage, normalize_output, compare_outputs"
             in test_content
         )
         assert "self.fail(StudentMessage.COMPILATION_ERROR)" in test_content
@@ -164,13 +164,13 @@ def test_function_test_template_expected_actual_output(tmp_path):
     zip_path = generator.generate(str(output_dir))
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        assert "grader_utils.py" in z.namelist()
+        assert "utils_submission.py" in z.namelist()
         test_content = z.read("question_1_test.py").decode("utf-8")
         assert 'print(f"# Math Test) Math Test")' in test_content
         assert 'expected_out = normalize_output("3")' in test_content
         assert "actual_out = normalize_output(str(result))" in test_content
         assert (
-            "from grader_utils import StudentMessage, normalize_output, compare_outputs"
+            "from utils_submission import StudentMessage, normalize_output, compare_outputs"
             in test_content
         )
         assert (
@@ -250,10 +250,10 @@ def test_java_remove_package_template(tmp_path):
     zip_path = generator.generate(str(output_dir))
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        assert "grader_utils.py" in z.namelist()
+        assert "utils_submission.py" in z.namelist()
         test_content = z.read("question_1_test.py").decode("utf-8")
         assert (
-            "from grader_utils import StudentMessage, normalize_output, compare_outputs, remove_package_line"
+            "from utils_java import call_java_function, assert_java_function_signature, check_java_function_signature, remove_package_line"
             in test_content
         )
         assert "remove_package_line(file_path)" in test_content
@@ -378,7 +378,7 @@ def test_float_comparison_strict_fails(tmp_path):
 
 
 def test_student_message_compilation_error():
-    from autograder_gen.grader_utils import StudentMessage
+    from autograder_gen.utils_submission import StudentMessage
 
     assert StudentMessage.COMPILATION_ERROR == "[COMPILATION_ERROR] Check compile errors above."
     assert not hasattr(StudentMessage, "COMPILER_ERROR")

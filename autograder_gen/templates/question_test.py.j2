@@ -26,7 +26,13 @@ if str(Path(__file__).parent.parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent.parent))
 if str(Path(__file__).parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent))
-from grader_utils import StudentMessage, normalize_output, compare_outputs{% if config.language == 'java' and config.remove_use_of_java_package %}, remove_package_line{% endif %}{% if config.language == 'java' %}, call_java_function, assert_java_function_signature, check_java_function_signature{% endif %}{% if config.language == 'python' %}, call_function_with_timeout, call_function_output_with_timeout, call_python_function, call_python_function_output, import_function_from_file, assert_python_function_signature, check_function_signature{% endif %}, format_function_call, assert_gitlab_submission_test, assert_github_submission_test, assert_git_submission_test
+from utils_submission import StudentMessage, normalize_output, compare_outputs, format_function_call, assert_gitlab_submission_test, assert_github_submission_test, assert_git_submission_test
+{% if config.language == 'java' %}
+from utils_java import call_java_function, assert_java_function_signature, check_java_function_signature{% if config.remove_use_of_java_package %}, remove_package_line{% endif %}
+
+{% elif config.language == 'python' %}
+from utils_python import call_function_with_timeout, call_function_output_with_timeout, call_python_function, call_python_function_output, import_function_from_file, assert_python_function_signature, check_function_signature
+{% endif %}
 
 
 

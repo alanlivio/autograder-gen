@@ -51,7 +51,7 @@ def test_autograder_zip_contains_expected_files(temp_output_dir):
             "run_autograder",
             "run_tests.py",
             "README.md",
-            "grader_utils.py",
+            "utils_submission.py",
         ]
         assert not any(f.startswith("tests/") for f in namelist)
         for fname in expected_files:

@@ -16,7 +16,7 @@ import yaml
 
 from autograder_gen.config import Config
 from autograder_gen.autograder_gen import AutograderGen
-from autograder_gen.grader_utils import STUDENT_ID_FALLBACK
+from autograder_gen.utils_submission import STUDENT_ID_FALLBACK
 
 
 class AutograderRun:

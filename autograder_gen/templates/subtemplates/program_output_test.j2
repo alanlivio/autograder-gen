@@ -9,7 +9,7 @@
 {% set script_to_use = item.expected_output_script or question.expected_output_script %}
 {% if script_to_use %}
         try:
-            from grader_utils import get_student_id
+            from utils_submission import get_student_id
             student_id = get_student_id(excluded_ids={{ config.excluded_student_ids | tojson }})
         except Exception:
             student_id = ""
