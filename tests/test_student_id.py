@@ -244,7 +244,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -257,7 +257,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
         'print("Hello, student wrong_id.")\n',
         encoding="utf-8",
     )
-    runner_wrong = ag.AutograderRunner(cfg_file)
+    runner_wrong = ag.AutograderRun(cfg_file)
     results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
     total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
     assert total_score_wrong == 0
@@ -307,7 +307,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -328,7 +328,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
         'public class CW1P1 {\n    public static void main(String[] args) {\n        System.out.println("Hello, student 00000000.");\n    }\n}\n',
         encoding="utf-8",
     )
-    runner_wrong = ag.AutograderRunner(cfg_file)
+    runner_wrong = ag.AutograderRun(cfg_file)
     results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
     total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
     assert total_score_wrong == 0
@@ -606,7 +606,7 @@ def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -620,7 +620,7 @@ def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
         'print("Computed for 100: 200")\n',
         encoding="utf-8",
     )
-    runner_custom = ag.AutograderRunner(cfg_file)
+    runner_custom = ag.AutograderRun(cfg_file)
     results_custom = runner_custom.run_autograder_for_submission(sub_custom)
     total_score_custom = sum(t.get("score", 0) for t in results_custom["tests"])
     assert total_score_custom == 20
@@ -632,7 +632,7 @@ def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
         'print("Computed for 42: 9999")\n',
         encoding="utf-8",
     )
-    runner_wrong = ag.AutograderRunner(cfg_file)
+    runner_wrong = ag.AutograderRun(cfg_file)
     results_wrong = runner_wrong.run_autograder_for_submission(sub_wrong)
     total_score_wrong = sum(t.get("score", 0) for t in results_wrong["tests"])
     assert total_score_wrong == 0
@@ -667,7 +667,7 @@ def test_expected_output_script_scope_only_has_uppercase_student_id(tmp_path: Pa
     (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
     (sub_dir / "solution.py").write_text('print("42")\n', encoding="utf-8")
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert results["tests"][0]["score"] == 0
     assert "name 'student_id' is not defined" in results["tests"][0]["output"]
@@ -703,7 +703,7 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
     (sub_dir / "submission_metadata.json").write_text(json.dumps(meta), encoding="utf-8")
     (sub_dir / "solution.py").write_text('print("hello_input")\n', encoding="utf-8")
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert results["tests"][0]["score"] == 0
     assert "name 'expected_input' is not defined" in results["tests"][0]["output"]
@@ -715,7 +715,7 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
         yaml.dump(config_dict, f)
 
     (sub_dir / "solution.py").write_text('print("hello_input_42")\n', encoding="utf-8")
-    runner_ok = ag.AutograderRunner(cfg_file)
+    runner_ok = ag.AutograderRun(cfg_file)
     results_ok = runner_ok.run_autograder_for_submission(sub_dir)
     assert results_ok["tests"][0]["score"] == 10
 
@@ -756,7 +756,7 @@ def test_autograder_run_with_custom_student_id_no_stubs(tmp_path: Path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -788,7 +788,7 @@ def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
     with open(cfg_file, "w", encoding="utf-8") as f:
         yaml.dump(config_dict, f)
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_generated_submissions()
     correct_score = sum(t.get("score", 0) for t in results["correct_answer"]["tests"])
     wrong_score = sum(t.get("score", 0) for t in results["wrong_answer"]["tests"])
@@ -894,7 +894,7 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
         f'print("SID:{STUDENT_ID_FALLBACK}")\n', encoding="utf-8"
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     res_excluded = runner.run_autograder_for_submission(sub_excluded)
     assert res_excluded["tests"][0]["score"] == 10
 
@@ -906,7 +906,7 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
     )
     (sub_regular / "solution.py").write_text('print("SID:44556677")\n', encoding="utf-8")
 
-    runner_regular = ag.AutograderRunner(cfg_file)
+    runner_regular = ag.AutograderRun(cfg_file)
     res_regular = runner_regular.run_autograder_for_submission(sub_regular)
     assert res_regular["tests"][0]["score"] == 10
 
@@ -998,7 +998,7 @@ def test_question_level_expected_output_script_execution(tmp_path: Path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     res = runner.run_autograder_for_submission(sub_dir)
     assert res["tests"][0]["score"] == 5
     assert res["tests"][1]["score"] == 5

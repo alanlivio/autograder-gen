@@ -29,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
-- Autograder execution framework (`AutograderRun` and `AutograderRunner`) with test log reporting.
+- Autograder execution `AutograderRun` with test log reporting.
 - Support for `manual_review` marking item types.
 - Support for `retrieve_student_id` to set environment variable `STUDENT_ID` from `submission_metadata.json` or `classlist.csv`.
 - Support for GitLab and GitHub submission existence checks.

@@ -89,7 +89,7 @@ def test_cli_run_stubs():
     assert "stub_wrong_answer.log" in result.stdout
     assert "stub_compiler_error.log" in result.stdout
     assert "stub_correct_answer_wrong_location.log" in result.stdout
-    assert "[AutograderRunner: Student View]" not in result.stdout
+    assert "[AutograderRun: Student View]" not in result.stdout
 
     correct_log = Path("tests/examples/py_simple/stub_correct_answer.log")
     assert correct_log.exists()

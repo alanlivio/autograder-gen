@@ -29,7 +29,7 @@ from autograder_gen.logger import (
     print_warning,
 )
 from autograder_gen.validator import Validator
-from autograder_gen.autograder_run import AutograderRun, AutograderRunner
+from autograder_gen.autograder_run import AutograderRun, AutograderRun
 from autograder_gen.utils_submission import (
     StudentMessage,
     normalize_output,
@@ -58,7 +58,7 @@ __all__ = [
     "AutograderGen",
     "Validator",
     "AutograderRun",
-    "AutograderRunner",
+    "AutograderRun",
     "StudentMessage",
     "normalize_output",
     "remove_package_line",

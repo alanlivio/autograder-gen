@@ -202,7 +202,7 @@ def test_autograder_gen_class():
 
 
 def test_autograder_run_class_alias():
-    assert ag.AutograderRun is ag.AutograderRunner
+    assert ag.AutograderRun is ag.AutograderRun
 
 
 def test_validate_file_path(tmp_path):

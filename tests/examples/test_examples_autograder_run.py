@@ -28,7 +28,7 @@ def run_autograder_sh_scenario(
     config_path = example_dir / config_file
     student_dir = example_dir / subdir
 
-    runner = ag.AutograderRunner(config_path)
+    runner = ag.AutograderRun(config_path)
     results = runner.run_autograder_for_submission(student_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -92,7 +92,7 @@ def test_autograder_runner_config_obj(tmp_path):
     no_ext_file = tmp_path / "custom_config_file"
     no_ext_file.write_text(yaml.dump(cfg_data), encoding="utf-8")
 
-    runner = ag.AutograderRunner(no_ext_file)
+    runner = ag.AutograderRun(no_ext_file)
     assert runner.config_obj is not None
     assert runner.config_obj.total_score == 10
 
@@ -100,7 +100,7 @@ def test_autograder_runner_config_obj(tmp_path):
 def test_run_autograder_for_generated_submissions(tmp_path):
     base_dir = Path(__file__).parent.parent.parent
     config_path = base_dir / "tests/examples/py_simple/config.yaml"
-    runner = ag.AutograderRunner(config_path)
+    runner = ag.AutograderRun(config_path)
 
     results = runner.run_autograder_for_generated_submissions()
     assert "correct_answer" in results
@@ -146,13 +146,13 @@ def test_run_autograder_for_generated_submissions(tmp_path):
     wrong_text = wrong_log.read_text(encoding="utf-8")
     compiler_text = compiler_log.read_text(encoding="utf-8")
     wrong_loc_text = wrong_loc_log.read_text(encoding="utf-8")
-    assert "[AutograderRunner Summary]" not in correct_text
+    assert "[AutograderRun Summary]" not in correct_text
     assert "Status =" not in correct_text
-    assert "[AutograderRunner Summary]" not in wrong_text
+    assert "[AutograderRun Summary]" not in wrong_text
     assert "Status =" not in wrong_text
-    assert "[AutograderRunner Summary]" not in compiler_text
+    assert "[AutograderRun Summary]" not in compiler_text
     assert "Status =" not in compiler_text
-    assert "[AutograderRunner Summary]" not in wrong_loc_text
+    assert "[AutograderRun Summary]" not in wrong_loc_text
     assert "Status =" not in wrong_loc_text
     assert "[INFO] Checking required file: solution.py..." in correct_text
     assert "[INFO] File 'solution.py' exists." in correct_text

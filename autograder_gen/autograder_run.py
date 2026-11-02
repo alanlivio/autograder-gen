@@ -197,7 +197,7 @@ class AutograderRun:
         output_buffer: list[str] = []
         header_lines = [
             f"{'#' * 80}",
-            "# [AutograderRunner: Student View]",
+            "# [AutograderRun: Student View]",
             f"# config={cfg_display}, submission={sub_display}",
             score_line,
             "# Summary per Question:",
@@ -902,6 +902,3 @@ class AutograderRun:
                 item_word = "marking item" if hidden_count == 1 else "marking items"
                 lines.append(f"[INFO] {q_name} has {hidden_count} hidden {item_word}")
         return lines
-
-
-AutograderRunner = AutograderRun

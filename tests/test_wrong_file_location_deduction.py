@@ -327,7 +327,7 @@ def test_wrong_file_location_autograder_run_log(tmp_path: Path):
     (sub_dir / "nested").mkdir(parents=True)
     (sub_dir / "nested" / "solution.py").write_text("print('hello')", encoding="utf-8")
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert (
         "Found file 'solution.py' at ./nested/solution.py, penalties will be applied"

@@ -292,7 +292,7 @@ def test_java_remove_package_execution(tmp_path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -331,7 +331,7 @@ def test_float_comparison_tolerance_non_strict(tmp_path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -370,7 +370,7 @@ def test_float_comparison_strict_fails(tmp_path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     total_score = sum(t.get("score", 0) for t in results["tests"])
@@ -620,7 +620,7 @@ def test_function_multi_test_case_output_execution(tmp_path):
         encoding="utf-8",
     )
 
-    runner = ag.AutograderRunner(cfg_file)
+    runner = ag.AutograderRun(cfg_file)
     results = runner.run_autograder_for_submission(sub_dir)
     assert "tests" in results
     test_out = results["tests"][0]["output"]

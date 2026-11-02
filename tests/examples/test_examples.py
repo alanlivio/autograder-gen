@@ -263,7 +263,7 @@ def test_java_simple_correct_answer_with_package():
     config_path = java_simple_dir / "config.yaml"
     student_dir = java_simple_dir / "correct_answer_with_package"
 
-    runner_without = ag.AutograderRunner(config_path)
+    runner_without = ag.AutograderRun(config_path)
     res_without = runner_without.run_autograder_for_submission(student_dir)
     assert "tests" in res_without
     score_without = sum(t.get("score", 0) for t in res_without["tests"])
@@ -273,7 +273,7 @@ def test_java_simple_correct_answer_with_package():
         data_with = yaml.safe_load(f)
     data_with["remove_use_of_java_package"] = True
 
-    runner_with = ag.AutograderRunner(data_with)
+    runner_with = ag.AutograderRun(data_with)
     res_with = runner_with.run_autograder_for_submission(student_dir)
     assert "tests" in res_with
     score_with = sum(t.get("score", 0) for t in res_with["tests"])
