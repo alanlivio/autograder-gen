@@ -60,6 +60,11 @@ class MarkingItem(BaseModel):
     # Function testing fields
     function_name: str = Field(default="", title="Function Name")
     test_cases: List[Dict[str, Any]] = Field(default_factory=list, title="Test Cases")
+    show_file_content: Optional[str] = Field(
+        default=None,
+        title="Show File Content",
+        description="Filename whose content (capped at 20 lines) is displayed in student test output.",
+    )
 
     # Signature checking fields
     expected_parameters: str = Field(default="", title="Expected Parameters")
@@ -285,6 +290,14 @@ class Config(BaseModel):
                 if target and target not in self.required_submission_files:
                     raise ValueError(
                         f"Question '{q.name}', Item {j+1}: Target file '{target}' is not listed in 'required_submission_files'"
+                    )
+                if (
+                    item.show_file_content
+                    and item.show_file_content not in self.required_autograder_files
+                    and item.show_file_content not in self.required_submission_files
+                ):
+                    raise ValueError(
+                        f"Question '{q.name}', Item {j+1}: show_file_content '{item.show_file_content}' is not listed in 'required_autograder_files' or 'required_submission_files'"
                     )
         return self
 

@@ -221,6 +221,7 @@ class StudentMessage:
     CHECKING_FUNCTION_SIGNATURE = "## Checking signature"
     INPUT = "### Input:"
     FUNCTION_CALL = "### Function call:"
+    FILE_CONTENT = StudentMessageStr("### INFO: {file_name} content:")
     EXPECTED_OUTPUT = "### Expected output:"
     EXPECTED_RETURN = "### Expected return:"
     ACTUAL_OUTPUT = "### Actual output:"
@@ -269,6 +270,27 @@ class StudentMessage:
     CORRECT_GITHUB_SUBMISSION = "[CORRECT_ANSWER] GitHub repository was found."
     WRONG_GITHUB_NOT_USED = "[WRONG_ANSWER] GitHub repository was not found."
     ERROR_GITHUB_NOT_USED = WRONG_GITHUB_NOT_USED
+
+
+def format_file_content(
+    file_name: str, source_dir: Union[str, Path] = ".", max_lines: int = 20
+) -> str:
+    candidates = [
+        Path(source_dir) / file_name,
+        Path(__file__).parent / file_name,
+        Path(file_name),
+    ]
+    for p in candidates:
+        if p.exists() and p.is_file():
+            lines = p.read_text(encoding="utf-8", errors="replace").strip("\r\n").splitlines()
+            if len(lines) > max_lines:
+                shown = lines[:max_lines]
+                shown.append(f"... (truncated, {len(lines)} lines total)")
+                body = "\n".join(shown)
+            else:
+                body = "\n".join(lines)
+            return f"{StudentMessage.FILE_CONTENT.format(file_name=file_name)}\n{body}"
+    return f"{StudentMessage.FILE_CONTENT.format(file_name=file_name)}\n[File not found]"
 
 
 def assert_file_exists(file_path: Union[str, Path], file_name: str) -> None:

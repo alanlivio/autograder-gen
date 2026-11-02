@@ -52,6 +52,9 @@
             if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
                 print(StudentMessage.COMPARING_RETURN)
                 print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                {% if item.show_file_content %}
+                print(format_file_content({{ item.show_file_content | tojson }}, self.source_dir))
+                {% endif %}
                 print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_out}")
                 print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_out}")
                 self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name))
@@ -83,6 +86,9 @@
             if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
                 print(StudentMessage.COMPARING_RETURN)
                 print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                {% if item.show_file_content %}
+                print(format_file_content({{ item.show_file_content | tojson }}, self.source_dir))
+                {% endif %}
                 print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_out}")
                 print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_out}")
                 self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_RETURN.format(function_name=function_name))
@@ -102,6 +108,9 @@
             print(StudentMessage.COMPARING_RETURN)
             for call_info, expected_output, actual_output in evaluated_cases:
                 print(f"{StudentMessage.FUNCTION_CALL}\n{call_info}")
+                {% if item.show_file_content %}
+                print(format_file_content({{ item.show_file_content | tojson }}, self.source_dir))
+                {% endif %}
                 print(f"{StudentMessage.EXPECTED_RETURN}\n{expected_output}")
                 print(f"{StudentMessage.ACTUAL_RETURN}\n{actual_output}")
         print(f"## Test Passed: {StudentMessage.CORRECT_ANSWER_FUNCTION_RETURN.format(function_name=function_name)}")

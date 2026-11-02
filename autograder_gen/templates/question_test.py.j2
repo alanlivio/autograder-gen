@@ -26,7 +26,7 @@ if str(Path(__file__).parent.parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent.parent))
 if str(Path(__file__).parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent))
-from utils_submission import StudentMessage, normalize_output, compare_outputs, format_function_call, assert_gitlab_submission_test, assert_github_submission_test, assert_git_submission_test
+from utils_submission import StudentMessage, normalize_output, compare_outputs, format_function_call, format_file_content, assert_gitlab_submission_test, assert_github_submission_test, assert_git_submission_test
 {% if config.language == 'java' %}
 from utils_java import call_java_function, assert_java_function_signature, check_java_function_signature{% if config.remove_use_of_java_package %}, remove_package_line{% endif %}
 
