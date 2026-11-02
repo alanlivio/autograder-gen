@@ -68,19 +68,29 @@ def main(argv: list[str] | None = None) -> int:
         "targets",
         nargs="*",
         metavar="TARGET",
-        help="Configuration YAML file(s) or directory with autograder.zip",
+        help="Configuration YAML file(s) or directory with autograder.zip (default: ./config.yaml)",
     )
     if argv is None:
         argv = sys.argv[1:]
     if not argv:
-        parser.print_help()
-        return 0
+        if Path("config.yaml").is_file():
+            argv = ["config.yaml"]
+        elif find_configs(Path(".")):
+            argv = ["."]
+        else:
+            parser.print_help()
+            return 0
     args = parser.parse_args(argv)
     setup_logging()
 
     if not args.targets:
-        print_error("Error: target configuration file or directory is required")
-        return 2
+        if Path("config.yaml").is_file():
+            args.targets = ["config.yaml"]
+        elif find_configs(Path(".")):
+            args.targets = ["."]
+        else:
+            print_error("Error: target configuration file or directory is required")
+            return 2
 
     configs: list[Path] = []
     for target in args.targets:

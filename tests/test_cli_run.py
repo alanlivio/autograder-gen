@@ -174,3 +174,18 @@ def test_cli_run_target_without_config(tmp_path: Path):
     )
     assert result.returncode == 1
     assert "config.yaml not found" in result.stderr
+
+
+def test_cli_run_zero_args_defaults_to_current_folder(tmp_path: Path, monkeypatch, capsys):
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(
+        Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    ret = main([])
+    assert ret == 0
+
+    captured = capsys.readouterr()
+    assert "# log config.yaml" in captured.out
+    assert (tmp_path / "stub_correct_answer.log").exists()
