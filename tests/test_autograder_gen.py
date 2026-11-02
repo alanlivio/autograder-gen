@@ -12,7 +12,7 @@ import autograder_gen as ag
 SAMPLE_CONFIG_DICT = {
     "version": __version__,
     "language": "python",
-    "files_necessary": ["solution.py"],
+    "required_submission_files": ["solution.py"],
     "questions": [
         {
             "name": "Question 1",
@@ -71,7 +71,7 @@ def test_skeleton_generation():
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -107,7 +107,7 @@ def test_skeleton_generation_java():
     config_dict = {
         "version": __version__,
         "language": "java",
-        "files_necessary": ["Solution.java"],
+        "required_submission_files": ["Solution.java"],
         "questions": [
             {
                 "name": "Question 1",
@@ -168,7 +168,7 @@ def test_skeleton_generation_compiler_error():
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -262,3 +262,77 @@ def test_format_error_message():
     err = ValueError("Something broke")
     assert ag.format_error_message(err) == "Something broke"
     assert ag.format_error_message(err, "Context") == "Context: Something broke"
+
+
+def test_required_autograder_files_packaged_and_accessible_at_runtime(tmp_path):
+    input_file = tmp_path / "input.txt"
+    input_file.write_text("Hello from input.txt\n", encoding="utf-8")
+
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "required_autograder_files": ["input.txt"],
+        "questions": [
+            {
+                "name": "Question 1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                        "expected_output": "Hello from input.txt",
+                    }
+                ],
+            }
+        ],
+    }
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.dump(config_dict), encoding="utf-8")
+
+    config = ag.Config.model_validate(config_dict)
+    generator = ag.AutograderGen(config, config_dict, base_dir=tmp_path)
+    zip_path = generator.generate(str(tmp_path))
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        assert "input.txt" in z.namelist()
+        assert z.read("input.txt").decode("utf-8") == "Hello from input.txt\n"
+
+    sub_dir = tmp_path / "sub"
+    sub_dir.mkdir()
+    (sub_dir / "solution.py").write_text(
+        "with open('input.txt', encoding='utf-8') as f:\n    print(f.read().strip())\n",
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRun(config_path, save_log=False)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert results["tests"][0]["score"] == 10
+
+
+def test_missing_required_autograder_file_raises(tmp_path):
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "required_autograder_files": ["missing_input.txt"],
+        "questions": [
+            {
+                "name": "Question 1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                        "expected_output": "ok",
+                    }
+                ],
+            }
+        ],
+    }
+    config = ag.Config.model_validate(config_dict)
+    generator = ag.AutograderGen(config, config_dict, base_dir=tmp_path)
+    with pytest.raises(
+        FileNotFoundError, match="Required autograder file not found: missing_input.txt"
+    ):
+        generator.generate(str(tmp_path))

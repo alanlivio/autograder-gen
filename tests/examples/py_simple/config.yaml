@@ -1,6 +1,6 @@
 version: '1.0'
 language: python
-required_files:
+required_submission_files:
 - solution.py
 questions:
 - name: Math Test

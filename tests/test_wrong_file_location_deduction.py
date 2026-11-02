@@ -15,7 +15,7 @@ def test_config_wrong_file_location_deduction_default():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -38,7 +38,7 @@ def test_config_wrong_file_location_deduction_custom():
         "version": __version__,
         "language": "python",
         "wrong_file_location_deduction": 0.5,
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -62,7 +62,7 @@ def test_config_wrong_file_location_deduction_requires_strict_false():
         "language": "python",
         "strict_file_location": True,
         "wrong_file_location_deduction": 0.5,
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -88,7 +88,7 @@ def test_config_wrong_file_location_deduction_out_of_bounds_fails():
     base_data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -117,7 +117,7 @@ def test_wrong_file_location_deduction_execution(tmp_path: Path):
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "File Check",
@@ -175,7 +175,7 @@ def test_wrong_file_location_deduction_not_applied_when_location_correct(tmp_pat
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "File Check",
@@ -232,7 +232,7 @@ def test_wrong_file_location_deduction_multiple_items_execution(tmp_path: Path):
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1 10pts",
@@ -304,7 +304,7 @@ def test_wrong_file_location_autograder_run_log(tmp_path: Path):
         "language": "python",
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",

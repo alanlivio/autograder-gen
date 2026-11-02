@@ -80,6 +80,7 @@ class AutograderGen:
             self._generate_run_autograder()
             self._generate_run_tests()
             self._generate_metadata_files()
+            self._copy_required_autograder_files()
 
             zip_path = output_path / "autograder.zip"
             self._create_zip(zip_path)
@@ -183,7 +184,7 @@ class AutograderGen:
         buffer = BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
             created_dirs = set()
-            for filename in self.config.required_files:
+            for filename in self.config.required_submission_files:
                 parent = Path(filename).parent
                 if str(parent) != "." and str(parent) not in created_dirs:
                     created_dirs.add(str(parent))
@@ -224,7 +225,7 @@ class AutograderGen:
         buffer = BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
             created_dirs = set()
-            for filename in self.config.required_files:
+            for filename in self.config.required_submission_files:
                 parent = Path(filename).parent
                 if str(parent) != "." and str(parent) not in created_dirs:
                     created_dirs.add(str(parent))
@@ -263,7 +264,7 @@ class AutograderGen:
         buffer = BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
             created_dirs = set()
-            for filename in self.config.required_files:
+            for filename in self.config.required_submission_files:
                 parent = Path(filename).parent
                 if str(parent) != "." and str(parent) not in created_dirs:
                     created_dirs.add(str(parent))
@@ -306,7 +307,7 @@ class AutograderGen:
             created_dirs = set()
             zipf.writestr("src/", "")
             created_dirs.add("src")
-            for filename in self.config.required_files:
+            for filename in self.config.required_submission_files:
                 nested_filename = f"src/{filename}"
                 parent = Path(nested_filename).parent
                 parts = parent.parts
@@ -514,6 +515,23 @@ class AutograderGen:
         readme_file = self.temp_dir / "README.md"
         with open(readme_file, "w", encoding="utf-8") as f:
             f.write(generate_readme_md(self.config))
+
+    def _copy_required_autograder_files(self):
+        """Copy required autograder files from base_dir into temp_dir."""
+        assert self.temp_dir is not None, "temp_dir must be set before generating files"
+
+        for rel_file in self.config.required_autograder_files:
+            src_path = self.base_dir / rel_file
+            if not src_path.exists():
+                raise FileNotFoundError(
+                    f"Required autograder file not found: {rel_file} (expected at {src_path})"
+                )
+            dest_path = self.temp_dir / rel_file
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            if src_path.is_dir():
+                shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src_path, dest_path)
 
     def _create_zip(self, zip_path: Path):
         """Create the autograder.zip file with proper structure."""

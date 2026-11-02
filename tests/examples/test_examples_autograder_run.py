@@ -73,7 +73,7 @@ def test_autograder_runner_config_obj(tmp_path):
     cfg_data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",

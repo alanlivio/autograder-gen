@@ -56,7 +56,7 @@ echo "Copying required submission files to source directory..."
 
 if [ -d "$SUBMISSION_DIR" ]; then
     cd "$SUBMISSION_DIR"
-    {% for file in config.required_files %}
+    {% for file in config.required_submission_files %}
     echo "[INFO] Checking required file: {{ file }}..." | tee -a "$FILE_CHECK_LOG"
     if [ -f "{{ file }}" ]; then
         echo "[INFO] File '{{ file }}' exists." | tee -a "$FILE_CHECK_LOG"

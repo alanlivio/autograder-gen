@@ -290,7 +290,7 @@ class AutograderRun:
                 ):
                     file_check_lines.append(stripped)
 
-        if not file_check_lines and self.config_obj and self.config_obj.required_files:
+        if not file_check_lines and self.config_obj and self.config_obj.required_submission_files:
             file_check_lines = self._get_fallback_file_check_lines(actual_submission)
 
         if file_check_lines:
@@ -772,7 +772,7 @@ class AutograderRun:
         self,
         actual_submission: str | Path | list[str | Path] | tuple[str | Path, ...] | None,
     ) -> list[str]:
-        if not self.config_obj or not self.config_obj.required_files:
+        if not self.config_obj or not self.config_obj.required_submission_files:
             return []
 
         sub_files: list[str] = []
@@ -872,7 +872,7 @@ class AutograderRun:
             lines.append("[INFO] Environment: Python 3.10")
         elif lang == "java":
             lines.append("[INFO] Environment: OpenJDK 25")
-        for req_file in self.config_obj.required_files:
+        for req_file in self.config_obj.required_submission_files:
             lines.append(f"[INFO] Checking required file: {req_file}...")
             norm_req = req_file.lstrip("./")
             if any(f.lstrip("./") == norm_req for f in sub_files):

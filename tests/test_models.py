@@ -50,7 +50,7 @@ def test_autograder_config_schema_full():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -84,7 +84,7 @@ def test_validator_and_utility_functions():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -113,7 +113,7 @@ def test_validator_program_output_test_no_command_warning():
     data = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -162,7 +162,7 @@ def test_validator_mutual_exclusion_validation():
     data = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -191,7 +191,7 @@ def test_question_level_expected_output_script():
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -226,7 +226,7 @@ def test_question_level_expected_output_script_syntax_error():
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",

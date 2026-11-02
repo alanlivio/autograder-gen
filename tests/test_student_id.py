@@ -15,7 +15,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
     data_without_script = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -38,7 +38,7 @@ def test_retrieve_student_id_not_in_json_schema_and_internal_to_autograder_gen()
     data_with_script = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -102,7 +102,7 @@ def test_stubs_submission_metadata_only_when_gitlab_or_github():
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Check",
@@ -158,7 +158,7 @@ def test_generator_output_with_retrieve_student_id(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Check File",
@@ -204,7 +204,7 @@ def test_question_hello_student_id_python(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["CW1P1.py"],
+        "required_submission_files": ["CW1P1.py"],
         "questions": [
             {
                 "name": "Question 1 - Hello",
@@ -267,7 +267,7 @@ def test_question_hello_student_id_java(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "java",
-        "required_files": ["CW1P1.java"],
+        "required_submission_files": ["CW1P1.java"],
         "questions": [
             {
                 "name": "Question 1 - Hello",
@@ -363,7 +363,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Check File",
@@ -401,7 +401,7 @@ def test_generate_warns_for_retrieve_student_id(tmp_path: Path, capsys):
     config_no_script = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Check File",
@@ -429,7 +429,7 @@ def test_expected_output_script_config_and_validation():
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["main.py"],
+        "required_submission_files": ["main.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -454,7 +454,7 @@ def test_expected_output_script_config_and_validation():
     bad_config = {
         "version": __version__,
         "language": "python",
-        "required_files": ["main.py"],
+        "required_submission_files": ["main.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -478,7 +478,7 @@ def test_stubs_include_submission_metadata_and_correct_skeleton_with_expected_ou
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["calc.py"],
+        "required_submission_files": ["calc.py"],
         "questions": [
             {
                 "name": "Calc",
@@ -517,7 +517,7 @@ def test_expected_output_script_java_skeleton():
     config_dict = {
         "version": __version__,
         "language": "java",
-        "required_files": ["App.java"],
+        "required_submission_files": ["App.java"],
         "questions": [
             {
                 "name": "App",
@@ -548,7 +548,7 @@ def test_java_void_function_skeleton_does_not_create_sortcomparison_csv():
     config_dict = {
         "version": __version__,
         "language": "java",
-        "required_files": ["CW1P3.java"],
+        "required_submission_files": ["CW1P3.java"],
         "questions": [
             {
                 "name": "Q3",
@@ -577,7 +577,7 @@ def test_autograder_run_with_expected_output_script_python(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Script Output Test",
@@ -642,7 +642,7 @@ def test_expected_output_script_scope_only_has_uppercase_student_id(tmp_path: Pa
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Scope Test",
@@ -677,7 +677,7 @@ def test_expected_output_script_expected_input_only_via_input(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Scope Input Test",
@@ -724,7 +724,7 @@ def test_autograder_run_with_custom_student_id_no_stubs(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Custom SID Test",
@@ -768,7 +768,7 @@ def test_autograder_run_stubs_using_fallback_student_id(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Stub Fallback Test",
@@ -802,7 +802,7 @@ def test_config_excluded_student_ids():
     base_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -863,7 +863,7 @@ def test_autograder_run_execution_with_excluded_student_ids(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "excluded_student_ids": [33811500, "tb931382"],
         "questions": [
             {
@@ -915,7 +915,7 @@ def test_config_file_has_excluded_student_ids(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "excluded_student_ids": [12345678, "instructor1"],
         "questions": [
             {
@@ -961,7 +961,7 @@ def test_question_level_expected_output_script_execution(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",

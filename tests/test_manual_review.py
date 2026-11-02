@@ -61,7 +61,7 @@ def test_manual_review_execution_file_present(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["report.pdf"],
+        "required_submission_files": ["report.pdf"],
         "questions": [
             {
                 "name": "Report Question",
@@ -118,7 +118,7 @@ def test_manual_review_execution_file_missing(tmp_path: Path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["report.pdf"],
+        "required_submission_files": ["report.pdf"],
         "questions": [
             {
                 "name": "Report Question",
@@ -229,7 +229,7 @@ def test_manual_review_generation_and_inspection(tmp_path: Path):
         "version": __version__,
         "language": "java",
         "global_time_limit": 300,
-        "files_necessary": ["Main.java", "report.pdf"],
+        "required_submission_files": ["Main.java", "report.pdf"],
         "questions": [
             {
                 "name": "Question 0 - Submission Verification",

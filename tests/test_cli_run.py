@@ -103,7 +103,7 @@ def test_cli_run_batch_stubs(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = f"""version: '{__version__}'
 language: python
-required_files:
+required_submission_files:
   - solution.py
 questions:
   - name: Q1

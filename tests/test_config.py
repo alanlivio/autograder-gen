@@ -11,7 +11,7 @@ def test_config_total_score_single_question():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -33,7 +33,7 @@ def test_config_total_score_float_marks():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -64,7 +64,7 @@ def test_config_total_score_multiple_questions_and_items():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py", "helper.py"],
+        "required_submission_files": ["solution.py", "helper.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -104,7 +104,7 @@ def test_config_total_score_from_yaml_file(tmp_path: Path):
     yaml_content = f"""
 version: '{__version__}'
 language: python
-files_necessary:
+required_submission_files:
   - solution.py
 questions:
   - name: Math Tests
@@ -137,7 +137,7 @@ def test_config_missing_target_file_in_files_necessary():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["other.py"],
+        "required_submission_files": ["other.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -159,7 +159,7 @@ def test_file_exists_type_fails_validation():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -190,7 +190,7 @@ def test_legacy_type_names_rejected():
         data = {
             "version": __version__,
             "language": "python",
-            "files_necessary": ["solution.py"],
+            "required_submission_files": ["solution.py"],
             "questions": [
                 {
                     "name": "Q1",
@@ -214,7 +214,7 @@ def test_function_return_test_and_function_signature_test_types():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -245,7 +245,7 @@ def test_function_signature_test_with_time_limit_fails_validation():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -269,7 +269,7 @@ def test_function_return_test_requires_function_name():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -292,7 +292,7 @@ def test_function_output_test_validation():
     data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -315,7 +315,7 @@ def test_function_output_test_validation():
     missing_fn_data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -338,7 +338,7 @@ def test_strict_file_location_configuration():
     base_data = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -363,7 +363,7 @@ def test_remove_use_of_java_package_configuration():
     base_data = {
         "version": __version__,
         "language": "java",
-        "files_necessary": ["Solution.java"],
+        "required_submission_files": ["Solution.java"],
         "questions": [
             {
                 "name": "Q1",
@@ -384,59 +384,12 @@ def test_remove_use_of_java_package_configuration():
     assert cfg_remove.remove_use_of_java_package is True
 
 
-def test_required_files_and_backwards_compatibility():
-    legacy_files_necessary = {
-        "version": __version__,
-        "language": "python",
-        "files_necessary": ["solution.py"],
-        "questions": [
-            {
-                "name": "Q1",
-                "marking_items": [
-                    {
-                        "target_file": "solution.py",
-                        "total_mark": 10,
-                        "type": "program_output_test",
-                    }
-                ],
-            }
-        ],
-    }
-    cfg_fn = ag.Config.model_validate(legacy_files_necessary)
-    assert cfg_fn.required_files == ["solution.py"]
-    assert cfg_fn.src_files == ["solution.py"]
-    assert cfg_fn.files_necessary == ["solution.py"]
-    summary_fn = cfg_fn.get_config_summary()
-    assert summary_fn["required_files"] == ["solution.py"]
-    assert summary_fn["src_files"] == ["solution.py"]
-    assert summary_fn["files_necessary"] == ["solution.py"]
-
-    legacy_src_files = {
-        "version": __version__,
-        "language": "python",
-        "src_files": ["main.py"],
-        "questions": [
-            {
-                "name": "Q1",
-                "marking_items": [
-                    {
-                        "target_file": "main.py",
-                        "total_mark": 10,
-                        "type": "program_output_test",
-                    }
-                ],
-            }
-        ],
-    }
-    cfg_sf = ag.Config.model_validate(legacy_src_files)
-    assert cfg_sf.required_files == ["main.py"]
-    assert cfg_sf.src_files == ["main.py"]
-    assert cfg_sf.files_necessary == ["main.py"]
-
+def test_required_submission_and_autograder_files():
     modern_data = {
         "version": __version__,
         "language": "python",
-        "required_files": ["app.py"],
+        "required_submission_files": ["app.py"],
+        "required_autograder_files": ["input.txt"],
         "questions": [
             {
                 "name": "Q1",
@@ -451,20 +404,18 @@ def test_required_files_and_backwards_compatibility():
         ],
     }
     cfg_rf = ag.Config.model_validate(modern_data)
-    assert cfg_rf.required_files == ["app.py"]
-    assert cfg_rf.src_files == ["app.py"]
-    assert cfg_rf.files_necessary == ["app.py"]
+    assert cfg_rf.required_submission_files == ["app.py"]
+    assert cfg_rf.required_autograder_files == ["input.txt"]
     summary_rf = cfg_rf.get_config_summary()
-    assert summary_rf["required_files"] == ["app.py"]
-    assert summary_rf["src_files"] == ["app.py"]
-    assert summary_rf["files_necessary"] == ["app.py"]
+    assert summary_rf["required_submission_files"] == ["app.py"]
+    assert summary_rf["required_autograder_files"] == ["input.txt"]
 
 
 def test_question_strict_float_configuration():
     data = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Default Float Question",
@@ -545,7 +496,7 @@ def test_marking_item_expected_input_multiline_unchanged():
 def test_config_from_yaml_single_line_expected_input(tmp_path: Path):
     yaml_content = f"""version: '{__version__}'
 language: python
-required_files:
+required_submission_files:
   - solution.py
 questions:
   - name: Output Question

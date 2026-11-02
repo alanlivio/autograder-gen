@@ -81,7 +81,7 @@ def test_web_validate_and_export_with_expected_output_script(client):
     config = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -112,7 +112,7 @@ def test_web_validate_and_export_with_wrong_file_location_deduction(client):
         "version": __version__,
         "language": "python",
         "wrong_file_location_deduction": 0.5,
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -142,7 +142,7 @@ def test_web_validate_and_export_with_manual_review(client):
     config = {
         "version": __version__,
         "language": "python",
-        "required_files": ["report.pdf"],
+        "required_submission_files": ["report.pdf"],
         "questions": [
             {
                 "name": "Report",
@@ -178,7 +178,7 @@ def test_upload_config_with_new_fields(client):
     yaml_content = f"""version: '{__version__}'
 language: python
 wrong_file_location_deduction: 0.5
-required_files:
+required_submission_files:
   - doc.pdf
 questions:
   - name: Q1
@@ -201,7 +201,7 @@ def test_web_validate_and_export_with_strict_file_location(client):
         "version": __version__,
         "language": "python",
         "strict_file_location": True,
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -232,7 +232,7 @@ def test_web_validate_and_export_with_remove_use_of_java_package(client):
         "version": __version__,
         "language": "java",
         "remove_use_of_java_package": True,
-        "required_files": ["Solution.java"],
+        "required_submission_files": ["Solution.java"],
         "questions": [
             {
                 "name": "Q1",
@@ -264,7 +264,7 @@ def test_web_validate_rejects_strict_file_location_with_deduction(client):
         "language": "python",
         "strict_file_location": True,
         "wrong_file_location_deduction": 0.5,
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",
@@ -297,7 +297,7 @@ def test_upload_config_with_strict_file_location_and_java_package(client):
 language: java
 strict_file_location: true
 remove_use_of_java_package: true
-required_files:
+required_submission_files:
   - Solution.java
 questions:
   - name: Q1
@@ -321,7 +321,7 @@ def test_web_validate_rejects_out_of_bounds_deduction(client):
         "version": __version__,
         "language": "python",
         "wrong_file_location_deduction": 1.5,
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Q1",

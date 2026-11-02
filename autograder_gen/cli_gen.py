@@ -56,7 +56,7 @@ def run_batch(
             else:
                 original_config = json.load(f)
 
-        engine = ag.AutograderGen(config, original_config)
+        engine = ag.AutograderGen(config, original_config, base_dir=config_path.parent)
         out_dir = config_path.parent
         engine.generate(str(out_dir), description=description)
         generated_assets = [
@@ -180,7 +180,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Total Questions: {summary['total_questions']}")
         print(f"  Total Marking Items: {summary['total_marking_items']}")
         print(f"  Total Marks: {summary['total_marks']}")
-        print(f"  Required Files: {', '.join(summary['required_files'])}")
+        print(f"  Required Submission Files: {', '.join(summary['required_submission_files'])}")
+        if summary.get("required_autograder_files"):
+            print(f"  Required Autograder Files: {', '.join(summary['required_autograder_files'])}")
 
         output_dir = path.parent if str(path.parent) != "" else Path(".")
         generator = ag.AutograderGen(config, original_config_dict, base_dir=path.parent)

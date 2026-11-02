@@ -11,7 +11,7 @@ CONFIG_FOR_TEMPLATES = {
     "version": __version__,
     "language": "python",
     "setup_commands": ["pip install numpy pandas matplotlib"],
-    "files_necessary": ["solution.py", "math_functions.py"],
+    "required_submission_files": ["solution.py", "math_functions.py"],
     "questions": [
         {
             "name": "Question 1",
@@ -61,7 +61,7 @@ def test_run_autograder_copies_files(temp_output_dir):
         with z.open("run_autograder") as f:
             content = f.read().decode()
             assert "Copying required submission files to source directory" in content
-            for fname in CONFIG_FOR_TEMPLATES["files_necessary"]:
+            for fname in CONFIG_FOR_TEMPLATES["required_submission_files"]:
                 assert fname in content
 
 
@@ -96,7 +96,7 @@ def test_program_output_test_template(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -140,7 +140,7 @@ def test_function_test_template_expected_actual_output(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Math Test",
@@ -197,7 +197,7 @@ def test_run_autograder_logs_checking_required_files(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Output Test",
@@ -228,7 +228,7 @@ def test_java_remove_package_template(tmp_path):
         "version": __version__,
         "language": "java",
         "remove_use_of_java_package": True,
-        "files_necessary": ["Solution.java"],
+        "required_submission_files": ["Solution.java"],
         "questions": [
             {
                 "name": "Java Test",
@@ -265,7 +265,7 @@ def test_java_remove_package_execution(tmp_path):
         "version": __version__,
         "language": "java",
         "remove_use_of_java_package": True,
-        "files_necessary": ["Solution.java"],
+        "required_submission_files": ["Solution.java"],
         "questions": [
             {
                 "name": "Java Test",
@@ -303,7 +303,7 @@ def test_float_comparison_tolerance_non_strict(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Float Question",
@@ -342,7 +342,7 @@ def test_float_comparison_strict_fails(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Float Question",
@@ -424,7 +424,7 @@ def test_run_autograder_contains_hidden_marking_items_info(temp_output_dir):
     cfg_data = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Question 1",
@@ -468,7 +468,7 @@ def test_run_autograder_found_file_penalties_message(temp_output_dir):
     cfg_data = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "strict_file_location": False,
         "wrong_file_location_deduction": 0.5,
         "questions": [
@@ -495,7 +495,7 @@ def test_function_return_test_and_signature_test_template_content(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Functions Test",
@@ -547,7 +547,7 @@ def test_function_output_test_template_content(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "files_necessary": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Functions Output Test",
@@ -590,7 +590,7 @@ def test_function_multi_test_case_output_execution(tmp_path):
     config_dict = {
         "version": __version__,
         "language": "python",
-        "required_files": ["solution.py"],
+        "required_submission_files": ["solution.py"],
         "questions": [
             {
                 "name": "Multi Case Test",

@@ -114,10 +114,7 @@ class MarkingItem(BaseModel):
             and "time_limit" in self.model_fields_set
         ):
             raise ValueError(f"time_limit is not allowed for type '{self.type}'")
-        if (
-            self.type in ("function_return_test", "function_output_test")
-            and not self.function_name
-        ):
+        if self.type in ("function_return_test", "function_output_test") and not self.function_name:
             raise ValueError(f"function_name is required for {self.type}")
         if (
             self.type
@@ -246,7 +243,12 @@ class Config(BaseModel):
         ),
     )
     setup_commands: List[str] = Field(default_factory=list, title="Setup Commands")
-    required_files: List[str] = Field(default_factory=list, title="Required Files")
+    required_submission_files: List[str] = Field(
+        default_factory=list, title="Required Submission Files"
+    )
+    required_autograder_files: List[str] = Field(
+        default_factory=list, title="Required Autograder Files"
+    )
     questions: List[Question] = Field(min_length=1, title="Questions")
 
     @field_validator("excluded_student_ids", mode="before")
@@ -267,29 +269,6 @@ class Config(BaseModel):
             raise ValueError("wrong_file_location_deduction must be between 0.0 and 1.0")
         return v
 
-    @model_validator(mode="before")
-    @classmethod
-    def handle_required_files_backwards_compat(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            if "required_files" not in data or not data["required_files"]:
-                if "src_files" in data and data["src_files"]:
-                    data["required_files"] = data["src_files"]
-                elif "files_necessary" in data and data["files_necessary"]:
-                    data["required_files"] = data["files_necessary"]
-            if "src_files" not in data and "required_files" in data:
-                data["src_files"] = data["required_files"]
-            if "files_necessary" not in data and "required_files" in data:
-                data["files_necessary"] = data["required_files"]
-        return data
-
-    @property
-    def files_necessary(self) -> List[str]:
-        return self.required_files
-
-    @property
-    def src_files(self) -> List[str]:
-        return self.required_files
-
     @field_validator("language")
     @classmethod
     def check_language(cls, v: str) -> str:
@@ -303,9 +282,9 @@ class Config(BaseModel):
         for i, q in enumerate(self.questions):
             for j, item in enumerate(q.marking_items):
                 target = item.target_file
-                if target and target not in self.required_files:
+                if target and target not in self.required_submission_files:
                     raise ValueError(
-                        f"Question '{q.name}', Item {j+1}: Target file '{target}' is not listed in 'required_files'"
+                        f"Question '{q.name}', Item {j+1}: Target file '{target}' is not listed in 'required_submission_files'"
                     )
         return self
 
@@ -339,9 +318,8 @@ class Config(BaseModel):
             "total_questions": len(self.questions),
             "total_marking_items": total_items,
             "total_marks": total_marks,
-            "required_files": self.required_files,
-            "src_files": self.required_files,
-            "files_necessary": self.required_files,
+            "required_submission_files": self.required_submission_files,
+            "required_autograder_files": self.required_autograder_files,
             "visibility_counts": visibility_counts,
             "excluded_student_ids": self.excluded_student_ids,
         }
@@ -401,11 +379,12 @@ class Config(BaseModel):
         dump["setup_commands"] = [
             cmd.strip() for cmd in dump.get("setup_commands", []) if cmd and cmd.strip()
         ]
-        dump["required_files"] = [
-            f.strip() for f in dump.get("required_files", []) if f and f.strip()
+        dump["required_submission_files"] = [
+            f.strip() for f in dump.get("required_submission_files", []) if f and f.strip()
         ]
-        dump["src_files"] = dump["required_files"]
-        dump["files_necessary"] = dump["required_files"]
+        dump["required_autograder_files"] = [
+            f.strip() for f in dump.get("required_autograder_files", []) if f and f.strip()
+        ]
         return dump
 
 

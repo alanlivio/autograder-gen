@@ -11,7 +11,7 @@ def test_language_validation():
         {
             "version": __version__,
             "language": "python",
-            "files_necessary": ["t.py"],
+            "required_submission_files": ["t.py"],
             "questions": [
                 {
                     "name": "Q1",
@@ -26,7 +26,7 @@ def test_language_validation():
         {
             "version": __version__,
             "language": "java",
-            "files_necessary": ["t.py"],
+            "required_submission_files": ["t.py"],
             "questions": [
                 {
                     "name": "Q1",
@@ -44,7 +44,7 @@ def test_language_validation():
             {
                 "version": __version__,
                 "language": "r",
-                "files_necessary": ["t.py"],
+                "required_submission_files": ["t.py"],
                 "questions": [
                     {
                         "name": "Q1",

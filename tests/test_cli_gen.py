@@ -11,7 +11,7 @@ from autograder_gen.version import __version__
 SAMPLE_CONFIG = {
     "version": __version__,
     "language": "python",
-    "files_necessary": ["solution.py"],
+    "required_submission_files": ["solution.py"],
     "questions": [
         {
             "name": "Q1",
@@ -32,7 +32,7 @@ UNSUPPORTED_LANG_CONFIG = {
     "version": __version__,
     "language": "brainfuck",
     "global_time_limit": 300,
-    "files_necessary": ["solution.bf"],
+    "required_submission_files": ["solution.bf"],
     "questions": [],
 }
 
@@ -380,7 +380,7 @@ def test_batch_gen_execution(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = f"""version: '{__version__}'
 language: python
-required_files:
+required_submission_files:
   - test.py
 questions:
   - name: Q1
@@ -413,7 +413,7 @@ def test_batch_gen_with_description(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_content = f"""version: '{__version__}'
 language: python
-required_files:
+required_submission_files:
   - test.py
 questions:
   - name: Q1
