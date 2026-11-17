@@ -627,3 +627,69 @@ def test_function_multi_test_case_output_execution(tmp_path):
     assert "add(1, 2)" in test_out
     assert "add(10, 20)" in test_out
     assert "30" in test_out
+
+
+def test_show_file_content_in_templates_and_execution(tmp_path):
+    (tmp_path / "input.txt").write_text("sample line 1\nsample line 2\n", encoding="utf-8")
+    config_dict = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "required_autograder_files": ["input.txt"],
+        "questions": [
+            {
+                "name": "File Content Question",
+                "marking_items": [
+                    {
+                        "name": "Program Output With File",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "program_output_test",
+                        "show_file_content": "input.txt",
+                        "expected_output": "sample line 1",
+                    },
+                    {
+                        "name": "Function Return With File",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "function_return_test",
+                        "function_name": "first_line",
+                        "show_file_content": "input.txt",
+                        "test_cases": [{"args": ["input.txt"], "expected": "sample line 1"}],
+                    },
+                    {
+                        "name": "Function Output With File",
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "function_output_test",
+                        "function_name": "print_first_line",
+                        "show_file_content": "input.txt",
+                        "test_cases": [{"args": ["input.txt"], "expected": "sample line 1"}],
+                    },
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(yaml.dump(config_dict), encoding="utf-8")
+
+    sub_dir = tmp_path / "submission"
+    sub_dir.mkdir()
+    (sub_dir / "solution.py").write_text(
+        "def first_line(path):\n"
+        "    with open(path, encoding='utf-8') as f:\n"
+        "        return f.readline().strip()\n\n"
+        "def print_first_line(path):\n"
+        "    print(first_line(path))\n\n"
+        "if __name__ == '__main__':\n"
+        "    print(first_line('input.txt'))\n",
+        encoding="utf-8",
+    )
+
+    runner = ag.AutograderRun(cfg_file, save_log=False)
+    results = runner.run_autograder_for_submission(sub_dir)
+    assert len(results["tests"]) == 3
+    for t in results["tests"]:
+        assert t["score"] == 5
+        assert "### INFO: input.txt content:" in t["output"]
+        assert "sample line 1" in t["output"]

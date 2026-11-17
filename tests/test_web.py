@@ -380,3 +380,73 @@ def test_default_runtime_alerts_in_pages(client):
     assert "java" in ag.DEFAULT_LANGUAGE_RUNTIMES
     assert isinstance(ag.DEFAULT_RUNTIME_SUMMARY, str)
     assert isinstance(ag.DEFAULT_RUNTIME_TIP, str)
+
+
+def test_api_normalize_and_lint_routes(client):
+    assert client.post("/api/normalize", json={}).status_code == 400
+    assert client.post("/api/lint", json={}).status_code == 400
+
+    config = {
+        "version": __version__,
+        "language": "python",
+        "setup_commands": ["  pip install requests  ", ""],
+        "required_submission_files": ["solution.py", "  extra.py  ", ""],
+        "required_autograder_files": ["  input.txt  ", ""],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "name": "Check",
+                        "target_file": "solution.py",
+                        "total_mark": 10.0,
+                        "type": "program_output_test",
+                        "expected_output": "ok",
+                    }
+                ],
+            }
+        ],
+    }
+    norm_resp = client.post("/api/normalize", json=config)
+    assert norm_resp.status_code == 200
+    norm_data = norm_resp.get_json()
+    assert norm_data["success"] is True
+    assert norm_data["normalized"]["setup_commands"] == ["pip install requests"]
+    assert norm_data["normalized"]["required_submission_files"] == ["solution.py", "extra.py"]
+    assert norm_data["normalized"]["required_autograder_files"] == ["input.txt"]
+
+    lint_resp = client.post("/api/lint", json=config)
+    assert lint_resp.status_code == 200
+    lint_data = lint_resp.get_json()
+    assert lint_data["success"] is True
+    assert lint_data["report"]["valid"] is True
+    assert lint_data["report"]["quality_score"] == 100
+
+
+def test_upload_config_error_branches(client):
+    import io
+
+    resp_missing = client.post("/upload-config", data={}, content_type="multipart/form-data")
+    assert resp_missing.status_code == 400
+
+    resp_empty_name = client.post(
+        "/upload-config",
+        data={"config_file": (io.BytesIO(b""), "")},
+        content_type="multipart/form-data",
+    )
+    assert resp_empty_name.status_code == 400
+
+    resp_wrong_ext = client.post(
+        "/upload-config",
+        data={"config_file": (io.BytesIO(b"{}"), "config.json")},
+        content_type="multipart/form-data",
+    )
+    assert resp_wrong_ext.status_code == 400
+
+    resp_invalid_cfg = client.post(
+        "/upload-config",
+        data={"config_file": (io.BytesIO(b"language: python\n"), "config.yaml")},
+        content_type="multipart/form-data",
+    )
+    assert resp_invalid_cfg.status_code == 400
+    assert "validation_errors" in resp_invalid_cfg.get_json()

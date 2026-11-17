@@ -517,3 +517,121 @@ def test_config_parse_rejects_yml(tmp_path):
     cfg_file.write_text(f"version: '{__version__}'\nlanguage: python\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Only YAML format \\(.yaml\\) is supported."):
         ag.Config.parse(cfg_file)
+
+
+def test_show_file_content_validation():
+    valid_autograder = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "required_autograder_files": ["input.txt"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                        "show_file_content": "input.txt",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg = ag.Config.model_validate(valid_autograder)
+    assert cfg.questions[0].marking_items[0].show_file_content == "input.txt"
+
+    valid_submission = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py", "data.txt"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                        "show_file_content": "data.txt",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_sub = ag.Config.model_validate(valid_submission)
+    assert cfg_sub.questions[0].marking_items[0].show_file_content == "data.txt"
+
+    invalid_data = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                        "show_file_content": "unlisted.txt",
+                    }
+                ],
+            }
+        ],
+    }
+    with pytest.raises(ValidationError) as excinfo:
+        ag.Config.model_validate(invalid_data)
+    assert "show_file_content 'unlisted.txt' is not listed" in str(excinfo.value)
+
+
+def test_config_normalize_and_excluded_student_ids():
+    from autograder_gen.config import normalize_autograder_config
+
+    raw = {
+        "version": __version__,
+        "language": "python",
+        "setup_commands": ["  pip install numpy  ", "   ", ""],
+        "required_submission_files": ["solution.py", "  helper.py ", ""],
+        "required_autograder_files": ["  input.txt  ", "  "],
+        "excluded_student_ids": 987654,
+        "questions": [
+            {
+                "name": "Q1",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                    }
+                ],
+            }
+        ],
+    }
+    cfg_single = ag.Config.model_validate(raw)
+    assert cfg_single.excluded_student_ids == ["987654"]
+
+    cfg_none = ag.Config.model_validate({**raw, "excluded_student_ids": None})
+    assert cfg_none.excluded_student_ids == []
+
+    cfg_tuple = ag.Config.model_validate({**raw, "excluded_student_ids": (111, "222")})
+    assert cfg_tuple.excluded_student_ids == ["111", "222"]
+
+    norm = normalize_autograder_config(raw)
+    assert norm["setup_commands"] == ["pip install numpy"]
+    assert norm["required_submission_files"] == ["solution.py", "helper.py"]
+    assert norm["required_autograder_files"] == ["input.txt"]
+
+
+def test_config_parse_missing_and_invalid_yaml(tmp_path: Path):
+    with pytest.raises(FileNotFoundError):
+        ag.Config.parse(tmp_path / "does_not_exist.yaml")
+
+    bad_yaml = tmp_path / "bad.yaml"
+    bad_yaml.write_text("questions: [unclosed", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid format in YAML configuration file"):
+        ag.Config.parse(bad_yaml)
+
+    fallback_yaml = ag.Config.get_example_config_yaml("unknown_example_key")
+    assert "language: python" in fallback_yaml

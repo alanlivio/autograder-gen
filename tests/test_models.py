@@ -286,3 +286,51 @@ def test_marking_item_function_types_and_signature_test():
                 type=legacy_type,
                 function_name="calc",
             )
+
+
+def test_validator_custom_warnings_and_errors(tmp_path):
+    validator = ag.Validator()
+
+    non_dict_file = tmp_path / "list.yaml"
+    non_dict_file.write_text("- item1\n- item2\n", encoding="utf-8")
+    assert validator.validate_from_file(str(non_dict_file)) is False
+    assert any("top-level dictionary" in err for err in validator.get_errors())
+
+    assert validator.validate_from_file(str(tmp_path / "missing.yaml")) is False
+    assert any("Error reading file" in err for err in validator.get_errors())
+
+    zero_marks_and_dup_questions = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "Duplicate Q",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 0,
+                        "type": "function_return_test",
+                        "function_name": "add",
+                        "test_cases": [],
+                    }
+                ],
+            },
+            {
+                "name": "Duplicate Q",
+                "marking_items": [
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 0,
+                        "type": "function_signature_test",
+                        "function_name": "",
+                    }
+                ],
+            },
+        ],
+    }
+    assert validator.validate_json(zero_marks_and_dup_questions) is False
+    assert any("missing function_name" in err for err in validator.get_errors())
+    assert any("Total marks for all questions is 0" in w for w in validator.get_warnings())
+    assert any("Duplicate question names found" in w for w in validator.get_warnings())
+    assert any("no test_cases defined" in w for w in validator.get_warnings())

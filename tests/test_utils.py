@@ -282,12 +282,16 @@ def test_modular_utils_submission_utilities(tmp_path):
     target.write_text("x = 1\n", encoding="utf-8")
 
     wrong_set = set()
-    found = resolve_target(tmp_path, "mysolution.py", strict_file_location=False, wrong_location_files=wrong_set)
+    found = resolve_target(
+        tmp_path, "mysolution.py", strict_file_location=False, wrong_location_files=wrong_set
+    )
     assert found == target
     assert "mysolution.py" in wrong_set
 
     # Test apply_wrong_location_deduction
-    awarded = apply_wrong_location_deduction("mysolution.py", total_mark=10.0, deduction_rate=0.2, wrong_location_files=wrong_set)
+    awarded = apply_wrong_location_deduction(
+        "mysolution.py", total_mark=10.0, deduction_rate=0.2, wrong_location_files=wrong_set
+    )
     assert awarded == 8.0
 
 
@@ -318,7 +322,9 @@ def test_modular_utils_python_utilities(tmp_path):
         call_function_with_timeout(slow, [], {}, timeout_seconds=0.05)
 
     # Test signature check success
-    check_function_signature(func, "compute", expected_parameters="a: int, b: int = 10", expected_return_type="int")
+    check_function_signature(
+        func, "compute", expected_parameters="a: int, b: int = 10", expected_return_type="int"
+    )
 
     # Test signature check failure parameter count
     with pytest.raises(AssertionError) as exc_param:
@@ -327,7 +333,9 @@ def test_modular_utils_python_utilities(tmp_path):
 
     # Test signature check failure return type
     with pytest.raises(AssertionError) as exc_ret:
-        check_function_signature(func, "compute", expected_parameters="a: int, b: int = 10", expected_return_type="str")
+        check_function_signature(
+            func, "compute", expected_parameters="a: int, b: int = 10", expected_return_type="str"
+        )
     assert "expected 'str'" in str(exc_ret.value)
 
 
@@ -377,9 +385,7 @@ def test_format_function_call_and_student_messages():
         == "countPeaks({{1, 2, 1}, {2, 5, 2}, {1, 2, 1}})"
     )
     assert (
-        format_function_call(
-            "average_grades", ["{{51, 83, 28}, {0, 38, 95}}", "{30, 40, 30}"]
-        )
+        format_function_call("average_grades", ["{{51, 83, 28}, {0, 38, 95}}", "{30, 40, 30}"])
         == "average_grades({{51, 83, 28}, {0, 38, 95}}, {30, 40, 30})"
     )
 
@@ -389,7 +395,10 @@ def test_format_function_call_and_student_messages():
 
     # Python keyword arguments and lists
     assert format_function_call("add", [1, 2]) == "add(1, 2)"
-    assert format_function_call("filter_items", [[1, 2, 3]], {"reverse": True}) == "filter_items([1, 2, 3], reverse=True)"
+    assert (
+        format_function_call("filter_items", [[1, 2, 3]], {"reverse": True})
+        == "filter_items([1, 2, 3], reverse=True)"
+    )
 
 
 def test_call_function_output_with_timeout():
@@ -412,7 +421,9 @@ def test_signature_student_messages_and_java_signature_check(tmp_path):
         == "[CORRECT_ANSWER] Function 'calc' signature is correct"
     )
     assert (
-        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(function_name="calc", reason="expected 2 parameters")
+        StudentMessage.WRONG_FUNCTION_SIGNATURE.format(
+            function_name="calc", reason="expected 2 parameters"
+        )
         == "[WRONG_ANSWER] Function 'calc' signature mismatch: expected 2 parameters."
     )
 
@@ -425,13 +436,16 @@ def test_signature_student_messages_and_java_signature_check(tmp_path):
         "}\n",
         encoding="utf-8",
     )
-    assert check_java_function_signature(
-        file_path=java_file,
-        function_name="add",
-        source_dir=tmp_path,
-        expected_parameters="int a, int b",
-        expected_return_type="int",
-    ) is True
+    assert (
+        check_java_function_signature(
+            file_path=java_file,
+            function_name="add",
+            source_dir=tmp_path,
+            expected_parameters="int a, int b",
+            expected_return_type="int",
+        )
+        is True
+    )
 
     with pytest.raises(AssertionError) as exc_missing:
         check_java_function_signature(
@@ -536,5 +550,94 @@ def test_comparison_assertion_helpers(tmp_path):
         assert_function_output_matches("bad", "result", "my_func")
 
 
+def test_format_file_content_helper(tmp_path):
+    from autograder_gen.utils_submission import format_file_content
+
+    short_file = tmp_path / "short.txt"
+    short_file.write_text("line 1\nline 2\nline 3\n", encoding="utf-8")
+    res_short = format_file_content("short.txt", source_dir=tmp_path)
+    assert "### INFO: short.txt content:" in res_short
+    assert "line 1\nline 2\nline 3" in res_short
+    assert "truncated" not in res_short
+
+    long_file = tmp_path / "long.txt"
+    long_file.write_text("\n".join(f"row {i}" for i in range(1, 26)) + "\n", encoding="utf-8")
+    res_long = format_file_content("long.txt", source_dir=tmp_path, max_lines=20)
+    assert "### INFO: long.txt content:" in res_long
+    assert "row 20" in res_long
+    assert "row 21" not in res_long
+    assert "... (truncated, 25 lines total)" in res_long
+
+    res_missing = format_file_content("nonexistent_file.txt", source_dir=tmp_path)
+    assert "### INFO: nonexistent_file.txt content:" in res_missing
+    assert "[File not found]" in res_missing
 
 
+def test_python_signature_and_import_edge_cases(tmp_path):
+    from autograder_gen.utils_python import (
+        assert_python_function_signature,
+        import_function_from_file,
+    )
+
+    with pytest.raises(FileNotFoundError):
+        import_function_from_file(tmp_path / "missing.py", "fn")
+
+    bad_syntax = tmp_path / "bad_syntax.py"
+    bad_syntax.write_text("def broken(\n", encoding="utf-8")
+    with pytest.raises(SyntaxError):
+        import_function_from_file(bad_syntax, "broken")
+
+    valid_mod = tmp_path / "valid_mod.py"
+    valid_mod.write_text("def existing():\n    return 1\n", encoding="utf-8")
+    with pytest.raises(ImportError, match="not found"):
+        import_function_from_file(valid_mod, "missing_fn")
+
+    with pytest.raises(AssertionError):
+        assert_python_function_signature("not_callable", "fn")
+
+    def fn_no_annotations(a, b=5):
+        return a + b
+
+    with pytest.raises(AssertionError, match="missing parameter 'c'"):
+        assert_python_function_signature(fn_no_annotations, "fn", expected_parameters="a, c")
+
+    with pytest.raises(AssertionError, match="should have type annotation 'int'"):
+        assert_python_function_signature(fn_no_annotations, "fn", expected_parameters="a: int, b=5")
+
+    with pytest.raises(AssertionError, match="should have default value"):
+        assert_python_function_signature(fn_no_annotations, "fn", expected_parameters="a=1, b=5")
+
+    with pytest.raises(AssertionError, match="has default '5'"):
+        assert_python_function_signature(fn_no_annotations, "fn", expected_parameters="a, b=99")
+
+    with pytest.raises(AssertionError, match="should have return type annotation 'int'"):
+        assert_python_function_signature(
+            fn_no_annotations, "fn", expected_parameters="a, b=5", expected_return_type="int"
+        )
+
+
+def test_infer_java_type_and_literals():
+    from autograder_gen.utils_java import get_java_literal_str, infer_java_type
+
+    assert get_java_literal_str("True") == "true"
+    assert get_java_literal_str("False") == "false"
+    assert get_java_literal_str("None") == "null"
+    assert get_java_literal_str("42") == "42"
+    assert get_java_literal_str("3.14") == "3.14"
+    assert get_java_literal_str('hello "world"') == '"hello \\"world\\""'
+
+    assert infer_java_type(True) == "boolean"
+    assert infer_java_type("false") == "boolean"
+    assert infer_java_type(42) == "int"
+    assert infer_java_type(3000000000) == "long"
+    assert infer_java_type(3.14) == "double"
+    assert infer_java_type([[1, 2], [3, 4]]) == "int[][]"
+    assert infer_java_type([[1.5, 2.0]]) == "double[][]"
+    assert infer_java_type(["a", "b"], desc="return an ArrayList") == "java.util.ArrayList<String>"
+    assert infer_java_type(["a", "b"], desc="return an array") == "String[]"
+    assert infer_java_type([1, 2, 3], desc="use ArrayList") == "java.util.ArrayList<Integer>"
+    assert infer_java_type([1.2, 3.4], desc="use ArrayList") == "java.util.ArrayList<Double>"
+    assert infer_java_type("{{1, 2}, {3, 4}}") == "int[][]"
+    assert infer_java_type("{1, 2, 3}") == "int[]"
+    assert infer_java_type("{1.5, 2.5}") == "double[]"
+    assert infer_java_type("hello") == "String"

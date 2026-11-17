@@ -336,3 +336,63 @@ def test_missing_required_autograder_file_raises(tmp_path):
         FileNotFoundError, match="Required autograder file not found: missing_input.txt"
     ):
         generator.generate(str(tmp_path))
+
+
+def test_verify_autograder_zip_and_git_stub_metadata(tmp_path):
+    from io import BytesIO
+
+    git_config_dict = {
+        "version": __version__,
+        "language": "python",
+        "required_submission_files": ["solution.py"],
+        "questions": [
+            {
+                "name": "123 Question!",
+                "marking_items": [
+                    {
+                        "total_mark": 5,
+                        "type": "github_submission_test",
+                    },
+                    {
+                        "target_file": "solution.py",
+                        "total_mark": 5,
+                        "type": "program_output_test",
+                        "expected_output": "ok",
+                    },
+                ],
+            }
+        ],
+    }
+    config = ag.Config.model_validate(git_config_dict)
+    gen = ag.AutograderGen(config, git_config_dict)
+
+    assert gen._sanitize_filename("123 Question!") == "question_123_question"
+    assert gen._sanitize_filename("!!!") == "question_"
+
+    no_zip_res = gen.verify_autograder_zip(None)
+    assert no_zip_res["valid"] is False
+
+    corrupt_res = gen.verify_autograder_zip(b"not a zip")
+    assert corrupt_res["valid"] is False
+    assert any("Invalid ZIP archive format" in e for e in corrupt_res["errors"])
+
+    empty_zip_buf = BytesIO()
+    with zipfile.ZipFile(empty_zip_buf, "w") as zf:
+        zf.writestr("setup.sh", "#!/bin/bash\n")
+    empty_zip_buf.seek(0)
+    missing_runner_res = gen.verify_autograder_zip(empty_zip_buf)
+    assert missing_runner_res["valid"] is False
+    assert any(
+        "Missing required root script: run_autograder" in e for e in missing_runner_res["errors"]
+    )
+
+    for stub_buf, prefix in [
+        (gen.generate_correct_answer_zip(), ""),
+        (gen.generate_wrong_answer_zip(), ""),
+        (gen.generate_compiler_error_zip(), ""),
+        (gen.generate_wrong_file_location_zip(), "src/"),
+    ]:
+        with zipfile.ZipFile(stub_buf, "r") as zf:
+            meta_name = f"{prefix}submission_metadata.json"
+            assert meta_name in zf.namelist()
+            assert '"GitHub"' in zf.read(meta_name).decode("utf-8")
