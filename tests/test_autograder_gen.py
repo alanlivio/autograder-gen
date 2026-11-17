@@ -248,6 +248,7 @@ def test_get_file_extension():
 def test_is_supported_language_file():
     assert ag.is_supported_language_file("main.py", "python")
     assert ag.is_supported_language_file("Main.java", "java")
+    assert ag.is_supported_language_file("solution.m", "matlab")
     assert not ag.is_supported_language_file("main.cpp", "python")
     assert not ag.is_supported_language_file("main.py", "unknown")
 

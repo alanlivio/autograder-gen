@@ -164,6 +164,24 @@ def test_autograder_integration_java_scenarios(subdir, expected_score):
     run_autograder_scenario("java_simple", subdir, expected_score)
 
 
+@pytest.mark.skipif(
+    shutil.which("octave-cli") is None and shutil.which("octave") is None,
+    reason="octave is not installed",
+)
+@pytest.mark.parametrize(
+    "subdir, expected_score",
+    [
+        ("correct_answer", 10),
+        ("wrong_answer", 0),
+        ("compiler_error", 0),
+        ("missing_file", 0),
+        ("correct_answer_wrong_location", 10),
+    ],
+)
+def test_autograder_integration_matlab_scenarios(subdir, expected_score):
+    run_autograder_scenario("matlab_simple", subdir, expected_score)
+
+
 def test_autograder_integration_java_simple():
     base_dir = Path(__file__).parent.parent.parent
     example_dir = base_dir / "tests/examples/java_simple"

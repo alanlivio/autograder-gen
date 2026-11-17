@@ -70,16 +70,25 @@
                 timeout={{ item.time_limit }},
                 cwd=self.source_dir
             )
+{% elif config.language == 'matlab' %}
+            result = subprocess.run(
+                ['octave-cli', '--no-gui', '--quiet', str(file_path)],
+                input=expected_input,
+                capture_output=True,
+                text=True,
+                timeout={{ item.time_limit }},
+                cwd=self.source_dir
+            )
 {% endif %}
             if result.returncode != 0:
                 err = result.stderr.strip() if result.stderr else result.stdout.strip()
-                if "SyntaxError" in err or "IndentationError" in err:
+                if "SyntaxError" in err or "IndentationError" in err or "syntax error" in err.lower() or "parse error" in err.lower() or "invalid parameter list" in err.lower():
                     print(StudentMessage.COMPILING)
                 else:
                     print(StudentMessage.RUNNING)
                 if err:
                     print(err)
-                if "SyntaxError" in err or "IndentationError" in err:
+                if "SyntaxError" in err or "IndentationError" in err or "syntax error" in err.lower() or "parse error" in err.lower() or "invalid parameter list" in err.lower():
                     self.fail(StudentMessage.COMPILATION_ERROR)
                 else:
                     self.fail(StudentMessage.RUNTIME_ERROR)

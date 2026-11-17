@@ -51,6 +51,16 @@ elif command -v javac >/dev/null 2>&1; then
 else
     echo "[INFO] Environment: OpenJDK 25" | tee -a "$FILE_CHECK_LOG"
 fi
+{% elif config.language == 'matlab' %}
+if command -v octave-cli >/dev/null 2>&1; then
+    OCTAVE_VERSION=$(octave-cli --version 2>&1 | head -n 1)
+    echo "[INFO] Environment: $OCTAVE_VERSION" | tee -a "$FILE_CHECK_LOG"
+elif command -v octave >/dev/null 2>&1; then
+    OCTAVE_VERSION=$(octave --version 2>&1 | head -n 1)
+    echo "[INFO] Environment: $OCTAVE_VERSION" | tee -a "$FILE_CHECK_LOG"
+else
+    echo "[INFO] Environment: GNU Octave" | tee -a "$FILE_CHECK_LOG"
+fi
 {% endif %}
 echo "Copying required submission files to source directory..."
 

@@ -30,6 +30,14 @@
                 expected_parameters={{ item.expected_parameters | tojson if item.expected_parameters is defined and item.expected_parameters else 'None' }},
                 expected_return_type={{ item.expected_return_type | tojson if item.expected_return_type is defined and item.expected_return_type else 'None' }},
             )
+{% elif config.language == 'matlab' %}
+            print(StudentMessage.CHECKING_FUNCTION_SIGNATURE)
+            self.assert_matlab_function_signature(
+                target_file,
+                function_name,
+                expected_parameters={{ item.expected_parameters | tojson if item.expected_parameters is defined and item.expected_parameters else 'None' }},
+                expected_return_type={{ item.expected_return_type | tojson if item.expected_return_type is defined and item.expected_return_type else 'None' }},
+            )
 {% endif %}
             
             print(f"## Test Passed: {StudentMessage.CORRECT_FUNCTION_SIGNATURE.format(function_name=function_name)}")

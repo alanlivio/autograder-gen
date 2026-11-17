@@ -80,6 +80,11 @@ def test_get_example_config_yaml_java():
     assert "language: java" in yaml_str
 
 
+def test_get_example_config_yaml_matlab():
+    yaml_str = ag.Config.get_example_config_yaml("matlab_simple")
+    assert "language: matlab" in yaml_str
+
+
 def test_validator_and_utility_functions():
     data = {
         "version": __version__,

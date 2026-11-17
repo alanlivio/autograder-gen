@@ -52,6 +52,11 @@ EXAMPLES = [
         "title": "Java Assignment",
         "description": "Java grading configuration with compilation checks and JUnit/standard output tests.",
     },
+    {
+        "id": "matlab_simple",
+        "title": "MATLAB Assignment",
+        "description": "MATLAB grading configuration executed using GNU Octave.",
+    },
 ]
 
 

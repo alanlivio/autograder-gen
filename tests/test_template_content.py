@@ -693,3 +693,76 @@ def test_show_file_content_in_templates_and_execution(tmp_path):
         assert t["score"] == 5
         assert "### INFO: input.txt content:" in t["output"]
         assert "sample line 1" in t["output"]
+
+
+def test_matlab_setup_templates_and_execution(tmp_path):
+    config_dict = {
+        "version": __version__,
+        "language": "matlab",
+        "required_submission_files": ["solution.m"],
+        "questions": [
+            {
+                "name": "MATLAB Question",
+                "marking_items": [
+                    {
+                        "name": "Signature Check",
+                        "target_file": "solution.m",
+                        "total_mark": 5,
+                        "type": "function_signature_test",
+                        "function_name": "add",
+                        "expected_parameters": "a, b",
+                    },
+                    {
+                        "name": "Function Return",
+                        "target_file": "solution.m",
+                        "total_mark": 10,
+                        "type": "function_return_test",
+                        "function_name": "add",
+                        "test_cases": [
+                            {"args": [2, 3], "expected": "5"},
+                            {"args": [1.5, 2.5], "expected": "4"},
+                        ],
+                    },
+                    {
+                        "name": "Function Output",
+                        "target_file": "solution.m",
+                        "total_mark": 5,
+                        "type": "function_output_test",
+                        "function_name": "greet",
+                        "test_cases": [
+                            {"args": ["Octave"], "expected": "Hello Octave"},
+                        ],
+                    },
+                    {
+                        "name": "Program Output",
+                        "target_file": "solution.m",
+                        "total_mark": 10,
+                        "type": "program_output_test",
+                        "expected_input": "7",
+                        "expected_output": "Result: 14",
+                    },
+                ],
+            }
+        ],
+    }
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(yaml.dump(config_dict), encoding="utf-8")
+
+    config = ag.Config.model_validate(config_dict)
+    gen = ag.AutograderGen(config, config_dict, base_dir=tmp_path)
+    zip_path = gen.generate(str(tmp_path))
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        assert "utils_matlab.py" in z.namelist()
+        setup_sh = z.read("setup.sh").decode("utf-8")
+        assert "apt-get install -y octave" in setup_sh
+        q1_test = z.read("question_1_test.py").decode("utf-8")
+        assert "from utils_matlab import call_matlab_function" in q1_test
+
+    runner = ag.AutograderRun(cfg_file, save_log=False)
+    gen_res = runner.run_autograder_for_generated_submissions()
+    assert sum(t["score"] for t in gen_res["correct_answer"]["tests"]) == 30
+    assert sum(t["score"] for t in gen_res["wrong_answer"]["tests"]) == 0
+    assert sum(t["score"] for t in gen_res["compiler_error"]["tests"]) == 0
+    for t in gen_res["compiler_error"]["tests"]:
+        assert "[COMPILATION_ERROR]" in t["output"]

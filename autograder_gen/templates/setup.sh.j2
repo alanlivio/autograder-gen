@@ -13,6 +13,8 @@ pip3 install gradescope-utils
 apt-get install -y python3-dev
 {% elif config.language == 'java' %}
 apt-get install -y openjdk-25-jdk
+{% elif config.language == 'matlab' %}
+apt-get install -y octave
 {% endif %}
 
 {% if config.setup_commands %}

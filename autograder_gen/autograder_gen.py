@@ -25,6 +25,10 @@ from autograder_gen.utils_java import (
     generate_java_skeleton,
     java_compiler_error_content,
 )
+from autograder_gen.utils_matlab import (
+    generate_matlab_skeleton,
+    matlab_compiler_error_content,
+)
 
 
 class AutograderGen:
@@ -363,11 +367,15 @@ class AutograderGen:
                 return python_compiler_error_content(self.config, target_file)
             if language == "java":
                 return java_compiler_error_content(target_file)
+            if language == "matlab":
+                return matlab_compiler_error_content(target_file)
 
         if language == "python":
             return generate_python_skeleton(self.config, target_file, correct)
         if language == "java":
             return generate_java_skeleton(self.config, target_file, correct)
+        if language == "matlab":
+            return generate_matlab_skeleton(self.config, target_file, correct)
         return "# Skeleton for " + target_file
 
     def _generate_setup_sh(self):
@@ -409,8 +417,10 @@ class AutograderGen:
             helpers.append("utils_java.py")
         elif self.config.language == "python":
             helpers.append("utils_python.py")
+        elif self.config.language == "matlab":
+            helpers.append("utils_matlab.py")
         else:
-            helpers.extend(["utils_java.py", "utils_python.py"])
+            helpers.extend(["utils_java.py", "utils_python.py", "utils_matlab.py"])
 
         for helper_name in helpers:
             helper_src = Path(__file__).parent / helper_name
@@ -577,7 +587,7 @@ def get_file_extension(file_path: str) -> str:
 
 def is_supported_language_file(file_path: str, language: str) -> bool:
     extension = get_file_extension(file_path)
-    language_extensions = {"python": [".py"], "java": [".java"]}
+    language_extensions = {"python": [".py"], "java": [".java"], "matlab": [".m"]}
     return extension in language_extensions.get(language.lower(), [])
 
 

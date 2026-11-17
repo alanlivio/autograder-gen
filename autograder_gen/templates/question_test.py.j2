@@ -32,6 +32,8 @@ from utils_java import call_java_function, assert_java_function_signature, check
 
 {% elif config.language == 'python' %}
 from utils_python import call_function_with_timeout, call_function_output_with_timeout, call_python_function, call_python_function_output, import_function_from_file, assert_python_function_signature, check_function_signature
+{% elif config.language == 'matlab' %}
+from utils_matlab import call_matlab_function, assert_matlab_function_signature, check_matlab_function_signature
 {% endif %}
 
 
@@ -147,6 +149,35 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 
     def check_java_function_signature(self, file_name, function_name, expected_parameters=None, expected_return_type=None):
         return self.assert_java_function_signature(file_name, function_name, expected_parameters, expected_return_type)
+
+{% elif config.language == 'matlab' %}
+    def call_matlab_function(self, file_name, function_name, args, timeout_seconds, capture_output=False):
+        file_path = self.resolve_target(file_name)
+        if not file_path.exists():
+            raise AssertionError(StudentMessage.WRONG_FILE.format(file_name=file_name))
+        return call_matlab_function(
+            file_path,
+            function_name,
+            args,
+            timeout_seconds,
+            self.source_dir,
+            capture_output=capture_output,
+        )
+
+    def assert_matlab_function_signature(self, file_name, function_name, expected_parameters=None, expected_return_type=None):
+        file_path = self.resolve_target(file_name)
+        if not file_path.exists():
+            raise AssertionError(StudentMessage.WRONG_FILE.format(file_name=file_name))
+        return assert_matlab_function_signature(
+            file_path,
+            function_name,
+            self.source_dir,
+            expected_parameters=expected_parameters,
+            expected_return_type=expected_return_type,
+        )
+
+    def check_matlab_function_signature(self, file_name, function_name, expected_parameters=None, expected_return_type=None):
+        return self.assert_matlab_function_signature(file_name, function_name, expected_parameters, expected_return_type)
 
 {% endif %}
 

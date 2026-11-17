@@ -37,6 +37,25 @@ def test_language_validation():
             ],
         }
     )
+    ag.Config.model_validate(
+        {
+            "version": __version__,
+            "language": "matlab",
+            "required_submission_files": ["solution.m"],
+            "questions": [
+                {
+                    "name": "Q1",
+                    "marking_items": [
+                        {
+                            "target_file": "solution.m",
+                            "total_mark": 1,
+                            "type": "program_output_test",
+                        }
+                    ],
+                }
+            ],
+        }
+    )
 
     # Invalid language
     with pytest.raises(ValidationError) as excinfo:

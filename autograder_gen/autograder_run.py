@@ -872,6 +872,8 @@ class AutograderRun:
             lines.append("[INFO] Environment: Python 3.10")
         elif lang == "java":
             lines.append("[INFO] Environment: OpenJDK 25")
+        elif lang == "matlab":
+            lines.append("[INFO] Environment: GNU Octave")
         for req_file in self.config_obj.required_submission_files:
             lines.append(f"[INFO] Checking required file: {req_file}...")
             norm_req = req_file.lstrip("./")

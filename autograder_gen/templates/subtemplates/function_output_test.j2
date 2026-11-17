@@ -102,6 +102,40 @@
             self.fail(StudentMessage.RUNTIME_ERROR)
         {% endfor %}
         {% endif %}
+{% elif config.language == 'matlab' %}
+        evaluated_cases = []
+        {% if item.test_cases %}
+        {% for test_case in item.test_cases %}
+        {% if test_case.args %}
+        args = {{ test_case.args }}
+        {% else %}
+        args = []
+        {% endif %}
+        call_str = format_function_call(function_name, args)
+        try:
+            result = self.call_matlab_function(target_file, function_name, args, {{ item.time_limit }}, capture_output=True)
+            expected_out = normalize_output({{ test_case.expected | string | tojson }})
+            actual_out = normalize_output(str(result))
+            evaluated_cases.append((call_str, expected_out, actual_out))
+            if not compare_outputs(actual_out, expected_out, strict_float={{ 'True' if question.strict_float else 'False' }}):
+                print(StudentMessage.COMPARING_OUTPUT)
+                print(f"{StudentMessage.FUNCTION_CALL}\n{call_str}")
+                {% if item.show_file_content %}
+                print(format_file_content({{ item.show_file_content | tojson }}, self.source_dir))
+                {% endif %}
+                print(f"{StudentMessage.EXPECTED_OUTPUT}\n{expected_out}")
+                print(f"{StudentMessage.ACTUAL_OUTPUT}\n{actual_out}")
+                self.fail(StudentMessage.WRONG_ANSWER_FUNCTION_OUTPUT.format(function_name=function_name))
+        except AssertionError:
+            raise
+        except subprocess.TimeoutExpired:
+            self.fail(StudentMessage.TIME_LIMIT_EXCEEDED_FUNCTION.format(seconds={{ item.time_limit }}, function_name=function_name))
+        except Exception as e:
+            print(StudentMessage.RUNNING)
+            print(f"Error: {str(e)}")
+            self.fail(StudentMessage.RUNTIME_ERROR)
+        {% endfor %}
+        {% endif %}
 {% endif %}
         
         if evaluated_cases:

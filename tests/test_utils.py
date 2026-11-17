@@ -641,3 +641,58 @@ def test_infer_java_type_and_literals():
     assert infer_java_type("{1, 2, 3}") == "int[]"
     assert infer_java_type("{1.5, 2.5}") == "double[]"
     assert infer_java_type("hello") == "String"
+
+
+def test_matlab_utils_helpers_and_execution(tmp_path):
+    from autograder_gen.utils_matlab import (
+        assert_matlab_function_signature,
+        call_matlab_function,
+        check_matlab_function_signature,
+        format_matlab_arg,
+        get_matlab_literal_str,
+    )
+
+    assert format_matlab_arg(True) == "true"
+    assert format_matlab_arg(False) == "false"
+    assert format_matlab_arg(42) == "42"
+    assert format_matlab_arg([1, 2, 3]) == "[1, 2, 3]"
+    assert format_matlab_arg([[1, 2], [3, 4]]) == "[1, 2; 3, 4]"
+    assert format_matlab_arg("[1 2 3]") == "[1 2 3]"
+    assert format_matlab_arg("hello") == "'hello'"
+    assert get_matlab_literal_str("True") == "true"
+    assert get_matlab_literal_str("[1, 2, 3]") == "[1, 2, 3]"
+    assert get_matlab_literal_str("42") == "42"
+    assert get_matlab_literal_str("abc") == "'abc'"
+
+    m_file = tmp_path / "calc.m"
+    m_file.write_text(
+        "1;\n"
+        "function y = add_nums(a, b)\n"
+        "    y = a + b;\n"
+        "end\n"
+        "function show_msg(name)\n"
+        "    fprintf('Hi %s', name);\n"
+        "end\n",
+        encoding="utf-8",
+    )
+
+    assert check_matlab_function_signature(
+        m_file, "add_nums", tmp_path, expected_parameters="a, b", expected_return_type="double"
+    )
+
+    with pytest.raises(AssertionError, match="not found"):
+        assert_matlab_function_signature(m_file, "missing_fn", tmp_path)
+
+    with pytest.raises(AssertionError, match="expected 3"):
+        assert_matlab_function_signature(
+            m_file, "add_nums", tmp_path, expected_parameters="a, b, c"
+        )
+
+    with pytest.raises(AssertionError, match="missing parameter 'z'"):
+        assert_matlab_function_signature(m_file, "add_nums", tmp_path, expected_parameters="a, z")
+
+    res_ret = call_matlab_function(m_file, "add_nums", [10, 25], 10, tmp_path)
+    assert res_ret.strip() == "35"
+
+    res_out = call_matlab_function(m_file, "show_msg", ["Ada"], 10, tmp_path, capture_output=True)
+    assert res_out.strip() == "Hi Ada"

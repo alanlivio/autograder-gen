@@ -27,7 +27,9 @@ def load_example(example_name):
     return None
 
 
-@pytest.mark.parametrize("example_name", ["py_complete", "py_function", "py_simple", "java_simple"])
+@pytest.mark.parametrize(
+    "example_name", ["py_complete", "py_function", "py_simple", "java_simple", "matlab_simple"]
+)
 def test_web_api_validate_examples(client, example_name):
     config_data = load_example(example_name)
     if not config_data:
@@ -40,7 +42,9 @@ def test_web_api_validate_examples(client, example_name):
     assert data["valid"] is True, f"Validation failed for {example_name}: {data.get('errors')}"
 
 
-@pytest.mark.parametrize("example_name", ["py_complete", "py_function", "py_simple", "java_simple"])
+@pytest.mark.parametrize(
+    "example_name", ["py_complete", "py_function", "py_simple", "java_simple", "matlab_simple"]
+)
 def test_web_export_bundle_examples(client, example_name):
     config_data = load_example(example_name)
     if not config_data:

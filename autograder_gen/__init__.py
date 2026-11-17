@@ -46,6 +46,11 @@ from autograder_gen.utils_python import (
     call_function_with_timeout,
     call_function_output_with_timeout,
 )
+from autograder_gen.utils_matlab import (
+    call_matlab_function,
+    assert_matlab_function_signature,
+    check_matlab_function_signature,
+)
 
 __all__ = [
     "__version__",
@@ -65,6 +70,9 @@ __all__ = [
     "JAVA_RUNNER_CODE",
     "ensure_java_runner",
     "call_java_function",
+    "call_matlab_function",
+    "assert_matlab_function_signature",
+    "check_matlab_function_signature",
     "validate_file_path",
     "validate_directory_path",
     "create_directory",

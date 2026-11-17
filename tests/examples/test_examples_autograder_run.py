@@ -61,11 +61,22 @@ def run_autograder_sh_scenario(
         ("java_simple", "compiler_error", 0),
         ("java_simple", "missing_file", 0),
         ("java_simple", "correct_answer_wrong_location", 10),
+        ("matlab_simple", "correct_answer", 10),
+        ("matlab_simple", "wrong_answer", 0),
+        ("matlab_simple", "compiler_error", 0),
+        ("matlab_simple", "missing_file", 0),
+        ("matlab_simple", "correct_answer_wrong_location", 10),
     ],
 )
 def test_examples_run_autograder_sh(example_name, subdir, expected_score):
     if example_name == "java_simple" and shutil.which("javac") is None:
         pytest.skip("javac is not installed")
+    if (
+        example_name == "matlab_simple"
+        and shutil.which("octave-cli") is None
+        and shutil.which("octave") is None
+    ):
+        pytest.skip("octave is not installed")
     run_autograder_sh_scenario(example_name, subdir, expected_score)
 
 

@@ -204,12 +204,28 @@ DEFAULT_LANGUAGE_RUNTIMES: Dict[str, Dict[str, str]] = {
             "<strong>OpenJDK 25</strong> via <code>openjdk-25-jdk</code>."
         ),
     },
+    "matlab": {
+        "title": "Default Environment: MATLAB (GNU Octave)",
+        "name": "MATLAB (GNU Octave)",
+        "version": "GNU Octave",
+        "package": "octave",
+        "details": (
+            "Gradescope's default Ubuntu environment provisions GNU Octave via "
+            "octave to execute MATLAB (.m) scripts and functions. "
+            "Custom Octave packages can be specified in setup_commands."
+        ),
+        "html_details": (
+            "Gradescope's default Ubuntu environment provisions "
+            "<strong>GNU Octave</strong> via <code>octave</code> to execute MATLAB (<code>.m</code>) files."
+        ),
+    },
 }
 
 DEFAULT_RUNTIME_SUMMARY = (
     "Gradescope autograder containers run on Ubuntu (Ubuntu 22.04 LTS by default). "
     "By default, Python assessments run on system Python 3 (Python 3.10) with python3-dev "
-    "and gradescope-utils, and Java assessments run on OpenJDK 25 via openjdk-25-jdk. "
+    "and gradescope-utils, Java assessments run on OpenJDK 25 via openjdk-25-jdk, and "
+    "MATLAB assessments run on GNU Octave via octave. "
     "Custom versions can be configured via setup_commands."
 )
 
@@ -227,7 +243,7 @@ class Config(BaseModel):
         default="python",
         title="Language",
         description=DEFAULT_RUNTIME_SUMMARY,
-        json_schema_extra={"enum": ["python", "java"]},
+        json_schema_extra={"enum": ["python", "java", "matlab"]},
     )
     global_time_limit: int = Field(default=300, ge=1, title="Global Time Limit (ms)")
     strict_file_location: bool = Field(default=False, title="Strict File Location")
@@ -277,7 +293,7 @@ class Config(BaseModel):
     @field_validator("language")
     @classmethod
     def check_language(cls, v: str) -> str:
-        allowed = {"python", "java"}
+        allowed = {"python", "java", "matlab"}
         if v not in allowed:
             raise ValueError(f"language must be one of: {allowed}")
         return v
@@ -345,6 +361,7 @@ class Config(BaseModel):
             "py_function": "py_function",
             "py_complete": "py_complete",
             "java_simple": "java_simple",
+            "matlab_simple": "matlab_simple",
         }
         example_key = key_map.get(name.lower(), "py_simple")
 
