@@ -230,7 +230,7 @@ DEFAULT_RUNTIME_SUMMARY = (
 )
 
 DEFAULT_RUNTIME_TIP = (
-    "If you require a different Python or Java version (such as Python 3.11/3.12 or OpenJDK 17/21), "
+    "If you require a different Python, Java, or GNU Octave version or package (such as Python 3.11/3.12, OpenJDK 17/21, or Octave packages), "
     "add custom installation steps in the setup_commands list."
 )
 
@@ -374,6 +374,107 @@ class Config(BaseModel):
         if pkg_example_path.exists():
             with open(pkg_example_path, "r", encoding="utf-8") as f:
                 return f.read()
+
+        fallback_examples = {
+            "python": (
+                "version: '1.0'\n"
+                "language: python\n"
+                "required_submission_files:\n"
+                "- function_return.py\n"
+                "- program_output.py\n"
+                "questions:\n"
+                "- name: Function Return Test\n"
+                '  description: "Implement a function `add(a, b)` in `function_return.py` that returns the sum of two integers. \\n\\nExample:\\nInput: `add(1, 2)`\\nOutput: `3`"\n'
+                "  marking_items:\n"
+                "  - target_file: function_return.py\n"
+                "    total_mark: 5\n"
+                "    type: function_return_test\n"
+                "    function_name: add\n"
+                "    test_cases:\n"
+                "    - args:\n"
+                "      - 1\n"
+                "      - 2\n"
+                "      expected: '3'\n"
+                "    - args:\n"
+                "      - 5\n"
+                "      - 5\n"
+                "      expected: '10'\n"
+                "- name: Program Output Test\n"
+                '  description: "Write a script `program_output.py` that reads an integer from standard input and prints its square. \\n\\nExample:\\nInput: `4` on stdin\\nOutput: `16` on stdout"\n'
+                "  marking_items:\n"
+                "  - target_file: program_output.py\n"
+                "    total_mark: 5\n"
+                "    type: program_output_test\n"
+                "    expected_input: '4'\n"
+                "    expected_output: '16'\n"
+            ),
+            "java": (
+                "version: '1.0'\n"
+                "language: java\n"
+                "required_submission_files:\n"
+                "- FunctionReturn.java\n"
+                "- ProgramOutput.java\n"
+                "questions:\n"
+                "- name: Function Return Test\n"
+                '  description: "Implement a function `add(a, b)` in `FunctionReturn.java` that returns the sum of two doubles. \\n\\nExample:\\nInput: `add(1.0, 2.0)`\\nOutput: `3.0`"\n'
+                "  marking_items:\n"
+                "  - target_file: FunctionReturn.java\n"
+                "    total_mark: 5\n"
+                "    type: function_return_test\n"
+                "    function_name: add\n"
+                "    test_cases:\n"
+                "    - args:\n"
+                "      - 1.0\n"
+                "      - 2.0\n"
+                "      expected: '3.0'\n"
+                "    - args:\n"
+                "      - 5.0\n"
+                "      - 5.0\n"
+                "      expected: '10.0'\n"
+                "- name: Program Output Test\n"
+                '  description: "Write a program `ProgramOutput.java` that reads an integer from standard input and prints its square. \\n\\nExample:\\nInput: `4` on stdin\\nOutput: `16` on stdout"\n'
+                "  marking_items:\n"
+                "  - target_file: ProgramOutput.java\n"
+                "    total_mark: 5\n"
+                "    type: program_output_test\n"
+                "    expected_input: '4'\n"
+                "    expected_output: '16'\n"
+            ),
+            "matlab": (
+                "version: '1.0'\n"
+                "language: matlab\n"
+                "required_submission_files:\n"
+                "- function_return.m\n"
+                "- program_output.m\n"
+                "questions:\n"
+                "- name: Function Return Test\n"
+                '  description: "Implement a function `add(a, b)` in `function_return.m` that returns the sum of two numbers. \\n\\nExample:\\nInput: `add(1, 2)`\\nOutput: `3`"\n'
+                "  marking_items:\n"
+                "  - target_file: function_return.m\n"
+                "    total_mark: 5\n"
+                "    type: function_return_test\n"
+                "    function_name: add\n"
+                "    test_cases:\n"
+                "    - args:\n"
+                "      - 1\n"
+                "      - 2\n"
+                "      expected: '3'\n"
+                "    - args:\n"
+                "      - 5\n"
+                "      - 5\n"
+                "      expected: '10'\n"
+                "- name: Program Output Test\n"
+                '  description: "Write a script `program_output.m` that reads an integer from standard input and displays its square. \\n\\nExample:\\nInput: `4` on stdin\\nOutput: `16` on stdout"\n'
+                "  marking_items:\n"
+                "  - target_file: program_output.m\n"
+                "    total_mark: 5\n"
+                "    type: program_output_test\n"
+                "    expected_input: '4'\n"
+                "    expected_output: '16'\n"
+            ),
+        }
+        if example_key in fallback_examples:
+            return fallback_examples[example_key]
 
         raise FileNotFoundError(f"Example configuration file not found for example '{name}'")
 

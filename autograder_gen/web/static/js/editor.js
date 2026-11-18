@@ -122,13 +122,13 @@ function switchEditorMode(mode) {
     if (mode === 'form') {
         textContainer.classList.add('d-none');
         formContainer.classList.remove('d-none');
-        textBtn.className = 'btn btn-outline-primary mode-toggle-btn px-4';
-        formBtn.className = 'btn btn-primary mode-toggle-btn px-4';
+        textBtn.className = 'btn btn-outline-secondary mode-toggle-btn px-4';
+        formBtn.className = 'btn btn-secondary mode-toggle-btn px-4';
     } else {
         formContainer.classList.add('d-none');
         textContainer.classList.remove('d-none');
-        textBtn.className = 'btn btn-primary mode-toggle-btn px-4';
-        formBtn.className = 'btn btn-outline-primary mode-toggle-btn px-4';
+        textBtn.className = 'btn btn-secondary mode-toggle-btn px-4';
+        formBtn.className = 'btn btn-outline-secondary mode-toggle-btn px-4';
     }
 }
 
@@ -355,6 +355,25 @@ async function downloadExport(type) {
     }
 }
 
+function loadExampleByName(exampleName) {
+    fetch(`/api/example/${exampleName}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.config) {
+                if (editor) editor.setValue(data.config);
+                const yamlTextarea = document.getElementById('yaml-textarea');
+                if (yamlTextarea) {
+                    yamlTextarea.value = data.yaml || jsyaml.dump(data.config, { schema: jsyaml.DEFAULT_SCHEMA, noRefs: true, lineWidth: -1 });
+                }
+                updateYamlStats();
+                updateRuntimeAlert(data.config.language);
+                document.getElementById('export-section').classList.add('d-none');
+                showAlert(`Example '${exampleName}' loaded successfully.`, 'success');
+            }
+        })
+        .catch(err => console.error('Failed to load example:', err));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initEditor();
     const yamlTextarea = document.getElementById('yaml-textarea');
@@ -367,17 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const loadExample = urlParams.get('load_example');
     if (loadExample) {
-        fetch(`/api/example/${loadExample}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.config) {
-                    if (editor) editor.setValue(data.config);
-                    yamlTextarea.value = data.yaml || jsyaml.dump(data.config, { schema: jsyaml.DEFAULT_SCHEMA, noRefs: true, lineWidth: -1 });
-                    updateYamlStats();
-                    updateRuntimeAlert(data.config.language);
-                    showAlert(`Example '${loadExample}' loaded successfully.`, 'success');
-                }
-            })
-            .catch(err => console.error('Failed to load example:', err));
+        loadExampleByName(loadExample);
     }
 });

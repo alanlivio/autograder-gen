@@ -355,6 +355,7 @@ def test_default_runtime_alerts_in_pages(client):
     assert b"runtime-summary-data" in gen_resp.data
     assert b"Python 3.10" in gen_resp.data
     assert b"OpenJDK 25" in gen_resp.data
+    assert b"GNU Octave" in gen_resp.data
 
     docs_resp = client.get("/docs")
     assert docs_resp.status_code == 200
@@ -362,12 +363,15 @@ def test_default_runtime_alerts_in_pages(client):
     assert b"python3-dev" in docs_resp.data
     assert b"openjdk-25-jdk" in docs_resp.data
     assert b"OpenJDK 25" in docs_resp.data
+    assert b"GNU Octave" in docs_resp.data
+    assert b"octave" in docs_resp.data
 
     home_resp = client.get("/")
     assert home_resp.status_code == 200
     assert b"Default Execution Environments" in home_resp.data
     assert b"Python 3.10" in home_resp.data
     assert b"OpenJDK 25" in home_resp.data
+    assert b"GNU Octave" in home_resp.data
 
     schema_resp = client.get("/api/schema")
     assert schema_resp.status_code == 200
@@ -376,9 +380,11 @@ def test_default_runtime_alerts_in_pages(client):
     assert "Python 3" in lang_desc
     assert "OpenJDK 25" in lang_desc
     assert "openjdk-25-jdk" in lang_desc
+    assert "GNU Octave" in lang_desc
 
     assert "python" in ag.DEFAULT_LANGUAGE_RUNTIMES
     assert "java" in ag.DEFAULT_LANGUAGE_RUNTIMES
+    assert "matlab" in ag.DEFAULT_LANGUAGE_RUNTIMES
     assert isinstance(ag.DEFAULT_RUNTIME_SUMMARY, str)
     assert isinstance(ag.DEFAULT_RUNTIME_TIP, str)
 
