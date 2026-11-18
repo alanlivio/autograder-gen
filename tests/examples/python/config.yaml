@@ -1,0 +1,31 @@
+version: '1.0'
+language: python
+required_submission_files:
+- function_return.py
+- program_output.py
+questions:
+- name: Function Return Test
+  description: "Implement a function `add(a, b)` in `function_return.py` that returns the sum of two integers. \n\nExample:\nInput: `add(1, 2)`\nOutput: `3`"
+  marking_items:
+  - target_file: function_return.py
+    total_mark: 5
+    type: function_return_test
+    function_name: add
+    test_cases:
+    - args:
+      - 1
+      - 2
+      expected: '3'
+    - args:
+      - 5
+      - 5
+      expected: '10'
+- name: Program Output Test
+  description: "Write a script `program_output.py` that reads an integer from standard input and prints its square. \n\nExample:\nInput: `4` on stdin\nOutput: `16` on stdout"
+  marking_items:
+  - target_file: program_output.py
+    total_mark: 5
+    type: program_output_test
+    expected_input: '4'
+    expected_output: '16'
+

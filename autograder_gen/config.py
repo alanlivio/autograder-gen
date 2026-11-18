@@ -354,16 +354,14 @@ class Config(BaseModel):
         }
 
     @staticmethod
-    def get_example_config_yaml(name: str = "py_simple") -> str:
+    def get_example_config_yaml(name: str = "python") -> str:
         """Return example YAML configuration content by example name."""
         key_map = {
-            "py_simple": "py_simple",
-            "py_function": "py_function",
-            "py_complete": "py_complete",
-            "java_simple": "java_simple",
-            "matlab_simple": "matlab_simple",
+            "python": "python",
+            "java": "java",
+            "matlab": "matlab",
         }
-        example_key = key_map.get(name.lower(), "py_simple")
+        example_key = key_map.get(name.lower(), "python")
 
         repo_example_path = (
             Path(__file__).parent.parent / "tests" / "examples" / example_key / "config.yaml"

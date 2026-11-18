@@ -71,17 +71,17 @@ def test_autograder_config_schema_full():
 
 
 def test_get_example_config_yaml_python():
-    yaml_str = ag.Config.get_example_config_yaml("py_simple")
+    yaml_str = ag.Config.get_example_config_yaml("python")
     assert "language: python" in yaml_str
 
 
 def test_get_example_config_yaml_java():
-    yaml_str = ag.Config.get_example_config_yaml("java_simple")
+    yaml_str = ag.Config.get_example_config_yaml("java")
     assert "language: java" in yaml_str
 
 
 def test_get_example_config_yaml_matlab():
-    yaml_str = ag.Config.get_example_config_yaml("matlab_simple")
+    yaml_str = ag.Config.get_example_config_yaml("matlab")
     assert "language: matlab" in yaml_str
 
 

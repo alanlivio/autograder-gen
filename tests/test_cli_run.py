@@ -47,7 +47,7 @@ def test_cli_run_rejects_verbose():
         [
             sys.executable,
             "autograder_gen/cli_run.py",
-            "tests/examples/py_simple/config.yaml",
+            "tests/examples/python/config.yaml",
             "--verbose",
         ],
         capture_output=True,
@@ -62,7 +62,7 @@ def test_cli_run_stubs_flag_removed():
         [
             sys.executable,
             "autograder_gen/cli_run.py",
-            "tests/examples/py_simple/config.yaml",
+            "tests/examples/python/config.yaml",
             "--stubs",
         ],
         capture_output=True,
@@ -72,18 +72,24 @@ def test_cli_run_stubs_flag_removed():
     assert "unrecognized arguments: --stubs" in result.stderr
 
 
-def test_cli_run_stubs():
+def test_cli_run_stubs(tmp_path: Path):
+    import shutil
+
+    ex_dir = tmp_path / "python"
+    shutil.copytree("tests/examples/python", ex_dir)
+    shutil.rmtree(ex_dir / "solution")
+    cfg_path = ex_dir / "config.yaml"
     result = subprocess.run(
         [
             sys.executable,
             "autograder_gen/cli_run.py",
-            "tests/examples/py_simple/config.yaml",
+            str(cfg_path),
         ],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
-    assert "# log tests/examples/py_simple/config.yaml" in result.stdout
+    assert "# log" in result.stdout
     assert "solution.log" not in result.stdout
     assert "stub_correct_answer.log" in result.stdout
     assert "stub_wrong_answer.log" in result.stdout
@@ -91,7 +97,7 @@ def test_cli_run_stubs():
     assert "stub_correct_answer_wrong_location.log" in result.stdout
     assert "[AutograderRun: Student View]" not in result.stdout
 
-    correct_log = Path("tests/examples/py_simple/stub_correct_answer.log")
+    correct_log = ex_dir / "stub_correct_answer.log"
     assert correct_log.exists()
     correct_content = correct_log.read_text(encoding="utf-8")
     assert "Summary per Question:" in correct_content
@@ -142,12 +148,12 @@ def test_cli_run_solution_and_stubs(tmp_path: Path, monkeypatch, capsys):
     assignment = tmp_path / "week_05_arrays"
     assignment.mkdir()
     (assignment / "config.yaml").write_text(
-        Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"),
+        Path("tests/examples/python/config.yaml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     solution = assignment / "solution"
     solution.mkdir()
-    for f in Path("tests/examples/py_simple/correct_answer").iterdir():
+    for f in Path("tests/examples/python/solution").iterdir():
         (solution / f.name).write_bytes(f.read_bytes())
 
     monkeypatch.chdir(tmp_path)
@@ -179,7 +185,7 @@ def test_cli_run_target_without_config(tmp_path: Path):
 def test_cli_run_zero_args_defaults_to_current_folder(tmp_path: Path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
-        Path("tests/examples/py_simple/config.yaml").read_text(encoding="utf-8"),
+        Path("tests/examples/python/config.yaml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)

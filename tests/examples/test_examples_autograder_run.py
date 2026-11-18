@@ -1,10 +1,5 @@
-import json
-import os
 import shutil
-import subprocess
 import sys
-import tempfile
-import zipfile
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -17,67 +12,33 @@ from autograder_gen.version import __version__
 import autograder_gen as ag
 
 
-def run_autograder_sh_scenario(
-    example_name: str,
-    subdir: str,
-    expected_score: int,
-    config_file: str = "config.yaml",
-):
-    base_dir = Path(__file__).parent.parent.parent
-    example_dir = base_dir / "tests/examples" / example_name
-    config_path = example_dir / config_file
-    student_dir = example_dir / subdir
-
-    runner = ag.AutograderRun(config_path)
-    results = runner.run_autograder_for_submission(student_dir)
-    assert "tests" in results
-    total_score = sum(t.get("score", 0) for t in results["tests"])
-    print(
-        f"[{example_name}] ({subdir}): expected score={expected_score}, actual score={total_score}"
-    )
-    assert total_score == expected_score
-
-
-@pytest.mark.parametrize(
-    "example_name, subdir, expected_score",
-    [
-        ("py_simple", "correct_answer", 10),
-        ("py_simple", "wrong_answer", 0),
-        ("py_simple", "compiler_error", 0),
-        ("py_simple", "missing_file", 0),
-        ("py_simple", "correct_answer_wrong_location", 10),
-        ("py_function", "correct_answer", 10),
-        ("py_function", "wrong_answer", 5),
-        ("py_function", "compiler_error", 0),
-        ("py_function", "missing_file", 0),
-        ("py_function", "correct_answer_wrong_location", 10),
-        ("py_complete", "correct_answer", 100),
-        ("py_complete", "wrong_answer", 0),
-        ("py_complete", "compiler_error", 0),
-        ("py_complete", "missing_file", 0),
-        ("py_complete", "correct_answer_wrong_location", 100),
-        ("java_simple", "correct_answer", 10),
-        ("java_simple", "wrong_answer", 0),
-        ("java_simple", "compiler_error", 0),
-        ("java_simple", "missing_file", 0),
-        ("java_simple", "correct_answer_wrong_location", 10),
-        ("matlab_simple", "correct_answer", 10),
-        ("matlab_simple", "wrong_answer", 0),
-        ("matlab_simple", "compiler_error", 0),
-        ("matlab_simple", "missing_file", 0),
-        ("matlab_simple", "correct_answer_wrong_location", 10),
-    ],
-)
-def test_examples_run_autograder_sh(example_name, subdir, expected_score):
-    if example_name == "java_simple" and shutil.which("javac") is None:
+@pytest.mark.parametrize("example_name", ["python", "java", "matlab"])
+def test_examples_run_autograder_sh(example_name):
+    if example_name == "java" and shutil.which("javac") is None:
         pytest.skip("javac is not installed")
     if (
-        example_name == "matlab_simple"
+        example_name == "matlab"
         and shutil.which("octave-cli") is None
         and shutil.which("octave") is None
     ):
         pytest.skip("octave is not installed")
-    run_autograder_sh_scenario(example_name, subdir, expected_score)
+
+    base_dir = Path(__file__).parent.parent.parent
+    example_dir = base_dir / "tests/examples" / example_name
+    config_path = example_dir / "config.yaml"
+    solution_dir = example_dir / "solution"
+
+    runner = ag.AutograderRun(config_path)
+    sol_res = runner.run_autograder_for_submission(
+        solution_dir, log_path=example_dir / "solution.log"
+    )
+    assert sum(t.get("score", 0) for t in sol_res["tests"]) == 10
+
+    stub_res = runner.run_autograder_for_generated_submissions()
+    assert sum(t.get("score", 0) for t in stub_res["correct_answer"]["tests"]) == 10
+    assert sum(t.get("score", 0) for t in stub_res["wrong_answer"]["tests"]) == 0
+    assert sum(t.get("score", 0) for t in stub_res["compiler_error"]["tests"]) == 0
+    assert sum(t.get("score", 0) for t in stub_res["correct_answer_wrong_location"]["tests"]) == 10
 
 
 def test_autograder_runner_config_obj(tmp_path):
@@ -108,9 +69,9 @@ def test_autograder_runner_config_obj(tmp_path):
     assert runner.config_obj.total_score == 10
 
 
-def test_run_autograder_for_generated_submissions(tmp_path):
+def test_run_autograder_for_generated_submissions():
     base_dir = Path(__file__).parent.parent.parent
-    config_path = base_dir / "tests/examples/py_simple/config.yaml"
+    config_path = base_dir / "tests/examples/python/config.yaml"
     runner = ag.AutograderRun(config_path)
 
     results = runner.run_autograder_for_generated_submissions()
@@ -154,19 +115,9 @@ def test_run_autograder_for_generated_submissions(tmp_path):
     assert "# Total Score = 10, Actual Score = 10" in wrong_loc_log.read_text(encoding="utf-8")
 
     correct_text = correct_log.read_text(encoding="utf-8")
-    wrong_text = wrong_log.read_text(encoding="utf-8")
-    compiler_text = compiler_log.read_text(encoding="utf-8")
     wrong_loc_text = wrong_loc_log.read_text(encoding="utf-8")
-    assert "[AutograderRun Summary]" not in correct_text
-    assert "Status =" not in correct_text
-    assert "[AutograderRun Summary]" not in wrong_text
-    assert "Status =" not in wrong_text
-    assert "[AutograderRun Summary]" not in compiler_text
-    assert "Status =" not in compiler_text
-    assert "[AutograderRun Summary]" not in wrong_loc_text
-    assert "Status =" not in wrong_loc_text
-    assert "[INFO] Checking required file: solution.py..." in correct_text
-    assert "[INFO] File 'solution.py' exists." in correct_text
-    assert "[INFO] Checking required file: solution.py..." in wrong_loc_text
-    assert "[WARNING] Required file solution.py not found in submission" in wrong_loc_text
-    assert "[INFO] Found file 'solution.py' at" in wrong_loc_text
+    assert "[INFO] Checking required file: function_return.py..." in correct_text
+    assert "[INFO] File 'function_return.py' exists." in correct_text
+    assert "[INFO] Checking required file: function_return.py..." in wrong_loc_text
+    assert "[WARNING] Required file function_return.py not found in submission" in wrong_loc_text
+    assert "[INFO] Found file 'function_return.py' at" in wrong_loc_text

@@ -209,7 +209,7 @@ def test_cli_run_solution_unrecognized():
         [
             sys.executable,
             "autograder_gen/cli_gen.py",
-            "tests/examples/py_simple/config.yaml",
+            "tests/examples/python/config.yaml",
             "--run-solution",
         ],
         capture_output=True,
@@ -224,7 +224,7 @@ def test_cli_run_stubs_unrecognized():
         [
             sys.executable,
             "autograder_gen/cli_gen.py",
-            "tests/examples/py_simple/config.yaml",
+            "tests/examples/python/config.yaml",
             "--run-stubs",
         ],
         capture_output=True,
@@ -239,7 +239,7 @@ def test_cli_verbose_unrecognized():
         [
             sys.executable,
             "autograder_gen/cli_gen.py",
-            "tests/examples/py_simple/config.yaml",
+            "tests/examples/python/config.yaml",
             "--verbose",
         ],
         capture_output=True,

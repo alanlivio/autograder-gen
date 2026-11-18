@@ -33,29 +33,19 @@ def inject_runtime_info():
 
 EXAMPLES = [
     {
-        "id": "py_simple",
-        "title": "Simple Calculator",
-        "description": "A lightweight setup that evaluates basic function creation and arithmetic operations with simple Python unit tests.",
+        "id": "python",
+        "title": "Python Assignment",
+        "description": "Python grading configuration with function return and standard output tests.",
     },
     {
-        "id": "py_function",
-        "title": "Python Functions",
-        "description": "Focuses on function definitions, arguments checking, and return types validation.",
-    },
-    {
-        "id": "py_complete",
-        "title": "Complete Python Suite",
-        "description": "Full assessment suite demonstrating multiple test types, standard input/output checks, and function unit tests.",
-    },
-    {
-        "id": "java_simple",
+        "id": "java",
         "title": "Java Assignment",
-        "description": "Java grading configuration with compilation checks and JUnit/standard output tests.",
+        "description": "Java grading configuration with compilation checks, function return, and standard output tests.",
     },
     {
-        "id": "matlab_simple",
+        "id": "matlab",
         "title": "MATLAB Assignment",
-        "description": "MATLAB grading configuration executed using GNU Octave.",
+        "description": "MATLAB grading configuration executed using GNU Octave with function return and standard output tests.",
     },
 ]
 

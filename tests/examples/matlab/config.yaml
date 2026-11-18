@@ -28,3 +28,4 @@ questions:
     type: program_output_test
     expected_input: '4'
     expected_output: '16'
+

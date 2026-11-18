@@ -1,0 +1,31 @@
+version: '1.0'
+language: java
+required_submission_files:
+- FunctionReturn.java
+- ProgramOutput.java
+questions:
+- name: Function Return Test
+  description: "Implement a function `add(a, b)` in `FunctionReturn.java` that returns the sum of two doubles. \n\nExample:\nInput: `add(1.0, 2.0)`\nOutput: `3.0`"
+  marking_items:
+  - target_file: FunctionReturn.java
+    total_mark: 5
+    type: function_return_test
+    function_name: add
+    test_cases:
+    - args:
+      - 1.0
+      - 2.0
+      expected: '3.0'
+    - args:
+      - 5.0
+      - 5.0
+      expected: '10.0'
+- name: Program Output Test
+  description: "Write a program `ProgramOutput.java` that reads an integer from standard input and prints its square. \n\nExample:\nInput: `4` on stdin\nOutput: `16` on stdout"
+  marking_items:
+  - target_file: ProgramOutput.java
+    total_mark: 5
+    type: program_output_test
+    expected_input: '4'
+    expected_output: '16'
+

@@ -44,7 +44,7 @@ def test_api_export_bundle_missing_data(client):
 
 @pytest.mark.parametrize(
     "template_name",
-    ["py_simple", "py_function", "py_complete", "java_simple", "matlab_simple"],
+    ["python", "java", "matlab"],
 )
 def test_web_app_import_and_export_all_templates(client, template_name):
     # 1. Fetch template via web API example endpoint (launch/import at start)
