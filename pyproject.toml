@@ -71,7 +71,6 @@ autograder_gen = ["templates/*", "templates/**/*"]
 version = { attr = "autograder_gen.version.__version__" }
 
 [tool.black]
-extend-exclude = '.*compiler_error.*|.*compilation_error.*'
 line-length = 100
 
 [tool.pytest.ini_options]

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-18
+
+### Added
+
+- Support for MATLAB (`.m`) assessments (`language: matlab`) executed using GNU Octave (`utils_matlab.py`), including `program_output_test`, `function_return_test`, `function_output_test`, `function_signature_test`, and automated stub generation.
+- `required_autograder_files` configuration property to bundle instructor-provided data and helper files into `autograder.zip`.
+- `show_file_content` option on marking items (`format_file_content`) to display the content of a specified file (capped at 20 lines) in student test output.
+- `git_submission_test` marking item type accepting either GitLab or GitHub repository submissions.
+
+### Changed
+
+- Renamed `required_files` configuration property to `required_submission_files`.
+- Updated `autograder-run` CLI to automatically evaluate the `solution/` folder and generated stub archives, and to default to the current folder when invoked without arguments.
+- Modularized runtime and documentation helpers into `utils_python.py`, `utils_java.py`, `utils_matlab.py`, `utils_submission.py`, `utils_description.py`, and `utils_readme.py`.
+- Consolidated example configurations under `tests/examples/` into `python`, `java`, and `matlab`, each containing `config.yaml` and a `solution/` directory.
+
 ## [0.2.0] - 2026-10-28
 
 ### Added
