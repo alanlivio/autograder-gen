@@ -58,6 +58,15 @@ class AutograderGen:
             trim_blocks=True,
             lstrip_blocks=True,
         )
+        self.jinja_env.filters["escape_fstring"] = (
+            lambda s: str(s)
+            .replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("{", "{{")
+            .replace("}", "}}")
+            .replace("\r", "\\r")
+            .replace("\n", "\\n")
+        )
         self.retrieve_student_id: bool = any(
             bool(getattr(q, "expected_output_script", None))
             or any(bool(getattr(item, "expected_output_script", None)) for item in q.marking_items)
@@ -68,7 +77,7 @@ class AutograderGen:
         self,
         output_dir: str,
         description: bool = False,
-        generate_description: bool | None = None,
+        generate_description: Optional[bool] = None,
     ) -> str:
         """Generate the autograder.zip file using Jinja templates."""
         if generate_description is not None:
@@ -458,12 +467,31 @@ class AutograderGen:
             if not attr.startswith("_") and not attr.startswith("model_"):
                 setattr(processed_question, attr, getattr(question, attr))
         processed_question.marking_items = []
+        used_test_names: set = set()
 
-        for item in question.marking_items:
+        for idx, item in enumerate(question.marking_items, 1):
             processed_item = SimpleNamespace()
             for attr in dir(item):
                 if not attr.startswith("_") and not attr.startswith("model_"):
                     setattr(processed_item, attr, getattr(item, attr))
+
+            raw_name = getattr(processed_item, "name", "")
+            if raw_name:
+                base_name = re.sub(r"[\(\)\[\]'\"`]", "", raw_name.lower())
+                base_name = re.sub(r"[^a-z0-9_]", "_", base_name)
+                if not base_name or not re.match(r"^[a-z0-9_]+$", base_name):
+                    base_name = f"item_{idx}"
+            else:
+                base_name = f"item_{idx}"
+            candidate = base_name
+            if candidate in used_test_names:
+                candidate = f"{base_name}_{idx}"
+                suffix = 2
+                while candidate in used_test_names:
+                    candidate = f"{base_name}_{idx}_{suffix}"
+                    suffix += 1
+            used_test_names.add(candidate)
+            processed_item._test_name = candidate
 
             if (
                 self.config.language == "python"

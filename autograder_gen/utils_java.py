@@ -150,7 +150,7 @@ public class JavaRunner {
 
     private static String unquote(String s) {
         s = s.trim();
-        if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) {
+        if (s.length() >= 2 && ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'")))) {
             return s.substring(1, s.length() - 1);
         }
         return s;
@@ -501,6 +501,25 @@ def infer_java_type(val, desc=""):
             return "String"
 
 
+def _java_wrong_return_line(ret_type: str, cases: list) -> str:
+    if ret_type == "void":
+        return '        System.out.print("wrong_output");'
+    if ret_type == "double":
+        return "        return -999999.0;"
+    if ret_type == "int":
+        return "        return -999999;"
+    if ret_type == "long":
+        return "        return -999999L;"
+    if ret_type == "boolean":
+        has_false = any(str(tc.get("expected", "")).strip().lower() == "false" for tc in cases)
+        return f"        return {'true' if has_false else 'false'};"
+    if ret_type.startswith("java.util.ArrayList<"):
+        return "        return new java.util.ArrayList<>();"
+    if ret_type.endswith("[]"):
+        return "        return null;"
+    return '        return "wrong_answer";'
+
+
 def java_compiler_error_content(target_file: str) -> str:
     class_name = Path(target_file).stem
     return f"public class {class_name} {{\n    public static void syntaxError() {{\n        return 0\n    }}\n}}\n"
@@ -544,24 +563,56 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
             for tc in getattr(item, "test_cases", []) or []:
                 cases.append(tc)
 
+        expected_params = ""
+        expected_return = ""
+        for item in func_items:
+            if getattr(item, "expected_parameters", "") and not expected_params:
+                expected_params = item.expected_parameters.strip()
+            if getattr(item, "expected_return_type", "") and not expected_return:
+                expected_return = item.expected_return_type.strip()
+
         max_args = 0
         for tc in cases:
             args_len = len(tc.get("args", []) or [])
             if args_len > max_args:
                 max_args = args_len
 
-        param_types = []
-        for i in range(max_args):
-            arg_vals = [tc.get("args", [])[i] for tc in cases if len(tc.get("args", []) or []) > i]
-            ptype = infer_java_type(arg_vals[0], desc_text) if arg_vals else "Object"
-            param_types.append(ptype)
+        if expected_params and not cases:
+            param_types = []
+            param_names = []
+            for idx_p, part in enumerate(
+                p.strip() for p in expected_params.split(",") if p.strip()
+            ):
+                if ":" in part:
+                    pname, ptype = part.split(":", 1)
+                    param_names.append(pname.strip() or chr(97 + idx_p))
+                    param_types.append(_normalize_java_type(ptype.split("=", 1)[0]))
+                else:
+                    tokens = part.split()
+                    if len(tokens) >= 2:
+                        param_types.append(_normalize_java_type(tokens[0]))
+                        param_names.append(tokens[1])
+                    else:
+                        param_types.append("Object")
+                        param_names.append(tokens[0])
+            max_args = len(param_types)
+        else:
+            param_types = []
+            for i in range(max_args):
+                arg_vals = [
+                    tc.get("args", [])[i] for tc in cases if len(tc.get("args", []) or []) > i
+                ]
+                ptype = infer_java_type(arg_vals[0], desc_text) if arg_vals else "Object"
+                param_types.append(ptype)
 
-        param_names = [chr(97 + i) for i in range(max_args)]
+            param_names = [chr(97 + i) for i in range(max_args)]
         param_str = ", ".join(f"{pt} {pn}" for pt, pn in zip(param_types, param_names))
 
         ret_type = "double"
         if any(getattr(item, "type", "") == "function_output_test" for item in func_items):
             ret_type = "void"
+        elif expected_return and not cases:
+            ret_type = _normalize_java_type(expected_return)
         elif cases:
             exp0 = str(cases[0].get("expected", ""))
             if "\n" in exp0:
@@ -600,7 +651,19 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
                     except ValueError:
                         ret_type = "String"
 
-        if func == "add" and max_args == 2:
+        if not correct and any(
+            getattr(item, "type", "") == "function_signature_test" for item in func_items
+        ):
+            bad_params = ", ".join(
+                [f"{pt} {pn}" for pt, pn in zip(param_types, param_names)] + ["int extraWrongParam"]
+            )
+            lines.append(f"    public static {ret_type} {func}({bad_params}) {{")
+            lines.append(_java_wrong_return_line(ret_type, cases))
+            lines.append("    }")
+            lines.append("")
+            continue
+
+        if func == "add" and max_args == 2 and not expected_return:
             lines.append(f"    public static double {func}(double a, double b) {{")
             if correct:
                 lines.append("        return a + b;")
@@ -623,8 +686,10 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
                             cond_parts.append(f"Math.abs({pn} - {float(arg_val)}) < 1e-4")
                         except Exception:
                             cond_parts.append(f"{pn} == {arg_val}")
-                    elif pt in ("int", "long"):
+                    elif pt == "int":
                         cond_parts.append(f"{pn} == {arg_val}")
+                    elif pt == "long":
+                        cond_parts.append(f"{pn} == {int(arg_val)}L")
                     elif pt == "boolean":
                         cond_parts.append(f"{pn} == {str(arg_val).lower()}")
                     elif pt == "String":
@@ -638,6 +703,19 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
                             raw = str(arg_val).strip().lstrip("[").rstrip("]").strip()
                             items = [x.strip().strip("'\"") for x in raw.split(",") if x.strip()]
                             items_code = ", ".join(json.dumps(x) for x in items)
+                        cond_parts.append(
+                            f"{pn} != null && {pn}.equals(new java.util.ArrayList<>(java.util.Arrays.asList({items_code})))"
+                        )
+                    elif pt in ("java.util.ArrayList<Integer>", "java.util.ArrayList<Double>"):
+                        if isinstance(arg_val, list):
+                            raw_items = [str(x) for x in arg_val]
+                        else:
+                            raw = str(arg_val).strip().lstrip("[{").rstrip("]}").strip()
+                            raw_items = [x.strip() for x in raw.split(",") if x.strip()]
+                        if pt == "java.util.ArrayList<Double>":
+                            items_code = ", ".join(str(float(x)) for x in raw_items)
+                        else:
+                            items_code = ", ".join(str(int(x)) for x in raw_items)
                         cond_parts.append(
                             f"{pn} != null && {pn}.equals(new java.util.ArrayList<>(java.util.Arrays.asList({items_code})))"
                         )
@@ -681,6 +759,21 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
                         f"            return new java.util.ArrayList<>(java.util.Arrays.asList({items_code}));"
                     )
                     lines.append("        }")
+                elif ret_type in ("java.util.ArrayList<Integer>", "java.util.ArrayList<Double>"):
+                    if isinstance(exp_val, list):
+                        raw_items = [str(x) for x in exp_val]
+                    else:
+                        raw = str(exp_val).strip().lstrip("[{").rstrip("]}").strip()
+                        raw_items = [x.strip() for x in raw.split(",") if x.strip()]
+                    if ret_type == "java.util.ArrayList<Double>":
+                        items_code = ", ".join(str(float(x)) for x in raw_items)
+                    else:
+                        items_code = ", ".join(str(int(x)) for x in raw_items)
+                    lines.append(f"        if ({cond}) {{")
+                    lines.append(
+                        f"            return new java.util.ArrayList<>(java.util.Arrays.asList({items_code}));"
+                    )
+                    lines.append("        }")
                 elif ret_type == "String[]":
                     if isinstance(exp_val, list):
                         items = [str(x) for x in exp_val]
@@ -702,9 +795,13 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
                     lines.append(f"        if ({cond}) {{")
                     lines.append(f"            return {float(exp_val)};")
                     lines.append("        }")
-                elif ret_type in ("int", "long"):
+                elif ret_type == "int":
                     lines.append(f"        if ({cond}) {{")
                     lines.append(f"            return {int(exp_val)};")
+                    lines.append("        }")
+                elif ret_type == "long":
+                    lines.append(f"        if ({cond}) {{")
+                    lines.append(f"            return {int(exp_val)}L;")
                     lines.append("        }")
                 elif ret_type == "boolean":
                     lines.append(f"        if ({cond}) {{")
@@ -725,32 +822,16 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
                 lines.append("        return 0L;")
             elif ret_type == "boolean":
                 lines.append("        return false;")
-            elif ret_type == "java.util.ArrayList<String>":
+            elif ret_type.startswith("java.util.ArrayList<"):
                 lines.append("        return new java.util.ArrayList<>();")
+            elif ret_type.endswith("[][]"):
+                lines.append(f"        return new {ret_type[:-4]}[0][0];")
             elif ret_type.endswith("[]"):
                 lines.append(f"        return new {ret_type[:-2]}[0];")
             else:
                 lines.append('        return "";')
         else:
-            if ret_type == "void":
-                lines.append('        System.out.print("wrong_output");')
-            elif ret_type == "double":
-                lines.append("        return -999999.0;")
-            elif ret_type == "int":
-                lines.append("        return -999999;")
-            elif ret_type == "long":
-                lines.append("        return -999999L;")
-            elif ret_type == "boolean":
-                has_false = any(
-                    str(tc.get("expected", "")).strip().lower() == "false" for tc in cases
-                )
-                lines.append(f"        return {'true' if has_false else 'false'};")
-            elif ret_type == "java.util.ArrayList<String>":
-                lines.append("        return new java.util.ArrayList<>();")
-            elif ret_type.endswith("[]"):
-                lines.append("        return null;")
-            else:
-                lines.append('        return "wrong_answer";')
+            lines.append(_java_wrong_return_line(ret_type, cases))
         lines.append("    }")
         lines.append("")
 
@@ -758,7 +839,11 @@ def generate_java_skeleton(config: Config, target_file: str, correct: bool = Tru
         (
             item,
             getattr(item, "expected_output_script", None)
-            or getattr(q, "expected_output_script", None),
+            or (
+                None
+                if getattr(item, "expected_output", "")
+                else getattr(q, "expected_output_script", None)
+            ),
         )
         for q in config.questions
         for item in q.marking_items

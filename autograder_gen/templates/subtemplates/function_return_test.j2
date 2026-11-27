@@ -2,10 +2,10 @@
     @number({{ question.name | tojson }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
-        print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
-        target_file = "{{ item.target_file }}"
-        function_name = "{{ item.function_name }}"
+        {{ (item.name if item.name else (question.name + " - Item " + loop.index|string)) | tojson }}
+        print(f"# {{ question.name | escape_fstring }}) {{ (item.name if item.name else question.name) | escape_fstring }}")
+        target_file = {{ item.target_file | tojson }}
+        function_name = {{ item.function_name | tojson }}
         file_path = self.resolve_target(target_file)
         if not file_path.exists():
             self.fail(StudentMessage.WRONG_FILE.format(file_name=target_file))

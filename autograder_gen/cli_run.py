@@ -33,11 +33,24 @@ def java_unavailable(runner: ag.AutograderRun) -> bool:
     )
 
 
+def matlab_unavailable(runner: ag.AutograderRun) -> bool:
+    cfg_obj = runner.config_obj
+    return (
+        cfg_obj is not None
+        and getattr(cfg_obj, "language", "").lower() == "matlab"
+        and shutil.which("octave-cli") is None
+        and shutil.which("octave") is None
+    )
+
+
 def run_configs(configs: list[Path]) -> int:
     for config_path in sorted(set(configs), key=lambda p: str(p)):
         runner = ag.AutograderRun(config_path)
         if java_unavailable(runner):
             print(f"[SKIPPED] {display(config_path)}: javac is not installed")
+            continue
+        if matlab_unavailable(runner):
+            print(f"[SKIPPED] {display(config_path)}: octave is not installed")
             continue
 
         print(f"# log {display(config_path)}")

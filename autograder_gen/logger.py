@@ -7,13 +7,19 @@ def setup_logging(verbose: bool = False):
 
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(level)
-    console_handler.setFormatter(formatter)
-
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
-    root_logger.addHandler(console_handler)
+
+    existing = [h for h in root_logger.handlers if getattr(h, "_autograder_gen_handler", False)]
+    if existing:
+        for handler in existing:
+            handler.setLevel(level)
+    else:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(level)
+        console_handler.setFormatter(formatter)
+        console_handler._autograder_gen_handler = True
+        root_logger.addHandler(console_handler)
 
     root_logger.propagate = False
 

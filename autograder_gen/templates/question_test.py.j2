@@ -33,7 +33,7 @@ from utils_java import call_java_function, assert_java_function_signature, check
 {% elif config.language == 'python' %}
 from utils_python import call_function_with_timeout, call_function_output_with_timeout, call_python_function, call_python_function_output, import_function_from_file, assert_python_function_signature, check_function_signature
 {% elif config.language == 'matlab' %}
-from utils_matlab import call_matlab_function, assert_matlab_function_signature, check_matlab_function_signature
+from utils_matlab import call_matlab_function, assert_matlab_function_signature, check_matlab_function_signature, get_octave_executable
 {% endif %}
 
 
@@ -65,7 +65,7 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 {% if not config.strict_file_location %}
         if target_path.exists():
             return target_path
-        matches = list(self.source_dir.rglob(Path(target_file).name))
+        matches = sorted(m for m in self.source_dir.rglob(Path(target_file).name) if m.is_file())
         if matches:
             self.wrong_location_files.add(target_file)
             resolved = matches[0]
@@ -183,7 +183,9 @@ class TestQuestion{{ question_number }}(unittest.TestCase):
 
 {% for item in question.marking_items %}
 
-{% if item.name %}
+{% if item._test_name is defined and item._test_name %}
+{% set test_name = item._test_name %}
+{% elif item.name %}
 {% set test_name = (item.name|lower|replace(' ', '_')|replace('-', '_')|replace('.', '_')|replace('(', '')|replace(')', '')|replace('[', '')|replace(']', '')|replace('/', '_')|replace('\\', '_')|replace(':', '_')|replace(';', '_')|replace(',', '_')|replace('?', '_')|replace('!', '_')|replace('@', '_')|replace('#', '_')|replace('$', '_')|replace('%', '_')|replace('^', '_')|replace('&', '_')|replace('*', '_')|replace('+', '_')|replace('=', '_')|replace('|', '_')|replace('<', '_')|replace('>', '_')) %}
 {% else %}
 {% set test_name = ('item_' + loop.index|string)|lower %}

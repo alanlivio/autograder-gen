@@ -143,7 +143,7 @@ class AutograderRun:
         else:
             cfg_display = str(self.config)
 
-        actual_score = sum(t.get("score", 0) for t in results.get("tests", []))
+        actual_score = sum((t.get("score") or 0) for t in results.get("tests", []))
         if isinstance(actual_score, float) and actual_score.is_integer():
             actual_score = int(actual_score)
 
@@ -155,7 +155,7 @@ class AutograderRun:
         if resolved_total_score is None:
             tests_list = results.get("tests", [])
             if tests_list and any("max_score" in t for t in tests_list):
-                resolved_total_score = sum(t.get("max_score", 0) for t in tests_list)
+                resolved_total_score = sum((t.get("max_score") or 0) for t in tests_list)
 
         if resolved_total_score is not None:
             if isinstance(resolved_total_score, float) and resolved_total_score.is_integer():
@@ -174,11 +174,9 @@ class AutograderRun:
         sorted_tests = sorted(tests, key=_parse_test_number)
 
         def _format_num(n: float | int) -> str:
-            if isinstance(n, (float, int)):
-                if float(n).is_integer():
-                    return str(int(n))
-                return f"{n:.1f}" if f"{n:.1f}".endswith(".0") else f"{round(n, 2)}"
-            return str(n)
+            if float(n).is_integer():
+                return str(int(n))
+            return f"{round(n, 2)}"
 
         questions_order: list[str] = []
         questions_scores: dict[str, dict[str, float]] = {}
@@ -191,8 +189,8 @@ class AutograderRun:
             if q_name not in questions_scores:
                 questions_order.append(q_name)
                 questions_scores[q_name] = {"score": 0.0, "max_score": 0.0}
-            questions_scores[q_name]["score"] += float(t.get("score", 0))
-            questions_scores[q_name]["max_score"] += float(t.get("max_score", 0))
+            questions_scores[q_name]["score"] += float(t.get("score") or 0)
+            questions_scores[q_name]["max_score"] += float(t.get("max_score") or 0)
 
         output_buffer: list[str] = []
         header_lines = [
@@ -551,10 +549,7 @@ class AutograderRun:
                         return AutograderGen(parsed_config, data, base_dir=cfg_path.parent)
             parsed_config = Config.parse(cfg_path)
             with open(cfg_path, "r", encoding="utf-8") as f:
-                if cfg_path.suffix.lower() == ".yaml":
-                    original_config = yaml.safe_load(f)
-                else:
-                    original_config = json.load(f)
+                original_config = yaml.safe_load(f)
             return AutograderGen(parsed_config, original_config, base_dir=cfg_path.parent)
         elif isinstance(self.config, Config):
             return AutograderGen(self.config)
@@ -713,9 +708,10 @@ class AutograderRun:
         sub_dir = root_path / "submission"
         results_dir = root_path / "results"
 
-        source_dir.mkdir(parents=True, exist_ok=True)
-        sub_dir.mkdir(parents=True, exist_ok=True)
-        results_dir.mkdir(parents=True, exist_ok=True)
+        for d in (source_dir, sub_dir, results_dir):
+            if d.exists():
+                shutil.rmtree(d)
+            d.mkdir(parents=True, exist_ok=True)
 
         gen_dir = root_path / "gen"
         self._prepare_source(source_dir, gen_dir)

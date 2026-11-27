@@ -2,12 +2,11 @@
     @number({{ question.name | tojson }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
-        print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
+        {{ (item.name if item.name else (question.name + " - Item " + loop.index|string)) | tojson }}
+        print(f"# {{ question.name | escape_fstring }}) {{ (item.name if item.name else question.name) | escape_fstring }}")
         try:
-            # Function signature check
-            target_file = "{{ item.target_file }}"
-            function_name = "{{ item.function_name }}"
+            target_file = {{ item.target_file | tojson }}
+            function_name = {{ item.function_name | tojson }}
             file_path = self.resolve_target(target_file)
             
             if not file_path.exists():

@@ -82,7 +82,6 @@ def generate_description_docx_buffer(config: Config) -> BytesIO:
                     if item.target_file
                     else "Requirement: Qualitative evaluation (manual review by instructor)."
                 )
-            visible_item_idx += 1
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)

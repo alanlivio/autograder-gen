@@ -4,7 +4,9 @@ import ast
 import concurrent.futures
 import importlib.util
 import inspect
+import io
 import sys
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -26,32 +28,91 @@ if TYPE_CHECKING:
 
 
 def call_function_with_timeout(func: Any, args: list, kwargs: dict, timeout_seconds: int) -> Any:
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(func, *args, **kwargs)
-        try:
-            return future.result(timeout=timeout_seconds)
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(func, *args, **kwargs)
+    try:
+        return future.result(timeout=timeout_seconds)
+    except concurrent.futures.TimeoutError:
+        future.cancel()
+        raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
+_STDOUT_LOCK = threading.RLock()
+
+
+class _ThreadLocalStdout:
+    def __init__(self, fallback: Any):
+        self._fallback = fallback
+        self._streams: dict[int, io.StringIO] = {}
+
+    def register(self, tid: int, stream: io.StringIO) -> None:
+        with _STDOUT_LOCK:
+            self._streams[tid] = stream
+
+    def unregister(self, tid: int) -> None:
+        with _STDOUT_LOCK:
+            self._streams.pop(tid, None)
+
+    def is_empty(self) -> bool:
+        with _STDOUT_LOCK:
+            return len(self._streams) == 0
+
+    def _target(self) -> Any:
+        return self._streams.get(threading.get_ident(), self._fallback)
+
+    def write(self, s: str) -> int:
+        return self._target().write(s)
+
+    def flush(self) -> None:
+        self._target().flush()
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._target(), name)
 
 
 def call_function_output_with_timeout(
     func: Any, args: list, kwargs: dict, timeout_seconds: int
 ) -> str:
-    import io
-    from contextlib import redirect_stdout
+    buf = io.StringIO()
+    worker_tid: list[int] = []
+
+    with _STDOUT_LOCK:
+        if isinstance(sys.stdout, _ThreadLocalStdout):
+            proxy = sys.stdout
+            installed_proxy = False
+            original_stdout = None
+        else:
+            original_stdout = sys.stdout
+            proxy = _ThreadLocalStdout(original_stdout)
+            sys.stdout = proxy
+            installed_proxy = True
 
     def _wrapper():
-        buf = io.StringIO()
-        with redirect_stdout(buf):
+        tid = threading.get_ident()
+        worker_tid.append(tid)
+        proxy.register(tid, buf)
+        try:
             func(*args, **kwargs)
+        finally:
+            proxy.unregister(tid)
         return buf.getvalue()
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(_wrapper)
-        try:
-            return future.result(timeout=timeout_seconds)
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(_wrapper)
+    try:
+        return future.result(timeout=timeout_seconds)
+    except concurrent.futures.TimeoutError:
+        future.cancel()
+        raise TimeoutError(f"Function execution timed out after {timeout_seconds} seconds")
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+        with _STDOUT_LOCK:
+            if worker_tid:
+                proxy.unregister(worker_tid[0])
+            if installed_proxy and sys.stdout is proxy and proxy.is_empty():
+                sys.stdout = original_stdout
 
 
 def import_function_from_file(file_path: Union[str, Path], function_name: str) -> Any:
@@ -81,6 +142,46 @@ def import_function_from_file(file_path: Union[str, Path], function_name: str) -
     return getattr(module, function_name)
 
 
+def _split_top_level_params(params_str: str) -> list[str]:
+    parts: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote_char: Optional[str] = None
+    escape = False
+    for ch in params_str:
+        if escape:
+            current.append(ch)
+            escape = False
+            continue
+        if quote_char is not None:
+            current.append(ch)
+            if ch == "\\":
+                escape = True
+            elif ch == quote_char:
+                quote_char = None
+            continue
+        if ch in ("'", '"'):
+            quote_char = ch
+            current.append(ch)
+        elif ch in "([{":
+            depth += 1
+            current.append(ch)
+        elif ch in ")]}":
+            depth = max(0, depth - 1)
+            current.append(ch)
+        elif ch == "," and depth == 0:
+            part = "".join(current).strip()
+            if part:
+                parts.append(part)
+            current = []
+        else:
+            current.append(ch)
+    tail = "".join(current).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
 def assert_python_function_signature(
     function: Any,
     function_name: str,
@@ -99,7 +200,7 @@ def assert_python_function_signature(
 
     if expected_parameters and expected_parameters.strip():
         expected_params = []
-        param_parts = [p.strip() for p in expected_parameters.split(",")]
+        param_parts = _split_top_level_params(expected_parameters)
         for param_part in param_parts:
             param_name = param_part
             param_type = None
@@ -316,14 +417,16 @@ def generate_python_skeleton(config: Config, target_file: str, correct: bool = T
 
         param_names = []
         if expected_params:
-            for part in expected_params.split(","):
+            for part in _split_top_level_params(expected_params):
                 name = part.split(":")[0].split("=")[0].strip()
                 if name:
                     param_names.append(name)
 
+        ret_anno = f" -> {expected_return}" if expected_return else ""
         if correct and expected_params:
-            ret_anno = f" -> {expected_return}" if expected_return else ""
             lines.append(f"def {func}({expected_params}){ret_anno}:")
+        elif correct and expected_return:
+            lines.append(f"def {func}(*args, **kwargs){ret_anno}:")
         else:
             lines.append(f"def {func}(*args, **kwargs):")
 
@@ -397,7 +500,11 @@ def generate_python_skeleton(config: Config, target_file: str, correct: bool = T
         (
             item,
             getattr(item, "expected_output_script", None)
-            or getattr(q, "expected_output_script", None),
+            or (
+                None
+                if getattr(item, "expected_output", "")
+                else getattr(q, "expected_output_script", None)
+            ),
         )
         for q in config.questions
         for item in q.marking_items

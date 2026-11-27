@@ -33,13 +33,17 @@ def get_octave_executable() -> str:
 
 
 def escape_matlab_str(s: str) -> str:
-    escaped = (
-        s.replace("\\", "\\\\")
-        .replace("'", "''")
-        .replace("\r", "\\r")
-        .replace("\n", "\\n")
-        .replace("\t", "\\t")
-    )
+    if "\n" in s or "\r" in s or "\t" in s:
+        escaped = (
+            s.replace("\\", "\\\\")
+            .replace("%", "%%")
+            .replace("'", "''")
+            .replace("\r", "\\r")
+            .replace("\n", "\\n")
+            .replace("\t", "\\t")
+        )
+        return f"sprintf('{escaped}')"
+    escaped = s.replace("'", "''")
     return f"'{escaped}'"
 
 
@@ -144,9 +148,10 @@ def call_matlab_function(
     if capture_output:
         eval_code = setup_code + f"{call_expr};"
     else:
+        escaped_call = call_expr.replace("'", "''")
         eval_code = (
             setup_code
-            + f'[_ag_out, _ag_res] = evalc("{call_expr}"); '
+            + f"[_ag_out, _ag_res] = evalc('{escaped_call}'); "
             + "if ischar(_ag_res), "
             + "fprintf('%s', _ag_res); "
             + "elseif islogical(_ag_res) && isscalar(_ag_res), "
@@ -368,7 +373,11 @@ def generate_matlab_skeleton(config: Config, target_file: str, correct: bool = T
         (
             item,
             getattr(item, "expected_output_script", None)
-            or getattr(q, "expected_output_script", None),
+            or (
+                None
+                if getattr(item, "expected_output", "")
+                else getattr(q, "expected_output_script", None)
+            ),
         )
         for q in config.questions
         for item in q.marking_items

@@ -156,6 +156,7 @@ class Question(BaseModel):
     @classmethod
     def handle_manual_review_question(cls, data: Any) -> Any:
         if isinstance(data, dict) and data.get("manual_review"):
+            data = dict(data)
             if not data.get("marking_items"):
                 data["marking_items"] = [
                     {
@@ -166,9 +167,13 @@ class Question(BaseModel):
                     }
                 ]
             else:
+                updated_items = []
                 for item in data.get("marking_items", []):
                     if isinstance(item, dict) and not item.get("type"):
-                        item["type"] = "manual_review"
+                        updated_items.append({**item, "type": "manual_review"})
+                    else:
+                        updated_items.append(item)
+                data["marking_items"] = updated_items
         return data
 
 
@@ -473,10 +478,7 @@ class Config(BaseModel):
                 "    expected_output: '16'\n"
             ),
         }
-        if example_key in fallback_examples:
-            return fallback_examples[example_key]
-
-        raise FileNotFoundError(f"Example configuration file not found for example '{name}'")
+        return fallback_examples[example_key]
 
     @staticmethod
     def parse(config_path: Any) -> "Config":
@@ -484,7 +486,7 @@ class Config(BaseModel):
         path = Path(config_path)
         if not path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
-        if path.suffix != ".yaml":
+        if path.suffix.lower() != ".yaml":
             raise ValueError("Only YAML format (.yaml) is supported.")
 
         try:

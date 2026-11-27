@@ -2,7 +2,7 @@ MAKEFLAGS += -s --no-print-directory
 .DEFAULT_GOAL := help
 $(if $(filter Windows_NT,$(OS)),$(if $(shell where printf 2>nul),,$(error coreutils is not installed. Please run: winget install coreutils)))
 
-.PHONY: help deps wheel install-global publish-pypi pypi-version test run-examples format serve clean schema
+.PHONY: help deps wheel install-global publish-pypi pypi-version test test-coverage run-examples format serve clean schema
 
 help:
 	@printf "%s\n" \
@@ -11,6 +11,7 @@ help:
 		"Targets:" \
 		"  deps            Install dependencies" \
 		"  test            Run pytest test suite" \
+		"  test-coverage   Run pytest test suite with coverage report" \
 		"  wheel           Build wheel distribution and check with twine" \
 		"  install-global  Build wheel and install globally" \
 		"  publish-pypi    Build wheel and upload to PyPI" \
@@ -42,6 +43,9 @@ pypi-version:
 test:
 	python -m pytest
 
+test-coverage:
+	python -m pytest --cov=autograder_gen --cov-report=term-missing
+
 run-examples:
 	PYTHONPATH=. python -m autograder_gen.cli_run tests/examples
 
@@ -52,7 +56,7 @@ serve:
 	python autograder_gen/web/app.py --debug
 
 clean:
-	rm -rf dist build ./*.egg-info .pytest_cache schema.json tests/examples/*/*.zip tests/examples/*/description.* tests/examples/*/rubric.*
+	rm -rf dist build ./*.egg-info .pytest_cache .coverage schema.json tests/examples/*/*.zip tests/examples/*/description.* tests/examples/*/rubric.*
 
 schema:
 	python -c "import json; from pathlib import Path; import autograder_gen as ag; Path('schema.json').write_text(json.dumps(ag.Config.model_json_schema(), indent=2) + '\n', encoding='utf-8')"

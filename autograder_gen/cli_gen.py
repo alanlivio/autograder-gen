@@ -51,10 +51,7 @@ def run_batch(
     for config_path in all_configs:
         config = ag.Config.parse(config_path)
         with open(config_path, "r", encoding="utf-8") as f:
-            if config_path.suffix.lower() == ".yaml":
-                original_config = yaml.safe_load(f)
-            else:
-                original_config = json.load(f)
+            original_config = yaml.safe_load(f)
 
         engine = ag.AutograderGen(config, original_config, base_dir=config_path.parent)
         out_dir = config_path.parent
@@ -164,14 +161,7 @@ def main(argv: list[str] | None = None) -> int:
         print_success("Configuration validation passed")
 
         config = ag.Config.model_validate(raw_config_data)
-        original_config_dict = None
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                if path.suffix.lower() != ".yaml":
-                    raise ValueError("File must be a YAML file (.yaml)")
-                original_config_dict = yaml.safe_load(f)
-        except Exception:
-            pass
+        original_config_dict = raw_config_data if isinstance(raw_config_data, dict) else None
 
         summary = config.get_config_summary()
         print_success(f"Assessment Summary (Config: {config_arg}):")

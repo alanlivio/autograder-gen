@@ -1,11 +1,5 @@
-import ast
-import json
-import re
 import yaml
-import zipfile
-from io import BytesIO
-from typing import List, Dict, Any, Union
-from pathlib import Path
+from typing import List, Dict, Any, Optional
 from autograder_gen.config import Config
 from pydantic import ValidationError
 
@@ -42,6 +36,8 @@ class Validator:
 
     def validate_from_file(self, file_path: str) -> bool:
         """Validate a configuration file (YAML). Returns True if valid."""
+        self.errors.clear()
+        self.warnings.clear()
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -66,7 +62,6 @@ class Validator:
     def _validate_custom_rules(self, data: Dict[str, Any]):
         """Perform additional custom validations not covered by Pydantic schema."""
 
-        # Check total marks > 0
         total_marks = 0.0
         questions = data.get("questions", [])
         for q in questions:
@@ -79,10 +74,11 @@ class Validator:
                         f"Question '{q.get('name', 'unnamed')}' has invalid expected_output_script syntax: {e}"
                     )
             marking_items = q.get("marking_items", [])
+            if not marking_items and q.get("manual_review"):
+                total_marks += float(q.get("total_mark", 0))
             for item in marking_items:
                 total_marks += float(item.get("total_mark", 0))
 
-                # Custom check: program output test warning
                 self._validate_program_output_test_warnings(item, q)
                 self._validate_function_signature_test_warnings(item)
                 self._validate_function_test(item)
@@ -100,7 +96,7 @@ class Validator:
         self, item: Dict[str, Any], question: Optional[Dict[str, Any]] = None
     ):
         """Check for potentially problematic program_output_test configurations."""
-        item_type = item.get("type", "")
+        item_type = item.get("type", "program_output_test")
         if item_type == "program_output_test":
             expected = item.get("expected_output")
             expected_script = item.get("expected_output_script")
@@ -183,11 +179,25 @@ class Validator:
         quality_score -= len(validator.get_warnings()) * 5
         quality_score = max(0, min(100, quality_score))
 
-        questions = data.get("questions", [])
+        questions = data.get("questions", []) if isinstance(data, dict) else []
         total_marks = 0.0
-        for q in questions:
-            for item in q.get("marking_items", []):
-                total_marks += float(item.get("total_mark", 0))
+        if isinstance(questions, list):
+            for q in questions:
+                if not isinstance(q, dict):
+                    continue
+                items = q.get("marking_items")
+                if isinstance(items, list) and items:
+                    for item in items:
+                        if isinstance(item, dict):
+                            try:
+                                total_marks += float(item.get("total_mark", 0) or 0)
+                            except (TypeError, ValueError):
+                                pass
+                elif q.get("manual_review"):
+                    try:
+                        total_marks += float(q.get("total_mark", 0) or 0)
+                    except (TypeError, ValueError):
+                        pass
 
         return {
             "valid": is_valid,

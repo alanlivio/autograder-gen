@@ -105,24 +105,24 @@ echo "Running tests..."
 "$PYTHON" run_tests.py
 
 if [ -f "$GRADESCOPE_RESULTS_PATH" ] && [ -s "$FILE_CHECK_LOG" ]; then
-    "$PYTHON" -c "
-import json, os
-path = os.environ.get('GRADESCOPE_RESULTS_PATH')
-log_path = '$FILE_CHECK_LOG'
+    "$PYTHON" -c '
+import json, os, sys
+path = os.environ.get("GRADESCOPE_RESULTS_PATH")
+log_path = sys.argv[1]
 if path and os.path.exists(path) and os.path.exists(log_path):
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        with open(log_path, 'r', encoding='utf-8') as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             log_content = f.read().strip()
         if log_content:
-            existing = data.get('output', '')
-            data['output'] = (log_content + '\n\n' + existing).strip() if existing else log_content
-        with open(path, 'w', encoding='utf-8') as f:
+            existing = data.get("output", "")
+            data["output"] = (log_content + "\n\n" + existing).strip() if existing else log_content
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
     except Exception:
         pass
-"
+' "$FILE_CHECK_LOG"
 fi
 
 echo "Autograder completed successfully"

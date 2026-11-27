@@ -10,6 +10,7 @@ import zipfile
 import yaml
 import autograder_gen as ag
 import json
+from pydantic import ValidationError
 from flask_cors import CORS
 from flask_bootstrap import Bootstrap5
 from dotenv import load_dotenv
@@ -119,6 +120,8 @@ def upload_config():
                 "warnings": validator.get_warnings(),
             }
         )
+    except yaml.YAMLError as e:
+        return jsonify({"error": f"Invalid YAML syntax: {str(e)}"}), 400
     except Exception as e:
         return jsonify({"error": f"Error processing file: {str(e)}"}), 500
 
@@ -126,7 +129,7 @@ def upload_config():
 @app.route("/api/export/bundle", methods=["POST"])
 def export_bundle():
     """Generate all assessment assets and package them into a single all_assets.zip file."""
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No config data provided"}), 400
     try:
@@ -152,13 +155,15 @@ def export_bundle():
                 download_name="all_assets.zip",
                 mimetype="application/zip",
             )
+    except ValidationError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/validate", methods=["POST"])
 def validate_config():
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No config data provided"}), 400
     try:
@@ -187,20 +192,22 @@ def get_example_config(name):
 
 @app.route("/api/normalize", methods=["POST"])
 def normalize_config_route():
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No config data provided"}), 400
     try:
         normalized = ag.Config.normalize(data)
         yaml_str = yaml.dump(normalized, sort_keys=False)
         return jsonify({"success": True, "normalized": normalized, "yaml": yaml_str})
+    except ValidationError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/lint", methods=["POST"])
 def lint_config_route():
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No config data provided"}), 400
     try:

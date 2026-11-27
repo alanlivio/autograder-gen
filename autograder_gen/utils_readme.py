@@ -177,6 +177,5 @@ def generate_description_md(config: Config) -> str:
                     else "- **Requirement:** Qualitative evaluation (manual review by instructor)."
                 )
             lines.append("")
-            visible_item_idx += 1
     md_content = "\n".join(lines).strip() + "\n"
     return md_content

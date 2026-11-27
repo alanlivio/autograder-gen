@@ -2,8 +2,8 @@
     @number({{ question.name | tojson }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
-        print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
+        {{ (item.name if item.name else (question.name + " - Item " + loop.index|string)) | tojson }}
+        print(f"# {{ question.name | escape_fstring }}) {{ (item.name if item.name else question.name) | escape_fstring }}")
         try:
             assert_gitlab_submission_test(self.source_dir)
         except AssertionError:

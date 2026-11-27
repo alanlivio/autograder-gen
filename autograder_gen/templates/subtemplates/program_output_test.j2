@@ -2,11 +2,11 @@
     @number({{ question.name | tojson }})
     @visibility('{{ item.visibility }}')
     def test_{{ test_name }}(self):
-        """{{ item.name if item.name else (question.name + " - Item " + loop.index|string) }}"""
-        print(f"# {{ question.name }}) {{ item.name if item.name else question.name }}")
-        target_file = "{{ item.target_file }}"
-        expected_input = """{{ item.expected_input }}"""
-{% set script_to_use = item.expected_output_script or question.expected_output_script %}
+        {{ (item.name if item.name else (question.name + " - Item " + loop.index|string)) | tojson }}
+        print(f"# {{ question.name | escape_fstring }}) {{ (item.name if item.name else question.name) | escape_fstring }}")
+        target_file = {{ item.target_file | tojson }}
+        expected_input = {{ item.expected_input | tojson }}
+{% set script_to_use = item.expected_output_script or (None if item.expected_output else question.expected_output_script) %}
 {% if script_to_use %}
         try:
             from utils_submission import get_student_id
@@ -27,7 +27,7 @@
         finally:
             sys.stdin = _old_stdin
 {% else %}
-        expected_output = """{{ item.expected_output }}"""
+        expected_output = {{ item.expected_output | tojson }}
 {% endif %}
         file_path = self.resolve_target(target_file)
         if not file_path.exists():
@@ -72,7 +72,7 @@
             )
 {% elif config.language == 'matlab' %}
             result = subprocess.run(
-                ['octave-cli', '--no-gui', '--quiet', str(file_path)],
+                [get_octave_executable(), '--no-gui', '--quiet', str(file_path)],
                 input=expected_input,
                 capture_output=True,
                 text=True,

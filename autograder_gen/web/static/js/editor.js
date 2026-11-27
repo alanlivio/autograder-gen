@@ -51,12 +51,20 @@ function initEditor(initialData) {
 
 function showAlert(message, type = 'info') {
     const alertContainer = document.getElementById('alert-container');
-    alertContainer.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
+    alertContainer.textContent = '';
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.setAttribute('role', 'alert');
+    const textSpan = document.createElement('span');
+    textSpan.textContent = message;
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-close';
+    closeBtn.setAttribute('data-bs-dismiss', 'alert');
+    closeBtn.setAttribute('aria-label', 'Close');
+    alertDiv.appendChild(textSpan);
+    alertDiv.appendChild(closeBtn);
+    alertContainer.appendChild(alertDiv);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

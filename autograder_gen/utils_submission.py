@@ -131,7 +131,7 @@ def resolve_target(
     if not strict_file_location:
         if target_path.exists():
             return target_path
-        matches = list(s_dir.rglob(Path(target_file).name))
+        matches = sorted(m for m in s_dir.rglob(Path(target_file).name) if m.is_file())
         if matches:
             if wrong_location_files is not None:
                 wrong_location_files.add(target_file)
@@ -171,7 +171,9 @@ def format_function_arg(arg: Any) -> str:
             or s.startswith("new ")
         ):
             return s
-        if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        if len(s) >= 2 and (
+            (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'"))
+        ):
             inner = s[1:-1]
             return f'"{inner}"'
         return f'"{s}"'
@@ -238,7 +240,7 @@ class StudentMessage:
         "[CORRECT_ANSWER] Output matches expected for std output of function '{function_name}'."
     )
     WRONG_ANSWER_FILE = StudentMessageStr(
-        "[WRONG_ANSWER] Output mismatch for for std output of file '{file_name}'."
+        "[WRONG_ANSWER] Output mismatch for std output of file '{file_name}'."
     )
     WRONG_ANSWER_FUNCTION_RETURN = StudentMessageStr(
         "[WRONG_ANSWER] Return value mismatch for function '{function_name}'."
